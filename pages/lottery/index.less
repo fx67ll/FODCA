@@ -1,0 +1,153 @@
+@import url('@/static/style/mixin.less');
+.fx67ll-tools-box {
+	padding: 50rpx;
+	.fx67ll-btn-box {
+		padding-bottom: 50rpx;
+		.fx67ll-btn-item {
+			margin-bottom: 40rpx;
+		}
+		.fx67ll-btn-item:last-child {
+			margin-bottom: 0;
+		}
+		@icon-size: 60rpx;
+		.fx67ll-btn-item-two {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			.fx67ll-btn-default {
+				width: calc(100% - @icon-size);
+			}
+			.fx67ll-btn-icon {
+				width: @icon-size;
+				height: @icon-size;
+				padding: 0 10rpx 0 20rpx;
+			}
+		}
+	}
+	@lcheight: 400rpx;
+	.fx67ll-lucky-box {
+		width: 100%;
+		.fx67ll-lucky-bumber {
+			width: 100%;
+			height: @lcheight;
+			line-height: @lcheight;
+			text-align: center;
+			font-size: 200rpx;
+			color: @topic-red;
+		}
+		.fx67ll-lucky-title {
+			width: 100%;
+			text-align: center;
+			position: relative;
+			animation: jumpTip 0.4s linear infinite alternate;
+		}
+	}
+}
+
+// 弹窗中文字样式
+.fx67ll-number-box {
+	padding: 70rpx;
+	.fx67ll-number-item {
+		display: flex;
+		justify-content: space-around;
+		margin: 0 auto;
+		margin-bottom: 20rpx;
+		text-align: center;
+		span {
+			width: 50rpx;
+		}
+	}
+}
+@copy-btn-gap: 40rpx;
+.fx67ll-btn-submit {
+	width: calc(100% - @copy-btn-gap * 2);
+	position: absolute;
+	bottom: @copy-btn-gap;
+	left: @copy-btn-gap;
+}
+
+// 弹窗中图片样式
+@delete-position: 44rpx;
+.fx67ll-drawer-img {
+	height: 100%;
+	overflow-y: auto;
+	padding: 30rpx;
+	position: relative;
+	.fx67ll-img-icon {
+		position: absolute;
+		top: @delete-position;
+		right: @delete-position;
+	}
+	.fx67ll-img-lottory {
+		width: 100%;
+	}
+}
+
+// 弹窗中设置样式
+.fx67ll-drawer-setting {
+	padding: 50rpx 60rpx 60rpx 60rpx;
+	.fx67ll-setting-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 30rpx;
+		.fx67ll-setting-switch {
+			zoom: 0.7;
+		}
+	}
+	.fx67ll-setting-item:last-child {
+		margin-bottom: 0;
+	}
+	.fx67ll-setting-tip {
+		font-size: 26rpx;
+		color: @topic-red;
+		text {
+			padding: 0 10rpx;
+		}
+	}
+}
+
+@keyframes jumpTip {
+	from {
+		top: -20px;
+	}
+
+	to {
+		top: -10px;
+	}
+}
+
+@-webkit-keyframes jumpTip {
+	from {
+		top: -20px;
+	}
+
+	to {
+		top: -10px;
+	}
+}
+
+// 图标加载样式
+.fx67ll-btn-loading {
+	animation: spinInfinite 1s linear infinite;
+}
+
+@keyframes spinInfinite {
+	from {
+		transform: rotate(360deg);
+	}
+
+	to {
+		transform: rotate(0deg);
+	}
+}
+
+@-webkit-keyframes spinInfinite {
+	from {
+		transform: rotate(360deg);
+	}
+
+	to {
+		transform: rotate(0deg);
+	}
+}

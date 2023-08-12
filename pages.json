@@ -72,6 +72,12 @@
       "style": {
         "navigationBarTitleText": "浏览文本"
       }
+    },
+    {
+      "path": "pages/lottery/index",
+      "style": {
+        "navigationBarTitleText": "fx67ll's daily lottery"
+      }
     }
   ],
   "tabBar": {
@@ -83,19 +89,22 @@
       {
         "pagePath": "pages/index",
         "iconPath": "static/images/tabbar/home.png",
-        "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
+        // "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
+        "selectedIconPath": "static/images/fx67ll-app.jpg",
         "text": "首页"
       },
-      // {
-      //   "pagePath": "",
-      //   "iconPath": "static/images/tabbar/dashboard.png",
-      //   "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
-      //   "text": "工作台"
-      // },
+      {
+        "pagePath": "pages/lottery/index",
+        "iconPath": "static/images/tabbar/dashboard.png",
+        // "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
+        "selectedIconPath": "static/images/fx67ll-app.jpg",
+        "text": "梦想"
+      },
       {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",
-        "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
+        // "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
+        "selectedIconPath": "static/images/fx67ll-app.jpg",
         "text": "我的"
       }
     ]
