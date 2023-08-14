@@ -1,13 +1,13 @@
 // 应用全局配置
 module.exports = {
-  baseUrl: 'https://vip.fx67ll.com/vip-api',
-  // baseUrl: 'http://localhost:9897/vip-api',
+  // baseUrl: 'https://vip.fx67ll.com/vip-api',
+  baseUrl: 'http://localhost:9897/vip-api',
   // 应用信息
   appInfo: {
     // 应用名称
     name: 'fx67ll-app',
     // 应用版本
-    version: '0.1.0',
+    version: '0.1.3',
     // 应用logo
     logo: 'https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg',
     // 个人主页
@@ -32,13 +32,13 @@ module.exports = {
         icon: 'fire',
       },
       {
+        title: '联系作者',
+        url: 'https://fx67ll.xyz/s/messageboard',
+      },
+      {
         title: '打赏作者',
         url: 'https://fx67ll.xyz/s/donate',
         icon: 'hand-up',
-      },
-      {
-        title: '联系作者',
-        url: 'https://fx67ll.xyz/s/messageboard',
       },
       {
         title: '关于作者',
