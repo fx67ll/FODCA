@@ -1,6 +1,12 @@
 {
   "pages": [
     {
+      "path": "pages/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/login",
       "style": {
         "navigationBarTitleText": "登录"
@@ -10,13 +16,6 @@
       "path": "pages/register",
       "style": {
         "navigationBarTitleText": "注册"
-      }
-    },
-    {
-      "path": "pages/index",
-      "style": {
-        "navigationBarTitleText": "fx67ll's Life App",
-        "navigationStyle": "custom"
       }
     },
     {
@@ -76,7 +75,7 @@
     {
       "path": "pages/lottery/index",
       "style": {
-        "navigationBarTitleText": "fx67ll's daily lottery"
+        "navigationBarTitleText": "每天等一个首付"
       }
     }
   ],
@@ -98,7 +97,7 @@
         "iconPath": "static/images/tabbar/dashboard.png",
         // "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
-        "text": "梦想"
+        "text": "白日梦"
       },
       {
         "pagePath": "pages/mine/index",
