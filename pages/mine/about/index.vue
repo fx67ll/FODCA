@@ -22,6 +22,14 @@
         </view>
         <view class="list-cell list-cell-arrow">
           <view class="menu-item-box">
+            <view>个人主页</view>
+            <view class="text-right">
+              <uni-link :href="siteUrl" :text="siteUrl" showUnderLine="false"></uni-link>
+            </view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow">
+          <view class="menu-item-box">
             <view>技术博客</view>
             <view class="text-right">
               <uni-link :href="blogUrl" :text="blogUrl" showUnderLine="false"></uni-link>
@@ -35,18 +43,6 @@
               <uni-link
                 :href="globalConfig.appInfo.author_info[5].url"
                 :text="globalConfig.appInfo.author_info[5].url"
-                showUnderLine="false"
-              ></uni-link>
-            </view>
-          </view>
-        </view>
-        <view class="list-cell list-cell-arrow">
-          <view class="menu-item-box">
-            <view>{{ globalConfig.appInfo.author_info[4].title }}</view>
-            <view class="text-right">
-              <uni-link
-                :href="globalConfig.appInfo.author_info[4].url"
-                :text="globalConfig.appInfo.author_info[4].url"
                 showUnderLine="false"
               ></uni-link>
             </view>
