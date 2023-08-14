@@ -1,24 +1,30 @@
 <template>
   <view class="content">
-    <image class="logo" :src="globalConfig.appInfo.logo"></image>
+    <image class="logo" :src="randomAvatar" @click="getRandomAvatar"></image>
     <view class="text-area">
-      <text class="title" @click="goFx67ll">Powered & Designed By fx67ll</text>
+      <text class="title">Powered & Designed By fx67ll</text>
     </view>
   </view>
 </template>
 
 <script>
+import { getAvatar } from "@/api/system/user";
 export default {
   data() {
     return {
-      globalConfig: getApp().globalData.config,
+      randomAvatar: getApp().globalData.config.appInfo.logo,
     };
   },
+  onLoad() {
+    this.getRandomAvatar();
+  },
   methods: {
-    goFx67ll() {
-      this.$tab.navigateTo(
-        "/pages/common/webview/index?title=fx67ll.com&url=https://fx67ll.com"
-      );
+    getRandomAvatar() {
+      getAvatar("fx67ll").then((res) => {
+        if (res?.avatar) {
+          this.randomAvatar = "data:image/gif;base64," + res.avatar;
+        }
+      });
     },
   },
 };
