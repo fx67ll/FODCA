@@ -1,6 +1,6 @@
 <template>
   <view class="content">
-    <image class="logo" :src="randomAvatar" @click="getRandomAvatar"></image>
+    <image class="logo" :src="randomAvatar" @click="getRandomAvatarDebounce"></image>
     <view class="text-area">
       <text class="title">Powered & Designed By fx67ll</text>
     </view>
@@ -9,20 +9,28 @@
 
 <script>
 import { getAvatar } from "@/api/system/user";
+import _ from "@/node_modules/underscore";
+import moment from "@/node_modules/moment";
 export default {
   data() {
     return {
-      randomAvatar: getApp().globalData.config.appInfo.logo,
+      randomAvatar: "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
     };
   },
   onLoad() {
-    this.getRandomAvatar();
+    this.getRandomAvatarDebounce();
   },
   methods: {
+    getRandomAvatarDebounce: _.debounce(function () {
+      this.getRandomAvatar();
+    }, 233),
     getRandomAvatar() {
+      const self = this;
       getAvatar("fx67ll").then((res) => {
         if (res?.avatar) {
-          this.randomAvatar = "data:image/gif;base64," + res.avatar;
+          self.randomAvatar = "data:image/gif;base64," + res.avatar;
+        } else {
+          self.randomAvatar = getApp().globalData.config.appInfo.logo;
         }
       });
     },
@@ -41,7 +49,7 @@ export default {
 .logo {
   height: 200rpx;
   width: 200rpx;
-  margin-top: 200rpx;
+  margin-top: 400rpx;
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 50rpx;
