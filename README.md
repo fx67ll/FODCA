@@ -4,6 +4,7 @@ fx67ll One Data Center App
 *Tip: 运行请先安装 `moment` & `underscore`*
 
 ## 0.1.4.20230815  
+* 优化各类接口重复调用的逻辑
 * 对接彩票号码记录管理的接口  
 
 ## 0.1.3.20230814
