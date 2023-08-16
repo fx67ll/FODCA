@@ -542,12 +542,10 @@ $hover: #f5f5f5;
 .uni-list-chat__content-note {
   margin-top: 3px;
   // color: $note-color;
-  // font-size: $note-size;
   color: #9254de;
-  font-size: 14px;
-  letter-spacing: 1px;
-  // font-weight: $title-weight;
-  font-weight: bold;
+  font-size: $note-size;
+  font-size: 12px;
+  font-weight: $title-weight;
   overflow: hidden;
 }
 .draft {
