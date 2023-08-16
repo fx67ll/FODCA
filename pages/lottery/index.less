@@ -58,15 +58,33 @@
     }
   }
 }
+
 @copy-btn-gap: 40rpx;
-.fx67ll-btn-submit {
+.fx67ll-btn-save {
   width: calc(100% - @copy-btn-gap * 2);
   position: absolute;
   bottom: @copy-btn-gap;
   left: @copy-btn-gap;
 }
-.fx67ll-btn-submit-h5 {
+.fx67ll-btn-save-h5 {
   bottom: calc(@copy-btn-gap + 50px);
+}
+.fx67ll-drawer-btn-box {
+  width: calc(100% - @copy-btn-gap * 2);
+  position: absolute;
+  bottom: @copy-btn-gap;
+  left: @copy-btn-gap;
+  display: flex;
+  justify-content: space-between;
+  &.h5 {
+    bottom: calc(@copy-btn-gap + 50px);
+  }
+  .fx67ll-btn-copy {
+    width: calc(55% - 40rpx);
+  }
+  .fx67ll-btn-submit {
+    width: 45%;
+  }
 }
 
 // 弹窗中图片样式

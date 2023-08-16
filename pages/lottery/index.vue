@@ -13,7 +13,7 @@
           class="fx67ll-btn-default"
           type="default"
           @click="getLuckyNumber"
-          :disabled="countLoading || isDrawLoading"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           获取今日随机号码
         </button>
@@ -22,13 +22,13 @@
           type="gear-filled"
           :size="iconSize"
           @click="editLuckySetting"
-          v-if="!countLoading && !isDrawLoading"
+          v-if="!isNetworkLoading && !countLoading && !isDrawLoading"
         ></uni-icons>
         <uni-icons
           class="fx67ll-btn-loading"
           type="spinner-cycle"
           :size="iconSize"
-          v-if="countLoading || isDrawLoading"
+          v-if="isNetworkLoading || countLoading || isDrawLoading"
         ></uni-icons>
       </div>
       <div class="fx67ll-btn-item fx67ll-btn-item-two">
@@ -36,7 +36,7 @@
           class="fx67ll-btn-default"
           type="default"
           @click="importLuckyImg"
-          :disabled="countLoading || isDrawLoading"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           上传照片自动分析
         </button>
@@ -45,18 +45,23 @@
           type="camera-filled"
           :size="iconSize"
           @click="useCamera"
-          v-if="!countLoading && !isDrawLoading"
+          v-if="!isNetworkLoading && !countLoading && !isDrawLoading"
         ></uni-icons>
         <uni-icons
           class="fx67ll-btn-loading"
           type="spinner-cycle"
           :size="iconSize"
-          v-if="countLoading || isDrawLoading"
+          v-if="isNetworkLoading || countLoading || isDrawLoading"
         ></uni-icons>
       </div>
       <div class="fx67ll-btn-item" v-if="!isDrawLoading">
-        <button class="fx67ll-btn-default" type="warn" @click="fakeDrawLottery(true)">
-          {{ drawLottoryText }}
+        <button
+          class="fx67ll-btn-default"
+          type="warn"
+          :disabled="isNetworkLoading"
+          @click="fakeDrawLottery(true)"
+        >
+          {{ drawLotteryText }}
         </button>
       </div>
       <div class="fx67ll-btn-item fx67ll-btn-item-two" v-if="isDrawLoading">
@@ -66,13 +71,13 @@
           @click="fakeDrawLottery(true)"
           :disabled="isDrawLoading"
         >
-          {{ drawLottoryText }}
+          {{ drawLotteryText }}
         </button>
         <uni-icons
           class="fx67ll-btn-icon"
           type="minus"
           :size="iconSize"
-          @click="stopDrawLottory"
+          @click="stopDrawLottery"
         ></uni-icons>
       </div>
       <div class="fx67ll-btn-item">
@@ -80,7 +85,7 @@
           class="fx67ll-btn-default"
           type="warn"
           @click="getTodayLucky"
-          :disabled="countLoading"
+          :disabled="isNetworkLoading || countLoading"
         >
           {{
             !countLoading
@@ -103,6 +108,7 @@
       :visible.sync="isShowDrawer"
       :radius="true"
       :height="drawerHeight"
+      :before-close="handleDrawerClose"
     >
       <div v-if="showType === 'luckyNumber'">
         <div id="luckyNumberText" class="fx67ll-number-box">
@@ -111,54 +117,57 @@
             v-for="item in luckyNumberList"
             :key="item.timeStamp"
           >
-            <!-- #ifdef H5 -->
-            <span
-              v-for="(redNum, j) in item.lottoryNumberFirst"
-              :key="Math.random() * redNum + j"
-              >{{ redNum }}</span
-            >
-            -
-            <span
-              v-for="(blueNum, k) in item.lottoryNumberSecond"
-              :key="Math.random() * blueNum + k"
-              >{{ blueNum }}</span
-            >
-            <!-- #endif -->
-            <!-- #ifdef MP-WEIXIN -->
-            <span v-for="itemFirst in item.lottoryNumberFirst" :key="itemFirst.key">{{
+            <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key">{{
               itemFirst.num
             }}</span>
             -
-            <span v-for="itemSecond in item.lottoryNumberSecond" :key="itemSecond.key">{{
+            <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">{{
               itemSecond.num
             }}</span>
-            <!-- #endif -->
           </div>
         </div>
+
         <!-- #ifdef H5 -->
-        <button
-          class="fx67ll-btn-submit fx67ll-btn-submit-h5"
-          type="primary"
-          @click="copyLuckyNumber"
-        >
-          拷贝至剪切板
-        </button>
+        <div class="fx67ll-drawer-btn-box h5">
+          <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
+            拷贝至剪切板
+          </button>
+          <button
+            class="fx67ll-btn-submit"
+            :loading="isNetworkLoading"
+            :disabled="isNetworkLoading"
+            @click="uploadLuckyNumberDebounce"
+          >
+            保存到云端
+          </button>
+        </div>
         <!-- #endif -->
+
         <!-- #ifdef MP-WEIXIN -->
-        <button class="fx67ll-btn-submit" type="primary" @click="copyLuckyNumber">
-          拷贝至剪切板
-        </button>
+        <div class="fx67ll-drawer-btn-box">
+          <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
+            拷贝至剪切板
+          </button>
+          <button
+            class="fx67ll-btn-submit"
+            :loading="isNetworkLoading"
+            :disabled="isNetworkLoading"
+            @click="uploadLuckyNumberDebounce"
+          >
+            保存到云端
+          </button>
+        </div>
         <!-- #endif -->
       </div>
 
       <div
         class="fx67ll-drawer-img"
-        v-if="showType === 'luckyPhoto' && lottoryTicketArr.length > 0"
+        v-if="showType === 'luckyPhoto' && lotteryTicketArr.length > 0"
       >
         <!-- <uni-icons class="fx67ll-img-icon" type="trash" size="24" color="#BFBFBF" @click="deleteImportImg"></uni-icons> -->
         <img
-          class="fx67ll-img-lottory"
-          :src="lottoryTicketArr[0]"
+          class="fx67ll-img-lottery"
+          :src="lotteryTicketArr[0]"
           @click="previewImportImg"
         />
       </div>
@@ -206,15 +215,21 @@
         </div>
         <!-- #ifdef H5 -->
         <button
-          class="fx67ll-btn-submit fx67ll-btn-submit-h5"
+          class="fx67ll-btn-save fx67ll-btn-save-h5"
           type="primary"
-          @click="saveLuckySetting(false)"
+          :loading="isNetworkLoading"
+          @click="saveLuckySettingDebounce(false)"
         >
           保存设置到云端
         </button>
         <!-- #endif -->
         <!-- #ifdef MP-WEIXIN -->
-        <button class="fx67ll-btn-submit" type="primary" @click="saveLuckySetting(false)">
+        <button
+          class="fx67ll-btn-save"
+          type="primary"
+          :loading="isNetworkLoading"
+          @click="saveLuckySettingDebounce(false)"
+        >
           保存设置到云端
         </button>
         <!-- #endif -->
@@ -232,10 +247,12 @@ import _ from "@/node_modules/underscore";
 // 日期时间处理
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
-// 快速排序
-import { quickSort } from "@/utils/index.js";
+// 各种工具类
+import { quickSort } from "@/utils/index";
+import { showConfirm } from "@/utils/common";
 // lottery相关api
-import { getSetting, updateSetting } from "@/api/lottery/setting";
+import { getSetting, updateSetting, addSetting } from "@/api/lottery/setting";
+import { getLogList, addLog } from "@/api/lottery/log";
 export default {
   components: {
     uniIcons,
@@ -243,6 +260,8 @@ export default {
   },
   data() {
     return {
+      // 当前配置信息云端ID
+      settingInfoId: null,
       // 按钮图标大小
       iconSize: 32,
       // 定时器对象
@@ -253,6 +272,7 @@ export default {
       // Drawer组件相关参数
       isShowDrawer: false,
       drawerHeight: "75%",
+      drawerType: 0,
       drawerTitle: moment().format("YYYY-MM-DD hh:mm:ss dddd"),
       showType: "",
       // SSQ红蓝球
@@ -266,32 +286,32 @@ export default {
       // SSQ固定追号配置，后期开放自定义固定追号
       luckyNumberSSQ: {
         timeStamp: new Date().getTime(),
-        lottoryNumberFirst: [1, 4, 5, 8, 10, 23],
-        lottoryNumberSecond: [5],
+        lotteryNumberFirst: [1, 4, 5, 8, 10, 23],
+        lotteryNumberSecond: [5],
       },
       // DLT固定追号配置，后期开放自定义固定追号
       luckyNumberDLT: {
         timeStamp: new Date().getTime(),
-        lottoryNumberFirst: [4, 7, 8, 10, 23],
-        lottoryNumberSecond: [4, 9],
+        lotteryNumberFirst: [4, 7, 8, 10, 23],
+        lotteryNumberSecond: [4, 9],
       },
       // 需要拷贝到剪切板的内容
       copyTextContent: "",
       // 照片数组
-      lottoryTicketArr: [],
+      lotteryTicketArr: [],
       idImgArrBack: [],
       // 设置相关参数
       settingInfo: {
         // 输出注数
-        luckyCount: 5,
+        luckyCount: 2,
         // 是否允许重复
         isNeedRepeat: false,
         // 当日是否只允许出现一注随机号码，打开开关后需要缓存当前第一注
-        isOnlyFirstToday: false,
+        isOnlyFirstToday: true,
         firstRandomDate: null,
         localLuckyNumberList: [],
         // 当日幸运数字是否必须出现在当日随机号码中
-        isNeedLuckyNumber: false,
+        isNeedLuckyNumber: true,
         todayLuckyNumber: null,
         luckyNumberDate: null,
         // 每天只允许点击一次是否幸运，并且判断当日点击后计算是否完成，未完成就退出下次进入允许重新点击
@@ -300,7 +320,7 @@ export default {
         todayLuckyText: null,
         luckyClickTotal: 0,
         // 模拟摇奖，包括中奖耗时，暂停摇奖，继续摇奖，以及中奖号码
-        drawLottoryTimeHistory: 0,
+        drawLotteryTimeHistory: 0,
         isGetBigReward: false,
         bigRewardNumber: null,
       },
@@ -317,12 +337,27 @@ export default {
       // 模拟摇奖的定时器
       fakeDrawTimer: null,
       // 模拟摇奖计时
-      drawLottoryText: "模拟摇奖",
+      drawLotteryText: "模拟摇奖",
       // 是否正在模拟
       isDrawLoading: false,
       // 模拟摇奖计时
-      drawLottoryTime: 0,
+      drawLotteryTime: 0,
+      // 调用接口的加载标识
+      isNetworkLoading: false,
     };
+  },
+  watch: {
+    isShowDrawer: {
+      handler(newValue, oldValue) {
+        if (!newValue && this.drawerType > 0) {
+          // #ifdef MP-WEIXIN
+          this.initCacheSetting();
+          // #endif
+        }
+      },
+      deep: true, // 深度监测对象的变化
+      immediate: true, // 立即执行监测器函数
+    },
   },
   onLoad() {
     // moment初始汉化
@@ -337,6 +372,8 @@ export default {
     this.showNowTime();
   },
   onHide() {
+    // 增加一下保存的频率
+    this.saveLuckySettingDebounce(true);
     // 销毁时清除定时器
     clearInterval(this.timer);
     clearTimeout(this.luckyTimer);
@@ -346,7 +383,7 @@ export default {
     this.fakeDrawTimer = null;
     // 隐藏时停止计时
     if (this.isDrawLoading) {
-      this.stopDrawLottory();
+      this.stopDrawLottery();
     }
   },
   onUnload() {
@@ -359,49 +396,108 @@ export default {
     this.fakeDrawTimer = null;
     // 隐藏时停止计时
     if (this.isDrawLoading) {
-      this.stopDrawLottory();
+      this.stopDrawLottery();
     }
   },
   methods: {
     // 保存设置到服务端
     // noToast，默认不用传，传true表示不会提示保存成功或失败的信息，传false表示正常提示
-    saveLuckySetting(noToast) {
+    saveLuckySetting(isNoNeedToast) {
       const self = this;
-      const updateParams = {
-        settingId: 1,
-        lotterySetting: JSON.stringify(this.settingInfo),
-      };
-      updateSetting(updateParams).then((res) => {
-        if (res?.code === 200) {
-          if (!noToast) {
-            uni.showToast({
-              title: "摇奖设置以成功保存到云端啦~",
-              icon: "none",
-              duration: 1998,
-            });
-          }
-        } else {
-          if (!noToast) {
-            uni.showToast({
-              title: "摇奖设置保存到云端失败！",
-              icon: "none",
-              duration: 1998,
-            });
-          }
+      this.isNetworkLoading = true;
+      if (this.settingInfoId) {
+        const updateParams = {
+          settingId: this.settingInfoId,
+          lotterySetting: JSON.stringify(this.settingInfo),
+        };
+        updateSetting(updateParams).then((res) => {
+          self.showSavingToast(
+            res?.code,
+            !isNoNeedToast,
+            "摇奖设置已成功新增到云端~",
+            "摇奖设置保存新增到云端失败！",
+            false
+          );
+        });
+      } else {
+        const addParams = {
+          lotterySetting: JSON.stringify(this.settingInfo),
+        };
+        addSetting(addParams).then((res) => {
+          self.showSavingToast(
+            res?.code,
+            !isNoNeedToast,
+            "摇奖设置已成功保存到云端~",
+            "摇奖设置保存修改到云端失败！",
+            true
+          );
+        });
+      }
+    },
+    saveLuckySettingDebounce: _.debounce(function (isNoNeedToast) {
+      this.saveLuckySetting(isNoNeedToast);
+    }, 233),
+    // 调用新增或修改接口之后的统一处理
+    showSavingToast(resCode, isNeedTip, successTip, failTip, isNeedQuerySettingId) {
+      const self = this;
+      if (resCode === 200) {
+        if (isNeedTip && successTip) {
+          uni.showToast({
+            title: successTip,
+            icon: "none",
+            duration: 1998,
+          });
         }
-        if (!noToast) {
-          self.isShowDrawer = false;
+        if (isNeedQuerySettingId) {
+          getSetting().then((res) => {
+            if (res?.code === 200 && res?.data) {
+              self.settingInfoId = res?.data?.settingId;
+            }
+          });
         }
+      } else {
+        if (isNeedTip && failTip) {
+          uni.showToast({
+            title: failTip,
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      }
+      if (isNeedTip) {
+        this.drawerType = 0;
+        this.isShowDrawer = false;
+      }
+      this.isNetworkLoading = false;
+    },
+    // 本地缓存摇奖设置
+    saveLuckySettingLocal() {
+      // 保存到服务端
+      this.saveLuckySettingDebounce(true);
+
+      // #ifdef H5
+      localStorage.setItem("settingInfo", JSON.stringify(this.settingInfo));
+      // #endif
+
+      // 微信端不支持localStorage
+      // #ifdef MP-WEIXIN
+      wx.setStorage({
+        key: "settingInfo",
+        data: JSON.stringify(this.settingInfo),
       });
+      // #endif
     },
     // 从服务端初始化之前的摇奖设置
     initCacheSetting() {
       const self = this;
+      this.$modal.loading("加载配置中，请耐心等待...");
+      this.isNetworkLoading = true;
       getSetting().then((res) => {
         if (res?.code === 200 && res?.data) {
+          this.settingInfoId = res?.data?.settingId;
           const lotterySetting = res?.data?.lotterySetting;
           const settingInfo = JSON.parse(lotterySetting) || {};
-          if (_.has(settingInfo, "luckyNumberDate")) {
+          if (_.has(settingInfo, "firstRandomDate")) {
             self.settingInfo = {
               ...settingInfo,
             };
@@ -415,13 +511,14 @@ export default {
             // 初始化完缓存配置项后初始化今日幸运数字
             self.initTodayLuckyNumber(settingInfo.luckyNumberDate);
             // 初始化模拟摇奖配置
-            self.initDrawLottory();
+            self.initDrawLottery();
           } else {
             // 初始化完缓存配置项后初始化今日幸运数字
             self.initTodayLuckyNumber(null);
           }
         } else {
-          // 如果云端摇奖设置获取失败，则自动加载本地摇奖设置
+          // 如果云端摇奖设置获取失败，则自动加载本地摇奖设置，并默认没有保存过摇奖设置
+          this.settingInfoId = null;
           this.initCacheSettingLocal();
           uni.showToast({
             title: "获取云端摇奖设置失败！已为您自动加载本地摇奖设置~",
@@ -429,24 +526,9 @@ export default {
             duration: 1998,
           });
         }
+        self.$modal.closeLoading();
+        self.isNetworkLoading = false;
       });
-    },
-    // 本地缓存摇奖设置
-    saveLuckySettingLocal() {
-      // 本地缓存的时候默认也存一下云端
-      this.saveLuckySetting(true);
-
-      // #ifdef H5
-      localStorage.setItem("settingInfo", JSON.stringify(this.settingInfo));
-      // #endif
-
-      // 微信端不支持localStorage
-      // #ifdef MP-WEIXIN
-      wx.setStorage({
-        key: "settingInfo",
-        data: JSON.stringify(this.settingInfo),
-      });
-      // #endif
     },
     // 从本地缓存里初始化之前的摇奖设置
     initCacheSettingLocal() {
@@ -467,7 +549,7 @@ export default {
         // 初始化完缓存配置项后初始化今日幸运数字
         this.initTodayLuckyNumber(settingInfo.luckyNumberDate);
         // 初始化模拟摇奖配置
-        this.initDrawLottory();
+        this.initDrawLottery();
       } else {
         // 初始化完缓存配置项后初始化今日幸运数字
         this.initTodayLuckyNumber(null);
@@ -493,7 +575,7 @@ export default {
           // 初始化完缓存配置项后初始化今日幸运数字
           self.initTodayLuckyNumber(settingInfo.luckyNumberDate);
           // 初始化模拟摇奖配置
-          self.initDrawLottory();
+          self.initDrawLottery();
         },
         fail: function () {
           // 如果第一次进入没有缓存配置，仍然需要生成当日幸运数字
@@ -502,6 +584,14 @@ export default {
       });
       // #endif
     },
+    // #ifdef H5
+    // 关闭摇奖设置弹窗时需重新加载之前保存的设置
+    // 这里的回调微信会直接报错，H5正常，所以微信采用watch函数来监听弹窗显示隐藏的变化来重新加载数据
+    handleDrawerClose() {
+      this.initCacheSetting();
+      this.isShowDrawer = false;
+    },
+    // #endif
     // 显示今日随机号码
     getLuckyNumber() {
       if (this.todayWeek === "5") {
@@ -524,6 +614,7 @@ export default {
         // #ifdef MP-WEIXIN
         this.drawerHeight = `${200 + this.settingInfo.luckyCount * 30}px`;
         // #endif
+        this.drawerType = 0;
         this.isShowDrawer = true;
       }
     },
@@ -580,14 +671,14 @@ export default {
         for (var i = 0; i < this.luckyNumberList.length; i++) {
           // #ifdef H5
           if (
-            _.isEqual(tempList, this.luckyNumberList[i].lottoryNumberFirst) ||
-            _.isEqual(tempList, this.luckyNumberList[i].lottoryNumberSecond)
+            _.isEqual(tempList, this.luckyNumberList[i].lotteryNumberFirst) ||
+            _.isEqual(tempList, this.luckyNumberList[i].lotteryNumberSecond)
           ) {
             isSameNumber = true;
           }
           // #endif
           // #ifdef MP-WEIXIN
-          if (_.isEqual(tempList, [this.luckyNumberList[i].lottoryNumberSecond[0].num])) {
+          if (_.isEqual(tempList, [this.luckyNumberList[i].lotteryNumberSecond[0].num])) {
             isSameNumber = true;
           }
           // #endif
@@ -599,43 +690,23 @@ export default {
         return tempList;
       }
     },
-    // 组装今今日随机号码
+    // 组装今日随机号码
     packageRandomList() {
       this.luckyNumberList = [];
       if (this.todayWeek === "1" || this.todayWeek === "3" || this.todayWeek === "6") {
-        // #ifdef H5
-        this.luckyNumberList.push(this.luckyNumberDLT);
-        // #endif
-        // #ifdef MP-WEIXIN
         this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberDLT));
-        // #endif
         for (var i = 0; i < this.settingInfo.luckyCount - 1; i++) {
-          // #ifdef H5
-          this.luckyNumberList.push(this.packageTempObj("DLT", i));
-          // #endif
-          // #ifdef MP-WEIXIN
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("DLT", i))
           );
-          // #endif
         }
       }
       if (this.todayWeek === "2" || this.todayWeek === "4" || this.todayWeek === "7") {
-        // #ifdef H5
-        this.luckyNumberList.push(this.luckyNumberSSQ);
-        // #endif
-        // #ifdef MP-WEIXIN
         this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberSSQ));
-        // #endif
         for (var i = 0; i < this.settingInfo.luckyCount - 1; i++) {
-          // #ifdef H5
-          this.luckyNumberList.push(this.packageTempObj("SSQ", i));
-          // #endif
-          // #ifdef MP-WEIXIN
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("SSQ", i))
           );
-          // #endif
         }
       }
       // 如果打开了只允许一注随机则需要缓存当日的随机号码
@@ -654,39 +725,21 @@ export default {
       if (this.settingInfo.isNeedLuckyNumber) {
         let hasTodayLuckyNumber = false;
         this.luckyNumberList.forEach(function (item) {
-          item.lottoryNumberFirst.forEach(function (ita) {
-            // #ifdef H5
-            if (
-              JSON.stringify(ita) === JSON.stringify(self.settingInfo.todayLuckyNumber)
-            ) {
-              hasTodayLuckyNumber = true;
-            }
-            // #endif
-            // #ifdef MP-WEIXIN
+          item.lotteryNumberFirst.forEach(function (ita) {
             if (
               JSON.stringify(ita.num) ===
               JSON.stringify(self.settingInfo.todayLuckyNumber)
             ) {
               hasTodayLuckyNumber = true;
             }
-            // #endif
           });
-          item.lottoryNumberSecond.forEach(function (itb) {
-            // #ifdef H5
-            if (
-              JSON.stringify(itb) === JSON.stringify(self.settingInfo.todayLuckyNumber)
-            ) {
-              hasTodayLuckyNumber = true;
-            }
-            // #endif
-            // #ifdef MP-WEIXIN
+          item.lotteryNumberSecond.forEach(function (itb) {
             if (
               JSON.stringify(itb.num) ===
               JSON.stringify(self.settingInfo.todayLuckyNumber)
             ) {
               hasTodayLuckyNumber = true;
             }
-            // #endif
           });
         });
         return hasTodayLuckyNumber;
@@ -694,47 +747,158 @@ export default {
         return true;
       }
     },
-    // 特供微信处理包装单条随机号码，微信小程序不支持key使用表达式，包装一下再渲染
+    // 本来是特供微信处理包装单条随机号码，微信小程序不支持key使用表达式，包装一下再渲染
+    // 目前为统一处理成微信小程序支持的数据结构
     packageTempObjForWX(numberObj) {
       let tempFirst = [];
       let tempSecond = [];
       let tempObj = {
         ...numberObj,
       };
-      _.each(tempObj.lottoryNumberFirst, function (ita, ina) {
+      _.each(tempObj.lotteryNumberFirst, function (ita, ina) {
         let temObj = {
           num: ita,
           key: Math.random() * ita + ina,
         };
         tempFirst.push(temObj);
       });
-      _.each(tempObj.lottoryNumberSecond, function (itb, inb) {
+      _.each(tempObj.lotteryNumberSecond, function (itb, inb) {
         let temObj = {
           num: itb,
           key: Math.random() * itb + inb,
         };
         tempSecond.push(temObj);
       });
-      tempObj.lottoryNumberFirst = tempFirst;
-      tempObj.lottoryNumberSecond = tempSecond;
+      tempObj.lotteryNumberFirst = tempFirst;
+      tempObj.lotteryNumberSecond = tempSecond;
       return tempObj;
     },
     // 包装单条随机号码
     packageTempObj(type, mix) {
       let objTemp = {
         timeStamp: new Date().getTime() + mix,
-        lottoryNumberFirst: [],
-        lottoryNumberSecond: [],
+        lotteryNumberFirst: [],
+        lotteryNumberSecond: [],
       };
       if (type === "DLT") {
-        objTemp.lottoryNumberFirst = this.rollNumber([], this.luckyNumberFront, 5);
-        objTemp.lottoryNumberSecond = this.rollNumber([], this.luckyNumberBack, 2);
+        objTemp.lotteryNumberFirst = this.rollNumber([], this.luckyNumberFront, 5);
+        objTemp.lotteryNumberSecond = this.rollNumber([], this.luckyNumberBack, 2);
       }
       if (type === "SSQ") {
-        objTemp.lottoryNumberFirst = this.rollNumber([], this.luckyNumberRed, 6);
-        objTemp.lottoryNumberSecond = this.rollNumber([], this.luckyNumberBlue, 1);
+        objTemp.lotteryNumberFirst = this.rollNumber([], this.luckyNumberRed, 6);
+        objTemp.lotteryNumberSecond = this.rollNumber([], this.luckyNumberBlue, 1);
       }
       return objTemp;
+    },
+    // 统一处理提示是否需要操作完关闭弹窗
+    isNeedCloseDrawer(successTip) {
+      const self = this;
+      showConfirm(`${successTip}，是否需要为您关闭抽屉？`).then((res) => {
+        if (res?.confirm) {
+          self.drawerType = 0;
+          self.isShowDrawer = false;
+        }
+      });
+    },
+    // 处理上传号码记录
+    handleUplaodTodayNumber(todayNumber) {
+      const self = this;
+      const fixNumList = [{ ...this.luckyNumberList[0] }];
+      let todayNumType = "";
+      if (["1", "3", "6"].includes(this.todayWeek)) {
+        todayNumType = "1";
+      }
+      if (["2", "4", "7"].includes(this.todayWeek)) {
+        todayNumType = "2";
+      }
+      this.isNetworkLoading = true;
+      const addParams = {
+        recordNumber: todayNumber,
+        chaseNumber: this.formatNumberListForUpload(fixNumList),
+        numberType: todayNumType,
+        weekType: this.todayWeek,
+        hasMorePurchases: "N",
+      };
+      addLog(addParams).then((res) => {
+        self.isNetworkLoading = false;
+        if (res?.code === 200) {
+          self.isNeedCloseDrawer("号码记录已经成功保存到云端");
+        } else {
+          uni.showToast({
+            title: "号码记录保存失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
+    },
+    // 上传当前生成的随机号码
+    uploadLuckyNumber() {
+      const self = this;
+      if (this.luckyNumberList && this.luckyNumberList.length > 0) {
+        const buyingNumList = this.luckyNumberList.filter((item, index) => index > 0);
+        const todayNumber = this.formatNumberListForUpload(buyingNumList);
+
+        const queryParams = {
+          pageNum: 1,
+          pageSize: 1,
+          recordNumber: todayNumber,
+        };
+        getLogList(queryParams).then((res) => {
+          if (res?.code === 200) {
+            if (res?.rows && res?.rows?.length > 0) {
+              showConfirm("查询到相同随机号码记录，是否需要再次上传该号码记录？").then(
+                (res) => {
+                  if (res?.confirm) {
+                    self.handleUplaodTodayNumber(todayNumber);
+                  }
+                }
+              );
+            } else {
+              self.handleUplaodTodayNumber(todayNumber);
+            }
+          } else {
+            uni.showToast({
+              title: "查询历史号码记录失败！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        });
+      } else {
+        uni.showToast({
+          title: "请先点击获取今日随机号码~",
+          icon: "none",
+          duration: 1998,
+        });
+      }
+    },
+    uploadLuckyNumberDebounce: _.debounce(function () {
+      this.uploadLuckyNumber();
+    }, 233),
+    // 保存到云端的号码记录需要重新处理下
+    formatNumberListForUpload(list) {
+      let textResult = "";
+      _.each(list, (item, key) => {
+        _.each(item?.lotteryNumberFirst, (ita, kya) => {
+          if (kya !== item.lotteryNumberFirst.length - 1) {
+            textResult = textResult.concat(`${ita?.num},`);
+          } else {
+            textResult = textResult.concat(`${ita?.num}-`);
+          }
+        });
+        _.each(item?.lotteryNumberSecond, (itb, kyb) => {
+          if (kyb !== item.lotteryNumberSecond.length - 1) {
+            textResult = textResult.concat(`${itb?.num},`);
+          } else {
+            textResult = textResult.concat(`${itb?.num}`);
+          }
+        });
+        if (key !== list.length - 1) {
+          textResult = textResult.concat("/");
+        }
+      });
+      return textResult;
     },
     // 复制给发给彩票店老板的内容
     copyLuckyNumber() {
@@ -761,19 +925,19 @@ export default {
         this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       }
       uni.setClipboardData({
-        data: this.copyTextContent,
-        showToast: false,
-        success: function () {
-          uni.showToast({
-            title: "已复制到剪切板啦~",
-            icon: "none",
-            duration: 1998,
-          });
-          self.isShowDrawer = false;
+        data: self.copyTextContent,
+        showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
+        success: function (res) {
+          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
+          // #ifdef H5
+          // 微信不支持关闭复制成功提示所以暂时只支持H5
+          self.isNeedCloseDrawer("已为您成功复制到剪切板");
+          // #endif
         },
-        fail: function () {
+        fail: function (res) {
+          console.log("uni.setClipboardData - fail: " + JSON.stringify(res));
           uni.showToast({
-            title: "卧槽复制失败了！请联系管理员~",
+            title: "卧槽复制失败了！请联系管理员处理! ",
             icon: "none",
             duration: 1998,
           });
@@ -787,13 +951,13 @@ export default {
       _.each(this.luckyNumberList, function (item, index) {
         let singleContextFirst = "";
         let singleContextSecond = "";
-        _.each(item.lottoryNumberFirst, function (ita, ina) {
+        _.each(item.lotteryNumberFirst, function (ita, ina) {
           singleContextFirst = singleContextFirst.concat(
             ina === 0 ? ` ` : "",
             `${JSON.stringify(ita.num)}  `
           );
         });
-        _.each(item.lottoryNumberSecond, function (itb, inb) {
+        _.each(item.lotteryNumberSecond, function (itb, inb) {
           singleContextSecond = singleContextSecond.concat(
             inb === 0 ? ` ` : "",
             `${JSON.stringify(itb.num)}  `
@@ -859,12 +1023,10 @@ export default {
         if (this.todayWeek === "2" || this.todayWeek === "4" || this.todayWeek === "7") {
           this.settingInfo.todayLuckyNumber = Math.floor(Math.random() * (34 - 1) + 1);
         }
-        this.saveLuckySettingLocal();
-      } else {
-        if (this.todayWeek === "5") {
-          this.settingInfo.todayLuckyNumber = "0";
-        }
+      } else if (this.todayWeek === "5") {
+        this.settingInfo.todayLuckyNumber = "0";
       }
+      this.saveLuckySettingLocal();
     },
     // 打开摇奖设置
     editLuckySetting() {
@@ -875,12 +1037,13 @@ export default {
       // #ifdef MP-WEIXIN
       this.drawerHeight = "420px";
       // #endif
+      this.drawerType += 1;
       this.isShowDrawer = true;
     },
     // 监听注数监听
     luckyCountChange(e) {
       this.settingInfo.luckyCount = e;
-      this.saveLuckySettingLocal();
+      // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
       }
@@ -888,7 +1051,7 @@ export default {
     // 监听是否允许重复
     isNeedRepeatChange(e) {
       this.settingInfo.isNeedRepeat = e.detail.value;
-      this.saveLuckySettingLocal();
+      // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
       }
@@ -897,11 +1060,11 @@ export default {
     isOnlyFirstTodayChange(e) {
       this.settingInfo.isOnlyFirstToday = e.detail.value;
       this.settingInfo.localLuckyNumberList = this.luckyNumberList;
-      this.saveLuckySettingLocal();
+      // this.saveLuckySettingLocal();
       if (!e.detail.value) {
         this.settingInfo.firstRandomDate = null;
         this.settingInfo.localLuckyNumberList = [];
-        this.saveLuckySettingLocal();
+        // this.saveLuckySettingLocal();
       }
     },
     // 其他设置修改需要重置当日只允许出现一注随机号码
@@ -915,13 +1078,35 @@ export default {
     // 监听当日幸运数字是否必须出现在当日随机号码中
     isNeedLuckyNumberChange(e) {
       this.settingInfo.isNeedLuckyNumber = e.detail.value;
-      this.saveLuckySettingLocal();
+      // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
       }
     },
+    // 处理上传之后的回调函数
+    handleImportCallback(callbackResult, deviceType, statusType) {
+      if (statusType === "success") {
+        this.showType = "luckyPhoto";
+        this.lotteryTicketArr = [];
+        this.lotteryTicketArr.push(callbackResult.tempFilePaths[0]);
+        this.drawerHeight = "80%";
+        this.drawerType = 0;
+        this.isShowDrawer = true;
+        this.showImgDevTip();
+      }
+      if (statusType === "fail") {
+        console.log(
+          `${deviceType}图片上传接口调用失败: ${JSON.stringify(callbackResult)}`
+        );
+      }
+      if (statusType === "complete") {
+        console.log(
+          `${deviceType}图片上传接口调用结束: ${JSON.stringify(callbackResult)}`
+        );
+      }
+    },
     // 上传图片
-    importLuckyImg(type) {
+    importLuckyImg() {
       const self = this;
       // #ifdef H5
       uni.chooseImage({
@@ -933,20 +1118,15 @@ export default {
         sourceType: ["album", "camera"], // album 从相册选图，camera 使用相机，默认二者都有。如需直接开相机或直接选相册，请只使用一个选项
         // 成功则返回图片的本地文件路径列表 tempFilePaths
         success: function (res) {
-          self.showType = "luckyPhoto";
-          self.lottoryTicketArr = [];
-          self.lottoryTicketArr.push(res.tempFilePaths[0]);
-          self.drawerHeight = "80%";
-          self.isShowDrawer = true;
-          self.showImgDevTip();
+          self.handleImportCallback(res, "H5", "success");
         },
         // 接口调用失败的回调函数，小程序、App
         fail: function (res) {
-          // console.log('H5图片上传接口调用失败:' + JSON.stringify(res));
+          self.handleImportCallback(res, "H5", "fail");
         },
         // 接口调用结束的回调函数（调用成功、失败都会执行），全平台
         complete: function (res) {
-          // console.log('H5图片上传接口调用结束:' + JSON.stringify(res));
+          self.handleImportCallback(res, "H5", "complete");
         },
       });
       // #endif
@@ -962,17 +1142,18 @@ export default {
         camera: "back",
         success(res) {
           self.showType = "luckyPhoto";
-          self.lottoryTicketArr = [];
-          self.lottoryTicketArr.push(res.tempFiles[0].tempFilePath);
+          self.lotteryTicketArr = [];
+          self.lotteryTicketArr.push(res.tempFilePaths[0]);
           self.drawerHeight = "80%";
+          self.drawerType = 0;
           self.isShowDrawer = true;
           self.showImgDevTip();
         },
         fail(res) {
-          // console.log('微信文件图片上传接口调用失败:' + JSON.stringify(res));
+          console.log(`微信图片上传接口调用失败: ${JSON.stringify(res)}`);
         },
         complete(res) {
-          // console.log('微信文件图片上传接口调用结束:' + JSON.stringify(res));
+          console.log(`微信图片上传接口调用结束: ${JSON.stringify(res)}`);
         },
       });
       // #endif
@@ -994,7 +1175,7 @@ export default {
         success: function (res) {
           if (res.confirm) {
             // console.log('用户点击确定');
-            self.lottoryTicketArr = [];
+            self.lotteryTicketArr = [];
           } else if (res.cancel) {
             // console.log('用户点击取消');
           }
@@ -1005,7 +1186,7 @@ export default {
     previewImportImg(type) {
       const self = this;
       uni.previewImage({
-        urls: [self.lottoryTicketArr[0]],
+        urls: [self.lotteryTicketArr[0]],
         longPressActions: {
           success: function (data) {
             // console.log('选中了第' + (data.tapIndex + 1) + '个按钮,第' + (data.index + 1) + '张图片');
@@ -1182,62 +1363,42 @@ export default {
         // 判断是否事第一次点击
         if (isFirst) {
           this.countStartTime = moment().format("X");
-          this.drawLottoryTime = this.settingInfo.drawLottoryTimeHistory;
+          this.drawLotteryTime = this.settingInfo.drawLotteryTimeHistory;
         } else {
           const nowTime = moment().format("X");
-          this.drawLottoryTime =
-            this.settingInfo.drawLottoryTimeHistory +
+          this.drawLotteryTime =
+            this.settingInfo.drawLotteryTimeHistory +
             this.getTimeDuration(this.countStartTime, nowTime, "milliseconds");
-          console.log("总耗时：", this.drawLottoryTime, "秒");
-          this.drawLottoryText = `模拟摇奖中，已耗时：${this.getTimeDurationText(
-            this.drawLottoryTime
+          console.log("总耗时：", this.drawLotteryTime, "秒");
+          this.drawLotteryText = `模拟摇奖中，已耗时：${this.getTimeDurationText(
+            this.drawLotteryTime
           )}`;
         }
         // 模拟摇奖，并判断是否中奖
         this.settingInfo.luckyCount = 2;
         this.settingInfo.isOnlyFirstToday = false;
+
         // 第一次摇号
         this.packageRandomList();
-        // H5和微信的数据结构有些区别，这里要分开处理
-
-        // #ifdef H5
-        const yourNumber = this.luckyNumberList[1].lottoryNumberFirst
-          .concat(this.luckyNumberList[1].lottoryNumberSecond)
-          .join(",");
-        // #endif
-
-        // H5和微信的数据结构有些区别，这里要分开处理
-        // #ifdef MP-WEIXIN
         const yourNumberTempList = [];
-        this.luckyNumberList[1].lottoryNumberFirst.forEach((item) => {
+        this.luckyNumberList[1].lotteryNumberFirst.forEach((item) => {
           yourNumberTempList.push(item.num);
         });
-        this.luckyNumberList[1].lottoryNumberSecond.forEach((item) => {
+        this.luckyNumberList[1].lotteryNumberSecond.forEach((item) => {
           yourNumberTempList.push(item.num);
         });
         const yourNumber = yourNumberTempList.join(",");
-        // #endif
+
         // 第二次摇号
         this.packageRandomList();
-
-        // H5和微信的数据结构有些区别，这里要分开处理
-        // #ifdef H5
-        const rightNumber = this.luckyNumberList[1].lottoryNumberFirst
-          .concat(this.luckyNumberList[1].lottoryNumberSecond)
-          .join(",");
-        // #endif
-
-        // H5和微信的数据结构有些区别，这里要分开处理
-        // #ifdef MP-WEIXIN
         const rightNumberTempList = [];
-        this.luckyNumberList[1].lottoryNumberFirst.forEach((item) => {
+        this.luckyNumberList[1].lotteryNumberFirst.forEach((item) => {
           rightNumberTempList.push(item.num);
         });
-        this.luckyNumberList[1].lottoryNumberSecond.forEach((item) => {
+        this.luckyNumberList[1].lotteryNumberSecond.forEach((item) => {
           rightNumberTempList.push(item.num);
         });
         const rightNumber = rightNumberTempList.join(",");
-        // #endif
 
         const isWin = _.isEqual(yourNumber, rightNumber);
         console.log(`${yourNumber}\n${rightNumber}\n是否中奖：${isWin}`);
@@ -1255,34 +1416,35 @@ export default {
           this.fakeDrawTimer = null;
 
           // #ifdef H5
-          const drawGap = 1;
+          const drawGapH5 = 1;
+          this.fakeDrawTimer = setTimeout(function () {
+            self.fakeDrawLottery(false);
+          }, drawGapH5);
           // #endif
 
           // #ifdef MP-WEIXIN
-          const drawGap = 88;
-          // #endif
-
+          const drawGapWX = 88;
           this.fakeDrawTimer = setTimeout(function () {
             self.fakeDrawLottery(false);
-          }, drawGap);
+          }, drawGapWX);
+          // #endif
         }
       }
     },
     // 停止计时
-    stopDrawLottory() {
+    stopDrawLottery() {
       const self = this;
       this.isDrawLoading = false;
-      const drawLottoryTimeTemp = this.drawLottoryTime;
+      const drawLotteryTimeTemp = this.drawLotteryTime;
       // #ifdef H5
       this.initCacheSettingLocal();
-      this.drawLottoryText = `继续摇奖，已耗时：${this.getTimeDurationText(
-        drawLottoryTimeTemp
+      this.drawLotteryText = `继续摇奖，已耗时：${this.getTimeDurationText(
+        drawLotteryTimeTemp
       )}`;
-      this.settingInfo.drawLottoryTimeHistory = drawLottoryTimeTemp;
-      this.saveLuckySettingLocal();
+      this.settingInfo.drawLotteryTimeHistory = drawLotteryTimeTemp;
       // #endif
       // #ifdef MP-WEIXIN
-      // 微信回调有延时，这里直接拷贝 `this.initCacheSetting()` 方法过来
+      // 微信回调有延时，这里直接拷贝 `this.initCacheSettingLocal()` 方法过来
       wx.getStorage({
         key: "settingInfo",
         success: function (res) {
@@ -1300,38 +1462,38 @@ export default {
           // 初始化完缓存配置项后初始化今日幸运数字
           self.initTodayLuckyNumber(settingInfo.luckyNumberDate);
           // 初始化模拟摇奖配置
-          self.initDrawLottory();
+          self.initDrawLottery();
           // 微信回调有延时，这里还原配置后保存计时
-          self.drawLottoryText = `继续摇奖，已耗时：${self.getTimeDurationText(
-            drawLottoryTimeTemp
+          self.drawLotteryText = `继续摇奖，已耗时：${self.getTimeDurationText(
+            drawLotteryTimeTemp
           )}`;
-          self.settingInfo.drawLottoryTimeHistory = drawLottoryTimeTemp;
+          self.settingInfo.drawLotteryTimeHistory = drawLotteryTimeTemp;
         },
         fail: function () {
           // 如果第一次进入没有缓存配置，仍然需要生成当日幸运数字
           self.initTodayLuckyNumber(null);
         },
       });
-      this.saveLuckySettingLocal();
       // #endif
+      this.saveLuckySettingLocal();
       clearTimeout(this.fakeDrawTimer);
       this.fakeDrawTimer = null;
     },
     // 初始化摇奖状态
-    initDrawLottory() {
+    initDrawLottery() {
       if (
         !this.settingInfo.isGetBigReward &&
-        this.settingInfo.drawLottoryTimeHistory > 0
+        this.settingInfo.drawLotteryTimeHistory > 0
       ) {
-        this.drawLottoryText = `继续摇奖，已耗时：${this.getTimeDurationText(
-          this.settingInfo.drawLottoryTimeHistory
+        this.drawLotteryText = `继续摇奖，已耗时：${this.getTimeDurationText(
+          this.settingInfo.drawLotteryTimeHistory
         )}`;
       } else {
         if (this.settingInfo.isGetBigReward) {
-          this.drawLottoryText = `已中奖，中奖号码是：${this.settingInfo.bigRewardNumber}`;
-          this.settingInfo.drawLottoryTimeHistory = 0;
+          this.drawLotteryText = `已中奖，中奖号码是：${this.settingInfo.bigRewardNumber}`;
+          this.settingInfo.drawLotteryTimeHistory = 0;
         } else {
-          this.drawLottoryText = "模拟摇奖";
+          this.drawLotteryText = "模拟摇奖";
         }
       }
     },
