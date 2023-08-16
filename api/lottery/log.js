@@ -17,3 +17,11 @@ export function addLog(data) {
     data: data,
   });
 }
+
+// 删除每日号码记录
+export function delLog(lotteryId) {
+  return request({
+    url: '/lottery/log/deleteLogByIdForApp/' + lotteryId,
+    method: 'delete'
+  })
+}
