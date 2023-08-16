@@ -48,21 +48,29 @@
       </view>
 
       <view class="menu-list">
+        <view class="list-cell list-cell-arrow" @click="handleToLogHistory">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="wallet" size="20"></uni-icons></view>
+            <view>历史号码记录</view>
+          </view>
+        </view>
         <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
           <view class="menu-item-box">
-            <view class="iconfont icon-user menu-icon"></view>
+            <view><uni-icons color="#2ecc71" type="staff" size="20"></uni-icons></view>
             <view>编辑资料</view>
           </view>
         </view>
         <view class="list-cell list-cell-arrow" @click="handleAbout">
           <view class="menu-item-box">
-            <view class="iconfont icon-aixin menu-icon"></view>
+            <view
+              ><uni-icons color="#2ecc71" type="paperclip" size="20"></uni-icons
+            ></view>
             <view>关于我们</view>
           </view>
         </view>
         <view class="list-cell list-cell-arrow" @click="handleToSetting">
           <view class="menu-item-box">
-            <view class="iconfont icon-setting menu-icon"></view>
+            <view><uni-icons color="#2ecc71" type="gear" size="20"></uni-icons></view>
             <view>应用设置</view>
           </view>
         </view>
@@ -93,6 +101,9 @@ export default {
   methods: {
     handleToInfo() {
       this.$tab.navigateTo("/pages/mine/info/index");
+    },
+    handleToLogHistory() {
+      this.$tab.navigateTo("/pages/lottery/log/index");
     },
     handleToEditInfo() {
       this.$tab.navigateTo("/pages/mine/info/edit");

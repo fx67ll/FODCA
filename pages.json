@@ -73,9 +73,15 @@
       }
     },
     {
-      "path": "pages/lottery/index",
+      "path": "pages/lottery/index/index",
       "style": {
         "navigationBarTitleText": "每天等一个首付"
+      }
+    },
+    {
+      "path": "pages/lottery/log/index",
+      "style": {
+        "navigationBarTitleText": "号码记录"
       }
     }
   ],
@@ -93,7 +99,7 @@
         "text": "首页"
       },
       {
-        "pagePath": "pages/lottery/index",
+        "pagePath": "pages/lottery/index/index",
         "iconPath": "static/images/tabbar/dashboard.png",
         // "selectedIconPath": "https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
