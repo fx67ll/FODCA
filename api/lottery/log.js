@@ -1,7 +1,7 @@
 import request from '@/utils/request';
 
 // 查询每日号码记录列表
-export function listLog(query) {
+export function getLogList(query) {
   return request({
     url: '/lottery/log/getLotteryLogListForApp',
     method: 'get',
