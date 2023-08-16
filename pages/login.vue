@@ -1,12 +1,11 @@
 <template>
   <view class="normal-login-container">
     <view class="logo-content align-center justify-center flex">
-      <!-- <image
+      <image
         style="width: 100rpx; height: 100rpx"
         :src="globalConfig.appInfo.logo"
         mode="widthFix"
-      ></image> -->
-      <image style="width: 100rpx; height: 100rpx" :src="globalConfig.appInfo.logo" mode="widthFix"></image>
+      ></image>
       <text class="title">fx67ll's Life App</text>
     </view>
     <view class="login-form-content">
@@ -44,11 +43,27 @@
           maxlength="4"
         />
         <view class="login-code">
-          <image :src="codeUrl" @click="getCode" class="login-code-img"></image>
+          <image
+            :src="codeUrl"
+            @click="getCodeDebounce"
+            class="login-code-img"
+            v-if="codeUrl"
+          ></image>
+          <button
+            class="login-code-img"
+            :loading="isLoginLoading"
+            :disabled="isLoginLoading"
+            v-if="!codeUrl"
+          ></button>
         </view>
       </view>
       <view class="action-btn">
-        <button @click="handleLogin" class="login-btn cu-btn block bg-blue lg round">
+        <button
+          @click="handleLogin"
+          :loading="isLoginLoading"
+          :disabled="isLoginLoading"
+          class="login-btn cu-btn block bg-blue lg round"
+        >
           登录
         </button>
       </view>
@@ -72,6 +87,7 @@
 
 <script>
 import { getCodeImg } from "@/api/login";
+import _ from "@/node_modules/underscore";
 
 export default {
   data() {
@@ -87,6 +103,8 @@ export default {
         code: "",
         uuid: "",
       },
+      // 是否正在登陆标识
+      isLoginLoading: false,
     };
   },
   created() {
@@ -110,15 +128,21 @@ export default {
         `/pages/common/webview/index?title=${site.title}&url=${site.url}`
       );
     },
+    getCodeDebounce: _.debounce(function () {
+      this.getCode();
+    }, 233),
     // 获取图形验证码
     getCode() {
+      const self = this;
+      this.isLoginLoading = true;
       getCodeImg().then((res) => {
-        this.captchaEnabled =
+        self.captchaEnabled =
           res.captchaEnabled === undefined ? true : res.captchaEnabled;
-        if (this.captchaEnabled) {
-          this.codeUrl = "data:image/gif;base64," + res.img;
-          this.loginForm.uuid = res.uuid;
+        if (self.captchaEnabled) {
+          self.codeUrl = "data:image/gif;base64," + res.img;
+          self.loginForm.uuid = res.uuid;
         }
+        self.isLoginLoading = false;
       });
     },
     // 登录方法
@@ -136,23 +160,28 @@ export default {
     },
     // 密码登录
     async pwdLogin() {
+      const self = this;
+      this.isLoginLoading = true;
       this.$store
         .dispatch("Login", this.loginForm)
         .then(() => {
-          this.$modal.closeLoading();
-          this.loginSuccess();
+          self.loginSuccess();
+          // self.$modal.closeLoading();
         })
         .catch(() => {
-          if (this.captchaEnabled) {
-            this.getCode();
+          if (self.captchaEnabled) {
+            self.getCode();
           }
         });
     },
     // 登录成功后，处理函数
     loginSuccess(result) {
+      const self = this;
       // 设置用户信息
       this.$store.dispatch("GetInfo").then((res) => {
-        this.$tab.reLaunch("/pages/index");
+        self.isLoginLoading = false;
+        self.$modal.closeLoading();
+        self.$tab.reLaunch("/pages/index");
       });
     },
   },
@@ -231,9 +260,14 @@ page {
         height: 38px;
         position: absolute;
         margin-left: 10px;
-        width: 200rpx;
+        width: 220rpx;
+        border-radius: 8px;
       }
     }
   }
+}
+
+uni-button[loading]:before {
+  vertical-align: initial;
 }
 </style>
