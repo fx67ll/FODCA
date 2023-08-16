@@ -16,3 +16,12 @@ export function updateSetting(data) {
     data: data,
   });
 }
+
+// 新增固定追号配置
+export function addSetting(data) {
+  return request({
+    url: '/lottery/setting/addLotterySettingConfigForApp',
+    method: 'post',
+    data: data,
+  });
+}
