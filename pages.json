@@ -81,7 +81,7 @@
     {
       "path": "pages/lottery/log/index",
       "style": {
-        "navigationBarTitleText": "号码记录"
+        "navigationBarTitleText": "历史号码记录"
       }
     }
   ],

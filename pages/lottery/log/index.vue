@@ -1,37 +1,37 @@
 <template>
   <view class="fx67ll-log-box">
-    <uni-swipe-action-item
-      v-for="item in logList"
-      :key="item.logId"
-      :right-options="actionOptions"
-      @click="(e) => handleActionClick(e, item.createTime)"
-    >
-      <uni-section :title="item.createTime" type="line" style="margin-bottom: 40rpx">
-        <uni-list :border="true">
-          <uni-list-chat
-            v-for="ita in item.chaseList"
-            :key="ita.numId"
-            :title="ita.title"
-            avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
-            :note="ita.chaseNumber"
-            :time="ita.updateTime"
-            :badge-text="ita.winText"
-          ></uni-list-chat>
-          <uni-list-chat
-            v-for="itb in item.recordList"
-            :key="itb.numId"
-            :title="itb.title"
-            :avatar="
-              'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-              itb.imgRandom
-            "
-            :note="itb.recordNumber"
-            :time="itb.updateTime"
-            :badge-text="itb.winText"
-          ></uni-list-chat>
-        </uni-list>
-      </uni-section>
-    </uni-swipe-action-item>
+    <view class="fx67ll-log-item" v-for="item in logList" :key="item.logId">
+      <uni-swipe-action-item
+        :right-options="actionOptions"
+        @click="(e) => handleActionClick(e, item.createTime)"
+      >
+        <uni-section :title="item.createTime" type="line">
+          <uni-list :border="true">
+            <uni-list-chat
+              v-for="ita in item.chaseList"
+              :key="ita.numId"
+              :title="ita.title"
+              avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
+              :note="ita.chaseNumber"
+              :time="ita.updateTime"
+              :badge-text="ita.winText"
+            ></uni-list-chat>
+            <uni-list-chat
+              v-for="itb in item.recordList"
+              :key="itb.numId"
+              :title="itb.title"
+              :avatar="
+                'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
+                itb.imgRandom
+              "
+              :note="itb.recordNumber"
+              :time="itb.updateTime"
+              :badge-text="itb.winText"
+            ></uni-list-chat>
+          </uni-list>
+        </uni-section>
+      </uni-swipe-action-item>
+    </view>
   </view>
 </template>
 
