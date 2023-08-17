@@ -234,7 +234,8 @@
 </script>
 
 <style lang="scss" >
-	$uni-shadow-base:0 1px 5px 2px rgba($color: #000000, $alpha: 0.3) !default;
+	// #2ecc71
+	$uni-shadow-base:0 2px 10px 3px rgba($color: #bfbfbf, $alpha: 0.3) !default;
 
 	.uni-fab {
 		position: fixed;
