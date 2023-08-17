@@ -1,92 +1,95 @@
 <template>
   <view class="fx67ll-log-box">
     <z-paging-mini ref="paging" v-model="logList" @query="queryLogList">
-      <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
-        <uni-swipe-action-item
-          :right-options="actionOptions"
-          @click="(e) => handleActionClick(e, item)"
-        >
-          <uni-section :title="item.createTime" type="line">
-            <uni-list :border="true">
-              <view v-if="item.winFlag !== 'Y'">
-                <uni-list-chat
-                  v-for="ita in item.chaseList"
-                  :key="ita.numKey"
-                  avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
-                  :title="ita.title"
-                  :note="ita.chaseNumber"
-                  :time="ita.updateTime"
-                  :badge-text="ita.winText"
-                >
-                </uni-list-chat>
-              </view>
+      <uni-swipe-action>
+        <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
+          <uni-swipe-action-item
+            :right-options="actionOptions"
+            @click="(e) => handleActionClick(e, item)"
+          >
+            <uni-section :title="item.createTime" type="line">
+              <uni-list :border="true">
+                <view v-if="item.winFlag !== 'Y'">
+                  <uni-list-chat
+                    v-for="ita in item.chaseList"
+                    :key="ita.numKey"
+                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
+                    :title="ita.title"
+                    :note="ita.chaseNumber"
+                    :time="ita.updateTime"
+                    :badge-text="ita.winText"
+                  >
+                  </uni-list-chat>
+                </view>
 
-              <view v-if="item.winFlag === 'Y'">
-                <uni-list-chat
-                  v-for="ita in item.chaseList"
-                  :key="ita.numKey"
-                  avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
-                  :title="ita.title"
-                  :note="ita.chaseNumber"
-                >
-                  <template v-slot:default>
-                    <view :style="{ fontSize: '12px', color: '#999' }">
-                      {{ itb.updateTime }}
-                    </view>
-                    <view>
-                      <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
-                    </view>
-                  </template>
-                </uni-list-chat>
-              </view>
+                <view v-if="item.winFlag === 'Y'">
+                  <uni-list-chat
+                    v-for="ita in item.chaseList"
+                    :key="ita.numKey"
+                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
+                    :title="ita.title"
+                    :note="ita.chaseNumber"
+                  >
+                    <template v-slot:default>
+                      <view :style="{ fontSize: '12px', color: '#999' }">
+                        {{ itb.updateTime }}
+                      </view>
+                      <view>
+                        <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
+                      </view>
+                    </template>
+                  </uni-list-chat>
+                </view>
 
-              <view v-if="item.winFlag !== 'Y'">
-                <uni-list-chat
-                  v-for="itb in item.recordList"
-                  :key="itb.numKey"
-                  :avatar="
-                    'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-                    itb.imgRandom
-                  "
-                  :title="itb.title"
-                  :note="itb.recordNumber"
-                  :time="itb.updateTime"
-                  :badge-text="itb.winText"
-                >
-                </uni-list-chat>
-              </view>
+                <view v-if="item.winFlag !== 'Y'">
+                  <uni-list-chat
+                    v-for="itb in item.recordList"
+                    :key="itb.numKey"
+                    :avatar="
+                      'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
+                      itb.imgRandom
+                    "
+                    :title="itb.title"
+                    :note="itb.recordNumber"
+                    :time="itb.updateTime"
+                    :badge-text="itb.winText"
+                  >
+                  </uni-list-chat>
+                </view>
 
-              <view v-if="item.winFlag === 'Y'">
-                <uni-list-chat
-                  v-for="itb in item.recordList"
-                  :key="itb.numKey"
-                  :avatar="
-                    'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-                    itb.imgRandom
-                  "
-                  :title="itb.title"
-                  :note="itb.recordNumber"
-                >
-                  <template v-slot:default v-if="itb.winFlag">
-                    <view :style="{ fontSize: '12px', color: '#999' }">
-                      {{ itb.updateTime }}
-                    </view>
-                    <view>
-                      <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
-                    </view>
-                  </template>
-                </uni-list-chat>
-              </view>
-            </uni-list>
-          </uni-section>
-        </uni-swipe-action-item>
-      </view>
+                <view v-if="item.winFlag === 'Y'">
+                  <uni-list-chat
+                    v-for="itb in item.recordList"
+                    :key="itb.numKey"
+                    :avatar="
+                      'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
+                      itb.imgRandom
+                    "
+                    :title="itb.title"
+                    :note="itb.recordNumber"
+                  >
+                    <template v-slot:default v-if="itb.winFlag">
+                      <view :style="{ fontSize: '12px', color: '#999' }">
+                        {{ itb.updateTime }}
+                      </view>
+                      <view>
+                        <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
+                      </view>
+                    </template>
+                  </uni-list-chat>
+                </view>
+              </uni-list>
+            </uni-section>
+          </uni-swipe-action-item>
+        </view>
+      </uni-swipe-action>
     </z-paging-mini>
   </view>
 </template>
 
 <script>
 import { getLogList, delLog } from "@/api/lottery/log";
+import { diffTimeStrFromNow } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
 export default {
@@ -275,7 +278,16 @@ export default {
         ).then((res) => {
           if (res?.confirm && record?.logId) {
             // console.log("handleActionClick", e, record);
-            self.deleteLog(record.logId);
+            if (diffTimeStrFromNow(record?.createTime) <= -24) {
+              // console.log(diffTimeStrFromNow(record?.createTime));
+              uni.showToast({
+                title: "记录创建时间已超过24小时，不允许删除操作！",
+                icon: "none",
+                duration: 1998,
+              });
+            } else {
+              self.deleteLog(record.logId);
+            }
           }
         });
       }
