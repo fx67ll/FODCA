@@ -89,6 +89,18 @@
       "style": {
         "navigationBarTitleText": "外快盈亏管理"
       }
+    },
+    {
+      "path": "pages/dortmund/extra/add",
+      "style": {
+        "navigationBarTitleText": "新增外快记录"
+      }
+    },
+    {
+      "path": "pages/dortmund/extra/chart",
+      "style": {
+        "navigationBarTitleText": "外快盈亏走势"
+      }
     }
   ],
   "tabBar": {
