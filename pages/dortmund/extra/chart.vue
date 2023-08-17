@@ -96,7 +96,7 @@ export default {
         categories: cateList,
         series: [
           {
-            name: "总金额",
+            name: "小目标",
             data: targetList,
           },
           {
