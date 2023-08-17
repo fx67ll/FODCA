@@ -226,7 +226,7 @@ export default {
     getImgRandomByWeekType(type) {
       if (["1", "3", "6"].includes(type?.toString())) {
         return 6;
-      } else if (["2", "3", "7"].includes(type?.toString())) {
+      } else if (["2", "4", "7"].includes(type?.toString())) {
         return 7;
       } else {
         return 5;
