@@ -54,6 +54,12 @@
             <view>历史号码记录</view>
           </view>
         </view>
+        <view class="list-cell list-cell-arrow" @click="handleToExtraManagement">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="wallet" size="20"></uni-icons></view>
+            <view>外快盈亏管理</view>
+          </view>
+        </view>
         <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="staff" size="20"></uni-icons></view>
@@ -80,8 +86,6 @@
 </template>
 
 <script>
-import storage from "@/utils/storage";
-
 export default {
   data() {
     return {
@@ -104,6 +108,9 @@ export default {
     },
     handleToLogHistory() {
       this.$tab.navigateTo("/pages/lottery/log/index");
+    },
+    handleToExtraManagement() {
+      this.$tab.navigateTo("/pages/dortmund/extra/index");
     },
     handleToEditInfo() {
       this.$tab.navigateTo("/pages/mine/info/edit");
