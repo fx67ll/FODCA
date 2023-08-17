@@ -14,7 +14,7 @@ const request = config => {
 
   // 如果原来就没有token，直接跳转登录界面
   // 如果有token，说明之前登陆过，就让后端验证token是否失效
-  if (!getToken() && config?.url !== '/captchaImage') {
+  if (!getToken() && config?.url !== '/captchaImage' && config?.url !== '/login') {
     uni.reLaunch({
       url: '/pages/login',
     });
@@ -76,7 +76,7 @@ const request = config => {
       .catch(error => {
         let { message } = error;
         if (message === 'Network Error') {
-          message = '后端接口连接异常';
+          message = '网络服务连接失败，后端接口连接异常';
         } else if (message.includes('timeout')) {
           message = '系统接口请求超时';
         } else if (message.includes('Request failed with status code')) {
