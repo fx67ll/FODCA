@@ -18,8 +18,8 @@
                   :time="ita.updateTime"
                   :badge-text="ita.winText"
                 >
-                </uni-list-chat
-              ></view>
+                </uni-list-chat>
+              </view>
 
               <view v-if="item.winFlag === 'Y'">
                 <uni-list-chat
@@ -36,8 +36,9 @@
                     <view>
                       <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
                     </view>
-                  </template> </uni-list-chat
-              ></view>
+                  </template>
+                </uni-list-chat>
+              </view>
 
               <view v-if="item.winFlag !== 'Y'">
                 <uni-list-chat
@@ -52,8 +53,8 @@
                   :time="itb.updateTime"
                   :badge-text="itb.winText"
                 >
-                </uni-list-chat
-              ></view>
+                </uni-list-chat>
+              </view>
 
               <view v-if="item.winFlag === 'Y'">
                 <uni-list-chat
@@ -73,8 +74,9 @@
                     <view>
                       <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
                     </view>
-                  </template> </uni-list-chat
-              ></view>
+                  </template>
+                </uni-list-chat>
+              </view>
             </uni-list>
           </uni-section>
         </uni-swipe-action-item>
@@ -117,8 +119,8 @@ export default {
     };
   },
   onLoad() {
+    // 请勿直接调用queryLogList方法！不过貌似z-paging的reload的方法初始化也不需要调用
     // this.queryLogList();
-    // 请勿直接调用queryLogList方法！！
     // this.$refs.paging.reload();
   },
   methods: {
@@ -138,11 +140,12 @@ export default {
               // 将请求的结果数组传递给z-paging
               self.$refs.paging.complete(self.formatLogList(res.rows));
             } else {
-              uni.showToast({
-                title: "暂无数据！",
-                icon: "none",
-                duration: 1998,
-              });
+              // uni.showToast({
+              //   title: "暂无更多数据！",
+              //   icon: "none",
+              //   duration: 1998,
+              // });
+              self.$refs.paging.complete([]);
             }
           } else {
             uni.showToast({
@@ -150,6 +153,7 @@ export default {
               icon: "none",
               duration: 1998,
             });
+            self.$refs.paging.complete(false);
           }
         })
         .catch((res) => {
@@ -246,7 +250,8 @@ export default {
       const self = this;
       delLog(id).then((res) => {
         if (res?.code === 200) {
-          self.queryLogList();
+          // self.queryLogList();
+          self.$refs.paging.reload();
           uni.showToast({
             title: "历史号码记录删除成功！",
             icon: "none",
