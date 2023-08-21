@@ -543,7 +543,7 @@ $hover: #f5f5f5;
   margin-top: 3px;
   // color: $note-color;
   color: #9254de;
-  font-size: $note-size;
+  // font-size: $note-size;
   font-size: 12px;
   font-weight: $title-weight;
   overflow: hidden;
@@ -572,6 +572,8 @@ $hover: #f5f5f5;
   font-size: $right-text-size;
   font-weight: $right-text-weight;
   overflow: hidden;
+  position: relative;
+  left: -6px;
 }
 
 .uni-list-chat__badge-pos {
