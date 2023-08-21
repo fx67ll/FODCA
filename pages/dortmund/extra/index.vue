@@ -18,7 +18,11 @@
                 >
                   <template v-slot:default>
                     <view
-                      :style="{ fontSize: '14px', color: '#999', paddingRight: '10rpx' }"
+                      :style="{ fontSize: '14px', color: '#999', paddingRight: '6rpx' }"
+                      >￥{{ item.seedMoney }}
+                    </view>
+                    <!-- <view
+                      :style="{ fontSize: '14px', color: '#999', paddingRight: '6rpx' }"
                     >
                       {{
                         item.isWin === "Y"
@@ -27,7 +31,7 @@
                           ? "持平"
                           : "亏损"
                       }}
-                    </view>
+                    </view> -->
                     <!-- <view
                     :style="{ fontSize: '14px', color: '#2ecc71', paddingRight: '10rpx' }"
                     v-if="item.isWin === 'Y'"
@@ -47,23 +51,23 @@
                     持平
                   </view> -->
                     <view>
-                      <uni-badge
-                        :text="
-                          item.isWin === 'Y'
+                      <text
+                        :class="{
+                          'fx67ll-extra-badge': true,
+                          'fx67ll-extra-badge-success': item.isWin === 'Y',
+                          'fx67ll-extra-badge-fail':
+                            item.isWin !== 'Y' && item.winMoney !== '0',
+                          'fx67ll-extra-badge-normal':
+                            item.isWin !== 'Y' && item.winMoney === '0',
+                        }"
+                        >{{
+                          item.isWin === "Y"
                             ? `+${item.winMoney}`
-                            : item.winMoney === '0'
-                            ? '0'
+                            : item.winMoney === "0"
+                            ? "0"
                             : `-${item.winMoney}`
-                        "
-                        :max-num="999999999"
-                        :custom-style="
-                          item.isWin === 'Y'
-                            ? badgeCustomSuccessStyle
-                            : item.winMoney === '0'
-                            ? badgeCustomNormalStyle
-                            : badgeCustomFailStyle
-                        "
-                      />
+                        }}
+                      </text>
                     </view>
                   </template>
                 </uni-list-chat>
@@ -95,30 +99,6 @@ export default {
   data() {
     return {
       extraList: [],
-      badgeCustomSuccessStyle: {
-        backgroundColor: "#2ecc71",
-        zoom: 1.4,
-        position: "relative",
-        left: "2rpx",
-        top: "4rpx",
-        padding: "0 14rpx",
-      },
-      badgeCustomFailStyle: {
-        backgroundColor: "#ff5a5f",
-        zoom: 1.4,
-        position: "relative",
-        left: "2rpx",
-        top: "4rpx",
-        padding: "0 14rpx",
-      },
-      badgeCustomNormalStyle: {
-        backgroundColor: "#999999",
-        zoom: 1.4,
-        position: "relative",
-        left: "0",
-        top: "4rpx",
-        padding: "0 14rpx",
-      },
       actionOptions: [
         {
           text: "取消",
