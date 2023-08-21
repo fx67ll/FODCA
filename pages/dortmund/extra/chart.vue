@@ -66,7 +66,9 @@ export default {
       getExtraList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
+            // #ifdef H5
             self.countChartHeight(res.rows.length);
+            // #endif
             self.formatChartData(res.rows);
           } else {
             uni.showToast({
