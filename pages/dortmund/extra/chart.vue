@@ -66,10 +66,11 @@ export default {
       getExtraList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
+            self.countChartHeight(res.rows.length);
             self.formatChartData(res.rows);
           } else {
             uni.showToast({
-              title: "暂无数据！",
+              title: "暂无外快盈亏记录数据！",
               icon: "none",
               duration: 1998,
             });
@@ -83,14 +84,28 @@ export default {
         }
       });
     },
+    countChartHeight(length) {
+      if (length <= 9) {
+        document.getElementsByClassName("fx67ll-chart-item")[0].style.height =
+          "calc(100vh - 60px)";
+      } else {
+        document.getElementsByClassName("fx67ll-chart-item")[0].style.height = `${
+          100 * length
+        }px`;
+      }
+    },
     formatChartData(list) {
       const cateList = [];
       const seriesList = [];
       const targetList = [];
+      const seedList = [];
       list.forEach((item) => {
         cateList.push(item?.createTime?.substr(0, 10));
-        seriesList.push(parseFloat(item?.extraMoney));
-        targetList.push(1100);
+        seriesList.push(parseFloat(item?.extraMoney || 0));
+        const targetMoney =
+          parseInt(item?.targetMoney || 0) + parseInt(item?.seedMoney || 0);
+        targetList.push(targetMoney);
+        seedList.push(item?.seedMoney);
       });
       const chartOption = {
         categories: cateList,
@@ -100,10 +115,17 @@ export default {
             data: targetList,
           },
           {
-            name: "总金额",
+            name: "交易余额",
             data: seriesList,
           },
+          {
+            name: "本金",
+            data: seedList,
+          },
         ],
+        yAxis: {
+          min: -100,
+        },
       };
       this.chartData = JSON.parse(JSON.stringify(chartOption));
     },
