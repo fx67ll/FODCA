@@ -3,6 +3,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.1.7.20230822
+* 优化外快盈亏管理页面  
+
 ## 0.1.6.20230817  
 * 增加外快盈亏管理页面  
 
