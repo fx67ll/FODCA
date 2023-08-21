@@ -64,15 +64,6 @@ const user = {
         getInfo()
           .then(res => {
             const user = res?.user;
-
-            getAvatar('fx67ll').then(res => {
-              let avatar = !user || !user?.avatar ? 'https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg' : baseUrl + user?.avatar;
-              if (res?.avatar) {
-                avatar = 'data:image/gif;base64,' + res.avatar;
-              }
-              commit('SET_AVATAR', avatar);
-            });
-
             // const avatar = (user == null || user.avatar == "" || user.avatar == null) ? require("@/static/images/profile.jpg") : baseUrl + user.avatar
             const username = user == null || user.userName == '' || user.userName == null ? '' : user.userName;
             if (res.roles && res.roles.length > 0) {
@@ -82,7 +73,16 @@ const user = {
               commit('SET_ROLES', ['ROLE_DEFAULT']);
             }
             commit('SET_NAME', username);
-            // commit('SET_AVATAR', avatar)
+            // commit('SET_AVATAR', avatar);
+
+            getAvatar('fx67ll').then(res => {
+              let avatar = !user || !user?.avatar ? 'https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg' : baseUrl + user?.avatar;
+              if (username === 'user' && res?.avatar) {
+                avatar = 'data:image/gif;base64,' + res.avatar;
+              }
+              commit('SET_AVATAR', avatar);
+            });
+
             resolve(res);
           })
           .catch(error => {
