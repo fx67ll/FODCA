@@ -1,8 +1,18 @@
 <template>
   <view class="fx67ll-chart-box">
-    <view class="fx67ll-chart-item">
-      <qiun-data-charts type="bar" :opts="opts" :chartData="chartData" />
+    <!-- #ifdef H5 -->
+    <view class="fx67ll-chart-item"
+      ><qiun-data-charts type="bar" :opts="opts" :chartData="chartData" />
     </view>
+    <!-- #endif  -->
+    <!-- #ifdef MP-WEIXIN -->
+    <view
+      id="fx67ll-wx-extra-chart"
+      class="fx67ll-chart-item"
+      :style="{ width: `${wxDomWidth}` }"
+      ><qiun-data-charts type="bar" :opts="opts" :chartData="chartData" />
+    </view>
+    <!-- #endif -->
   </view>
 </template>
 
@@ -50,6 +60,7 @@ export default {
             categoryGap: 2,
           },
         },
+        wxDomWidth: "calc(100vh - 44rpx)",
       },
     };
   },
@@ -66,9 +77,7 @@ export default {
       getExtraList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
-            // #ifdef H5
             self.countChartHeight(res.rows.length);
-            // #endif
             self.formatChartData(res.rows);
           } else {
             uni.showToast({
@@ -87,14 +96,23 @@ export default {
       });
     },
     countChartHeight(length) {
+      // #ifdef H5
       if (length <= 9) {
         document.getElementsByClassName("fx67ll-chart-item")[0].style.height =
-          "calc(100vh - 60px)";
+          "calc(100vh - 44rpx)";
       } else {
         document.getElementsByClassName("fx67ll-chart-item")[0].style.height = `${
           100 * length
         }px`;
       }
+      // #endif
+      // #ifdef MP-WEIXIN
+      if (length <= 9) {
+        this.wxDomWidth = "calc(100vh - 44rpx)";
+      } else {
+        this.wxDomWidth = `${100 * length}px`;
+      }
+      // #endif
     },
     formatChartData(list) {
       const cateList = [];
