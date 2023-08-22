@@ -65,7 +65,7 @@
                             ? `+${item.winMoney}`
                             : item.winMoney === "0"
                             ? "0"
-                            : `-${item.winMoney}`
+                            : `${item.winMoney}`
                         }}
                       </text>
                     </view>
