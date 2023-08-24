@@ -1,7 +1,9 @@
 ######################################################################
 # Build Tools
 
-/unpackage/*
+/unpackage/dist/dev
+/unpackage/dist/build/.automator
+/unpackage/dist/build/mp-weixin
 /node_modules/*
 
 ######################################################################
