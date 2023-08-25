@@ -1,13 +1,6 @@
 <template>
   <view class="fx67ll-tools-box">
     <div class="fx67ll-btn-box">
-      <!-- 
-			1. 优化大乐透的选号方案，是否严格限制重复号码
-			2. 添加设置，当日幸运数字，输入之后必须出现在随机号码中
-			3. 幸运按钮点击之后，添加一个动画效果，然后展示今天是否适合买彩票，虽然永远不会用，但是我想做一个这个功能
-			4. 完成彩票的基础功能的之后，重新开一个项目做一个fx67ll的App，添加之前一直想做的，在地图上记录行踪的功能
-			-->
-
       <div class="fx67ll-btn-item fx67ll-btn-item-two">
         <button
           class="fx67ll-btn-default"
@@ -31,7 +24,11 @@
           v-if="isNetworkLoading || countLoading || isDrawLoading"
         ></uni-icons>
       </div>
-      <div class="fx67ll-btn-item fx67ll-btn-item-two">
+      <!-- 只允许超级管理员fx67ll使用图片上传自动分析的功能，后续视情况开放 -->
+      <div
+        class="fx67ll-btn-item fx67ll-btn-item-two"
+        v-if="userName && userName === 'fx67ll'"
+      >
         <button
           class="fx67ll-btn-default"
           type="default"
@@ -260,6 +257,8 @@ export default {
   },
   data() {
     return {
+      // 当前登录用户信息
+      userName: this.$store.state.user.name,
       // 当前配置信息云端ID
       settingInfoId: null,
       // 按钮图标大小
@@ -415,7 +414,7 @@ export default {
             res?.code,
             !isNoNeedToast,
             "摇奖设置已成功新增到云端~",
-            "摇奖设置保存新增到云端失败！",
+            "摇奖设置保存新增到云端失败，请联系管理员！",
             false
           );
         });
@@ -428,7 +427,7 @@ export default {
             res?.code,
             !isNoNeedToast,
             "摇奖设置已成功保存到云端~",
-            "摇奖设置保存修改到云端失败！",
+            "摇奖设置保存修改到云端失败，请联系管理员！",
             true
           );
         });
@@ -825,7 +824,7 @@ export default {
           self.isNeedCloseDrawer("号码记录已经成功保存到云端");
         } else {
           uni.showToast({
-            title: "号码记录保存失败！",
+            title: "号码记录保存失败，请联系管理员！",
             icon: "none",
             duration: 1998,
           });
@@ -859,7 +858,7 @@ export default {
             }
           } else {
             uni.showToast({
-              title: "查询历史号码记录失败！",
+              title: "查询历史号码记录失败，请联系管理员！",
               icon: "none",
               duration: 1998,
             });
@@ -934,13 +933,13 @@ export default {
           self.isNeedCloseDrawer("已为您成功复制到剪切板");
           // #endif
         },
-        fail: function (res) {
-          console.log("uni.setClipboardData - fail: " + JSON.stringify(res));
+        fail: function (err) {
           uni.showToast({
             title: "卧槽复制失败了！请联系管理员处理! ",
             icon: "none",
             duration: 1998,
           });
+          console.log("uni.setClipboardData - fail: " + JSON.stringify(err));
         },
       });
     },
@@ -1083,27 +1082,74 @@ export default {
         this.resetIsOnlyFirstToday();
       }
     },
-    // 处理上传之后的回调函数
-    handleImportCallback(callbackResult, deviceType, statusType) {
-      if (statusType === "success") {
-        this.showType = "luckyPhoto";
-        this.lotteryTicketArr = [];
-        this.lotteryTicketArr.push(callbackResult.tempFilePaths[0]);
-        this.drawerHeight = "80%";
-        this.drawerType = 0;
-        this.isShowDrawer = true;
-        this.showImgDevTip();
-      }
-      if (statusType === "fail") {
-        console.log(
-          `${deviceType}图片上传接口调用失败: ${JSON.stringify(callbackResult)}`
-        );
-      }
-      if (statusType === "complete") {
-        console.log(
-          `${deviceType}图片上传接口调用结束: ${JSON.stringify(callbackResult)}`
-        );
-      }
+    // 百度OCR识别
+    analysisByBaiduOCR(fileList) {
+      uniCloud.uploadFile({
+        filePath: fileList[0].path,
+        cloudPath: fileList[0].name,
+        // 后续添加进度条功能
+        // onUploadProgress: function (progressEvent) {
+        //   console.log("progressEvent" + progressEvent);
+        //   const percentCompleted = Math.round(
+        //     (progressEvent.loaded * 100) / progressEvent.total
+        //   );
+        //   console.log("percentCompleted" + percentCompleted);
+        // },
+        success: (uploadFileRes) => {
+          console.log(uploadFileRes);
+          console.log(uploadFileRes?.fileID);
+          console.log("上传成功！");
+          if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
+            const ocrAuthUrlKey =
+              "?grant_type=client_credentials&client_id=&client_secret=&";
+            uni
+              .request({
+                method: "POST",
+                timeout: 102344,
+                url: `/baidu-ocr-auth${ocrAuthUrlKey}`,
+                dataType: "json",
+              })
+              .then((baiduOcrAuthRes) => {
+                console.log(baiduOcrAuthRes);
+                if (
+                  baiduOcrAuthRes &&
+                  baiduOcrAuthRes.length > 1 &&
+                  baiduOcrAuthRes[1]?.data?.access_token
+                )
+                  uni
+                    .request({
+                      method: "POST",
+                      timeout: 102344,
+                      url: `/baidu-ocr?access_token=${baiduOcrAuthRes[1]?.data?.access_token}`,
+                      data: {
+                        url: uploadFileRes?.fileID,
+                      },
+                      header: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                      },
+                      dataType: "json",
+                    })
+                    .then((data) => {
+                      console.log(data);
+                      console.log(JSON.stringify(data));
+                    })
+                    .catch((err) => {});
+              })
+              .catch((err) => {});
+          }
+        },
+        fail: (err) => {
+          uni.showToast({
+            title: "uniCloud图片上传接口调用失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+          console.log("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
+        },
+        complete: (res) => {
+          console.log("uniCloud图片上传接口调用完成: " + JSON.stringify(res));
+        },
+      });
     },
     // 上传图片
     importLuckyImg() {
@@ -1117,16 +1163,38 @@ export default {
         sizeType: ["original", "compressed"], // 可以指定是原图还是压缩图，默认二者都有，仅支持App、微信小程序、支付宝小程序、百度小程序
         sourceType: ["album", "camera"], // album 从相册选图，camera 使用相机，默认二者都有。如需直接开相机或直接选相册，请只使用一个选项
         // 成功则返回图片的本地文件路径列表 tempFilePaths
-        success: function (res) {
-          self.handleImportCallback(res, "H5", "success");
+        success: function (chooseImageRes) {
+          // self.showType = "luckyPhoto";
+          // self.lotteryTicketArr = [];
+          // self.lotteryTicketArr.push(callbackResult.tempFilePaths[0]);
+          // self.drawerHeight = "80%";
+          // self.drawerType = 0;
+          // self.isShowDrawer = true;
+          // self.showImgDevTip();
+          const tempFileList = chooseImageRes.tempFiles;
+          console.log(tempFileList);
+          if (tempFileList && tempFileList.length > 0) {
+            self.analysisByBaiduOCR(tempFileList);
+          } else {
+            uni.showToast({
+              title: "相册选择接口返回数据异常，请联系管理员！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
         },
         // 接口调用失败的回调函数，小程序、App
-        fail: function (res) {
-          self.handleImportCallback(res, "H5", "fail");
+        fail: function (err) {
+          uni.showToast({
+            title: "相册选择接口调用失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+          console.log("相册选择接口调用失败: " + JSON.stringify(err));
         },
         // 接口调用结束的回调函数（调用成功、失败都会执行），全平台
         complete: function (res) {
-          self.handleImportCallback(res, "H5", "complete");
+          console.log("相册选择接口调用完成: " + JSON.stringify(res));
         },
       });
       // #endif
@@ -1150,10 +1218,10 @@ export default {
           self.showImgDevTip();
         },
         fail(res) {
-          console.log(`微信图片上传接口调用失败: ${JSON.stringify(res)}`);
+          console.log(`微信相册选择接口调用失败: ${JSON.stringify(res)}`);
         },
         complete(res) {
-          console.log(`微信图片上传接口调用结束: ${JSON.stringify(res)}`);
+          console.log(`微信相册选择接口调用结束: ${JSON.stringify(res)}`);
         },
       });
       // #endif
