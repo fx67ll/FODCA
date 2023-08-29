@@ -15,9 +15,11 @@
             mode="widthFix"
           >
           </image>
-          <view v-if="!name" @click="handleToLogin" class="login-tip"> 点击登录 </view>
-          <view v-if="name" @click="handleToInfo" class="user-info">
-            <view class="u_title"> {{ name }} </view>
+          <view v-if="!userName" @click="handleToLogin" class="login-tip">
+            点击登录
+          </view>
+          <view v-if="userName" @click="handleToInfo" class="user-info">
+            <view class="u_title"> {{ userName }} </view>
           </view>
         </view>
         <view @click="handleToInfo" class="flex align-center">
@@ -54,7 +56,11 @@
             <view>历史号码记录</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToExtraManagement">
+        <!-- 只允许超级管理员fx67ll使用外快盈亏管理的功能，后续视情况开放 -->
+        <view
+          class="list-cell list-cell-arrow"
+          @click="handleToExtraManagement"
+        >
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="gift" size="20"></uni-icons></view>
             <view>外快盈亏管理</view>
@@ -89,7 +95,8 @@
 export default {
   data() {
     return {
-      name: this.$store.state.user.name,
+      // 当前登录用户信息
+      userName: this.$store.state.user.name,
       version: getApp().globalData.config.appInfo.version,
       globalConfig: getApp().globalData.config,
     };
