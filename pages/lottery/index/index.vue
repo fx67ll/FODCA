@@ -35,7 +35,15 @@
           @click="importLuckyImg"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
-          上传照片自动分析
+          <span v-if="parseInt(pictureUploadNumber) === 0 && !isNetworkLoading"
+            >上传照片自动分析</span
+          >
+          <span v-if="parseInt(pictureUploadNumber) === 0 && isNetworkLoading"
+            >功能正在初始化...</span
+          >
+          <span v-if="parseInt(pictureUploadNumber) !== 0"
+            >上传进度:{{ pictureUploadNumber }}%, 正在解析数据中...</span
+          >
         </button>
         <uni-icons
           class="fx67ll-btn-icon"
@@ -157,16 +165,19 @@
         <!-- #endif -->
       </div>
 
-      <div
-        class="fx67ll-drawer-img"
-        v-if="showType === 'luckyPhoto' && lotteryTicketArr.length > 0"
-      >
+      <div class="fx67ll-drawer-img" v-if="showType === 'luckyPhoto'">
         <!-- <uni-icons class="fx67ll-img-icon" type="trash" size="24" color="#BFBFBF" @click="deleteImportImg"></uni-icons> -->
+        <div class="fx67ll-ocr-tag">
+          <span v-for="item in ocrTagList" :key="item.timeStamp">{{
+            item.words || "--"
+          }}</span>
+        </div>
         <img
           class="fx67ll-img-lottery"
           :src="lotteryTicketArr[0]"
           @click="previewImportImg"
         />
+        <div class="fx67ll-fake-bottom"></div>
       </div>
 
       <div class="fx67ll-drawer-setting" v-if="showType === 'luckySetting'">
@@ -343,6 +354,12 @@ export default {
       drawLotteryTime: 0,
       // 调用接口的加载标识
       isNetworkLoading: false,
+      // 图片上传百分比
+      pictureUploadNumber: 0,
+      // 本次上传的分析图片本地地址
+      pickForUploadPictureLocalUrl: null,
+      // 百度OCR分析之后的结果列表
+      ocrTagList: [],
     };
   },
   watch: {
@@ -1082,60 +1099,154 @@ export default {
         this.resetIsOnlyFirstToday();
       }
     },
-    // 百度OCR识别
-    analysisByBaiduOCR(fileList) {
+    // 图片上传结束后需要还原加载状态
+    afterPicUploadFinished() {
+      this.isNetworkLoading = false;
+      this.pictureUploadNumber = 0;
+    },
+    // 百度OCR结果返回之后的回调
+    ocrResultCallBack(ocrCallBackRes) {
+      console.log("ocrCallBackRes", ocrCallBackRes);
+      // 关闭加载状态
+      this.afterPicUploadFinished();
+      console.log("words_result", ocrCallBackRes?.data?.words_result);
+      // 存储分析结果
+      if (
+        ocrCallBackRes?.data?.words_result &&
+        ocrCallBackRes?.data?.words_result.length > 0
+      ) {
+        const corTempList = [];
+        const ocrResList = ocrCallBackRes?.data?.words_result;
+        ocrResList.forEach((item, index) => {
+          corTempList.push({
+            words: item?.words,
+            timeStamp: new Date().getTime() + index,
+          });
+        });
+        this.ocrTagList = [...corTempList];
+        console.log("ocrTagList", this.ocrTagList);
+      } else {
+        uni.showToast({
+          title: "百度OCR识别结果为空，请联系管理员！",
+          icon: "none",
+          duration: 1998,
+        });
+      }
+      // 打开回显结果的弹窗
+      this.showType = "luckyPhoto";
+      this.lotteryTicketArr = [];
+      // this.lotteryTicketArr.push(this.pickForUploadPictureLocalUrl);
+      this.drawerHeight = "80%";
+      this.drawerType = 0;
+      this.isShowDrawer = true;
+    },
+    // 使用百度OCR分析，注意！！！百度OCR识别需要先获取鉴权信息~
+    analysisByBaiduOcr(fileCloudUrl) {
+      const self = this;
+      const ocrPubKey = "";
+      const ocrSecKey = "";
+      uni
+        .request({
+          method: "POST",
+          timeout: 102344,
+          // #ifdef H5
+          url: "/baiduOcrAuth",
+          // #endif
+          // #ifdef MP-WEIXIN
+          url: `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${ocrPubKey}&client_secret=${ocrSecKey}`,
+          // #endif
+          dataType: "json",
+        })
+        .then((baiduOcrAuthRes) => {
+          // console.log("baiduOcrAuthRes", baiduOcrAuthRes);
+          if (
+            baiduOcrAuthRes &&
+            baiduOcrAuthRes.length > 1 &&
+            baiduOcrAuthRes[1]?.data?.access_token
+          ) {
+            uni.request({
+              method: "POST",
+              timeout: 102344,
+              // #ifdef H5
+              url: "/baiduOcr",
+              // #endif
+              // #ifdef MP-WEIXIN
+              url: `https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token=${baiduOcrAuthRes[1]?.data?.access_token}`,
+              // #endif
+              data: {
+                url: fileCloudUrl,
+              },
+              header: {
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+              dataType: "json",
+              success: function (baiduOcrRes) {
+                // console.log("baiduOcrRes", baiduOcrRes);
+                self.ocrResultCallBack(baiduOcrRes);
+              },
+              fail: (err) => {
+                uni.showToast({
+                  title: "百度OCR识别接口调用失败，请联系管理员！",
+                  icon: "none",
+                  duration: 1998,
+                });
+                console.log("百度OCR识别接口调用失败: " + JSON.stringify(err));
+                self.afterPicUploadFinished();
+              },
+              complete: (res) => {
+                console.log("百度OCR识别接口调用完成: " + JSON.stringify(res));
+              },
+            });
+          } else {
+            uni.showToast({
+              title: "百度OCR鉴权接口调用失败，请联系管理员！",
+              icon: "none",
+              duration: 1998,
+            });
+            self.afterPicUploadFinished();
+          }
+        })
+        .catch((err) => {
+          self.afterPicUploadFinished();
+        });
+    },
+    // 上传图片到uniCloud
+    uploadPicForBaiDuOcr(fileList) {
+      const self = this;
+      this.isNetworkLoading = true;
+      // #ifdef H5
+      this.pickForUploadPictureLocalUrl = fileList[0].path;
+      // #endif
+      // #ifdef MP-WEIXIN
+      this.pickForUploadPictureLocalUrl = fileList[0].tempFilePath;
+      // #endif
       uniCloud.uploadFile({
+        // #ifdef H5
         filePath: fileList[0].path,
         cloudPath: fileList[0].name,
-        // 后续添加进度条功能
-        // onUploadProgress: function (progressEvent) {
-        //   console.log("progressEvent" + progressEvent);
-        //   const percentCompleted = Math.round(
-        //     (progressEvent.loaded * 100) / progressEvent.total
-        //   );
-        //   console.log("percentCompleted" + percentCompleted);
-        // },
+        // #endif
+        // #ifdef MP-WEIXIN
+        filePath: fileList[0].tempFilePath,
+        cloudPath: moment().format("YYYY-MM-DD hh:mm:ss"),
+        // #endif
+        // 后续添加进度条功能，先用百分比代替
+        onUploadProgress: function (progressEvent) {
+          const percentLoadingPercent = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          self.pictureUploadNumber = parseInt(percentLoadingPercent);
+        },
         success: (uploadFileRes) => {
-          console.log(uploadFileRes);
-          console.log(uploadFileRes?.fileID);
-          console.log("上传成功！");
+          // console.log("uploadFileRes", uploadFileRes);
+          // uni.showToast({
+          //   title: "uniCloud图片上传成功！",
+          //   icon: "none",
+          //   duration: 1998,
+          // });
           if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
-            const ocrAuthUrlKey =
-              "?grant_type=client_credentials&client_id=&client_secret=&";
-            uni
-              .request({
-                method: "POST",
-                timeout: 102344,
-                url: `/baidu-ocr-auth${ocrAuthUrlKey}`,
-                dataType: "json",
-              })
-              .then((baiduOcrAuthRes) => {
-                console.log(baiduOcrAuthRes);
-                if (
-                  baiduOcrAuthRes &&
-                  baiduOcrAuthRes.length > 1 &&
-                  baiduOcrAuthRes[1]?.data?.access_token
-                )
-                  uni
-                    .request({
-                      method: "POST",
-                      timeout: 102344,
-                      url: `/baidu-ocr?access_token=${baiduOcrAuthRes[1]?.data?.access_token}`,
-                      data: {
-                        url: uploadFileRes?.fileID,
-                      },
-                      header: {
-                        "Content-Type": "application/x-www-form-urlencoded",
-                      },
-                      dataType: "json",
-                    })
-                    .then((data) => {
-                      console.log(data);
-                      console.log(JSON.stringify(data));
-                    })
-                    .catch((err) => {});
-              })
-              .catch((err) => {});
+            self.analysisByBaiduOcr(uploadFileRes?.fileID);
+          } else {
+            self.afterPicUploadFinished();
           }
         },
         fail: (err) => {
@@ -1145,11 +1256,44 @@ export default {
             duration: 1998,
           });
           console.log("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
+          self.afterPicUploadFinished();
         },
         complete: (res) => {
           console.log("uniCloud图片上传接口调用完成: " + JSON.stringify(res));
         },
       });
+    },
+    // 本地选取照片上传之后统一处理的回调
+    pickLocalPhotoCallBack(type, pickCallBackRes) {
+      // 成功回调
+      if (type === 0) {
+        // 如果返回的图片列表数据正常则继续执行百度OCR分析的流程
+        if (pickCallBackRes && pickCallBackRes.length > 0) {
+          // console.log("chooseImageRes", pickCallBackRes);
+          this.uploadPicForBaiDuOcr(pickCallBackRes);
+        } else {
+          uni.showToast({
+            title: "相册选择接口返回数据异常，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      }
+      // 失败回调
+      if (type === 1) {
+        if (pickCallBackRes?.errMsg !== "chooseMedia:fail cancel") {
+          uni.showToast({
+            title: "相册选择接口调用失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+        console.log("相册选择接口调用失败: " + JSON.stringify(pickCallBackRes));
+      }
+      // 完成回调，不管失败还是成功打印参数，方便后期查看错误调试
+      if (type === 2) {
+        console.log("相册选择接口调用完成: " + JSON.stringify(pickCallBackRes));
+      }
     },
     // 上传图片
     importLuckyImg() {
@@ -1164,37 +1308,15 @@ export default {
         sourceType: ["album", "camera"], // album 从相册选图，camera 使用相机，默认二者都有。如需直接开相机或直接选相册，请只使用一个选项
         // 成功则返回图片的本地文件路径列表 tempFilePaths
         success: function (chooseImageRes) {
-          // self.showType = "luckyPhoto";
-          // self.lotteryTicketArr = [];
-          // self.lotteryTicketArr.push(callbackResult.tempFilePaths[0]);
-          // self.drawerHeight = "80%";
-          // self.drawerType = 0;
-          // self.isShowDrawer = true;
-          // self.showImgDevTip();
-          const tempFileList = chooseImageRes.tempFiles;
-          console.log(tempFileList);
-          if (tempFileList && tempFileList.length > 0) {
-            self.analysisByBaiduOCR(tempFileList);
-          } else {
-            uni.showToast({
-              title: "相册选择接口返回数据异常，请联系管理员！",
-              icon: "none",
-              duration: 1998,
-            });
-          }
+          self.pickLocalPhotoCallBack(0, chooseImageRes?.tempFiles || null);
         },
         // 接口调用失败的回调函数，小程序、App
         fail: function (err) {
-          uni.showToast({
-            title: "相册选择接口调用失败，请联系管理员！",
-            icon: "none",
-            duration: 1998,
-          });
-          console.log("相册选择接口调用失败: " + JSON.stringify(err));
+          self.pickLocalPhotoCallBack(1, err);
         },
         // 接口调用结束的回调函数（调用成功、失败都会执行），全平台
         complete: function (res) {
-          console.log("相册选择接口调用完成: " + JSON.stringify(res));
+          self.pickLocalPhotoCallBack(2, res);
         },
       });
       // #endif
@@ -1208,31 +1330,17 @@ export default {
         sizeType: ["original"],
         maxDuration: 30,
         camera: "back",
-        success(res) {
-          self.showType = "luckyPhoto";
-          self.lotteryTicketArr = [];
-          self.lotteryTicketArr.push(res.tempFilePaths[0]);
-          self.drawerHeight = "80%";
-          self.drawerType = 0;
-          self.isShowDrawer = true;
-          self.showImgDevTip();
+        success(chooseImageRes) {
+          self.pickLocalPhotoCallBack(0, chooseImageRes?.tempFiles || null);
         },
-        fail(res) {
-          console.log(`微信相册选择接口调用失败: ${JSON.stringify(res)}`);
+        fail(err) {
+          self.pickLocalPhotoCallBack(1, err);
         },
         complete(res) {
-          console.log(`微信相册选择接口调用结束: ${JSON.stringify(res)}`);
+          self.pickLocalPhotoCallBack(2, res);
         },
       });
       // #endif
-    },
-    // 上传图片功能研发中
-    showImgDevTip() {
-      uni.showToast({
-        title: "上传照片自动 OCR 分析识别功能正在紧张研发中，敬请期待！",
-        icon: "none",
-        duration: 5000,
-      });
     },
     // 删除上传图片（功能暂时不需要）
     deleteImportImg(type) {
