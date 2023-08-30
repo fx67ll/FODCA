@@ -2,7 +2,7 @@
   "name": "fx67ll-app",
   "appid": "__UNI__6F4A995",
   "description": "",
-  "versionName": "0.1.7",
+  "versionName": "0.1.8",
   "versionCode": 1,
   "transformPx": false,
   "app-plus": {
@@ -58,20 +58,7 @@
     "template": "static/index.html",
     "devServer": {
       "port": 9090,
-      "https": false,
-      "disableHostCheck": true,
-      "proxy": {
-        "/baidu-ocr-auth": {
-          "target": "https://aip.baidubce.com/oauth/2.0/token",
-          "changeOrigin": true,
-          "secure": false
-        },
-        "/baidu-ocr": {
-          "target": "https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic",
-          "changeOrigin": true,
-          "secure": false
-        }
-      }
+      "https": false
     },
     "title": "fx67ll-app",
     "router": {
