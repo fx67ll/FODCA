@@ -317,16 +317,16 @@ export default {
               if (indexB === 0) {
                 tmpListBeta.forEach((itemC, indexC) => {
                   if (indexC !== tmpListBeta.length - 1) {
-                    txtRes = txtRes.concat(`${itemC}   `);
+                    txtRes = txtRes.concat(`${itemC}  `);
                   } else {
-                    txtRes = txtRes.concat(`${itemC}  -  `);
+                    txtRes = txtRes.concat(`${itemC} - `);
                   }
                 });
               }
               if (indexB === 1) {
                 tmpListBeta.forEach((itemD, indexD) => {
                   if (indexD !== tmpListBeta.length - 1) {
-                    txtRes = txtRes.concat(`${itemD}   `);
+                    txtRes = txtRes.concat(`${itemD}  `);
                   } else {
                     txtRes = txtRes.concat(`${itemD}`);
                   }
@@ -347,13 +347,13 @@ export default {
       txtList.forEach((item, index) => {
         if (index !== txtList.length - 1) {
           // #ifdef H5
-          concatResTxt = concatResTxt.concat(`  ${item} `, "\n");
+          concatResTxt = concatResTxt.concat(` ${item} `, "\n");
           // #endif
           // #ifdef MP-WEIXIN
-          concatResTxt = concatResTxt.concat(`  ${item} `, "\r\n", "\r\n");
+          concatResTxt = concatResTxt.concat(` ${item} `, "\r\n", "\r\n");
           // #endif
         } else {
-          concatResTxt = concatResTxt.concat(`  ${item} `);
+          concatResTxt = concatResTxt.concat(` ${item} `);
         }
       });
       return concatResTxt;
@@ -386,21 +386,21 @@ export default {
       let copyContentTxt = "";
       if (tdWeek === "1" || tdWeek === "3" || tdWeek === "6") {
         // #ifdef H5
-        const copyContentTitleH5 = "  老板买" + luckyCount + "注自选号码大乐透 \n";
+        const copyContentTitleH5 = " 老板买" + luckyCount + "注自选号码大乐透 \n";
         copyContentTxt = copyContentTitleH5 + copyContentBody;
         // #endif
         // #ifdef MP-WEIXIN
-        const copyContentTitleWX = "  老板买" + luckyCount + "注自选号码大乐透 \r\n \r\n";
+        const copyContentTitleWX = " 老板买" + luckyCount + "注自选号码大乐透 \r\n \r\n";
         copyContentTxt = copyContentTitleWX + copyContentBody;
         // #endif
       }
       if (tdWeek === "2" || tdWeek === "4" || tdWeek === "7") {
         // #ifdef H5
-        const copyContentTitleH5 = "  老板买" + luckyCount + "注自选号码双色球 \n";
+        const copyContentTitleH5 = " 老板买" + luckyCount + "注自选号码双色球 \n";
         copyContentTxt = copyContentTitleH5 + copyContentBody;
         // #endif
         // #ifdef MP-WEIXIN
-        const copyContentTitleWX = "  老板买" + luckyCount + "注自选号码双色球 \r\n \r\n";
+        const copyContentTitleWX = " 老板买" + luckyCount + "注自选号码双色球 \r\n \r\n";
         copyContentTxt = copyContentTitleWX + copyContentBody;
         // #endif
       }
