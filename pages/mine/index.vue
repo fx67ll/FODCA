@@ -60,6 +60,7 @@
         <view
           class="list-cell list-cell-arrow"
           @click="handleToExtraManagement"
+          v-if="userName && userName === 'fx67ll'"
         >
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="gift" size="20"></uni-icons></view>
