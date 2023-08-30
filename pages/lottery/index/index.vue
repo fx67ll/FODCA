@@ -450,6 +450,7 @@ export default {
         });
       }
     },
+    // 保存设置到服务端 - 防抖处理
     saveLuckySettingDebounce: _.debounce(function (isNoNeedToast) {
       this.saveLuckySetting(isNoNeedToast);
     }, 233),
@@ -889,6 +890,7 @@ export default {
         });
       }
     },
+    // 上传当前生成的随机号码 - 防抖处理
     uploadLuckyNumberDebounce: _.debounce(function () {
       this.uploadLuckyNumber();
     }, 233),
@@ -921,7 +923,7 @@ export default {
       const self = this;
       let luckyTitle = "";
       // let luckyFooter = '\n 老板号码别打错了哈，谢谢~';
-      let luckyFooter = "\n";
+      let luckyFooter = "";
       let luckyContent = null;
       // #ifdef H5
       luckyContent = document
@@ -944,11 +946,11 @@ export default {
         data: self.copyTextContent,
         showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
         success: function (res) {
-          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
           // #ifdef H5
           // 微信不支持关闭复制成功提示所以暂时只支持H5
           self.isNeedCloseDrawer("已为您成功复制到剪切板");
           // #endif
+          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
         },
         fail: function (err) {
           uni.showToast({
@@ -956,7 +958,7 @@ export default {
             icon: "none",
             duration: 1998,
           });
-          console.log("uni.setClipboardData - fail: " + JSON.stringify(err));
+          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
         },
       });
     },
@@ -1190,7 +1192,7 @@ export default {
                   icon: "none",
                   duration: 1998,
                 });
-                console.log("百度OCR识别接口调用失败: " + JSON.stringify(err));
+                console.error("百度OCR识别接口调用失败: " + JSON.stringify(err));
                 self.afterPicUploadFinished();
               },
               complete: (res) => {
@@ -1238,11 +1240,6 @@ export default {
         },
         success: (uploadFileRes) => {
           // console.log("uploadFileRes", uploadFileRes);
-          // uni.showToast({
-          //   title: "uniCloud图片上传成功！",
-          //   icon: "none",
-          //   duration: 1998,
-          // });
           if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
             self.analysisByBaiduOcr(uploadFileRes?.fileID);
           } else {
@@ -1255,7 +1252,7 @@ export default {
             icon: "none",
             duration: 1998,
           });
-          console.log("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
+          console.error("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
           self.afterPicUploadFinished();
         },
         complete: (res) => {
@@ -1288,7 +1285,7 @@ export default {
             duration: 1998,
           });
         }
-        console.log("相册选择接口调用失败: " + JSON.stringify(pickCallBackRes));
+        console.error("相册选择接口调用失败: " + JSON.stringify(pickCallBackRes));
       }
       // 完成回调，不管失败还是成功打印参数，方便后期查看错误调试
       if (type === 2) {
@@ -1368,7 +1365,7 @@ export default {
             // console.log('选中了第' + (data.tapIndex + 1) + '个按钮,第' + (data.index + 1) + '张图片');
           },
           fail: function (err) {
-            // console.log(err.errMsg);
+            // console.error(err.errMsg);
           },
         },
       });
@@ -1420,14 +1417,17 @@ export default {
         this.countStartTime = moment().format("X");
       } else {
         const nowTime = moment().format("X");
-        // console.log('已耗时：', this.getTimeDuration(this.countStartTime, nowTime, 'milliseconds'));
+        console.log(
+          "当前计算已耗时：",
+          this.getTimeDuration(this.countStartTime, nowTime, "milliseconds")
+        );
       }
       const self = this;
       const randomTempNum = Math.random() * (1 - 0) + 0;
       nowProgress += randomTempNum;
       this.luckyRandomProgrss = Math.floor((nowProgress / total) * 100);
       this.luckyProgrssCount += 1;
-      // console.log(`计算进度：${this.luckyRandomProgrss}%`);
+      console.log(`当前计算进度：${this.luckyRandomProgrss}%`);
       if (nowProgress > total) {
         if (this.luckyProgrssCount % 2 === 0) {
           const luckyText = "今天你真的很幸运！";
@@ -1545,7 +1545,7 @@ export default {
           this.drawLotteryTime =
             this.settingInfo.drawLotteryTimeHistory +
             this.getTimeDuration(this.countStartTime, nowTime, "milliseconds");
-          console.log("总耗时：", this.drawLotteryTime, "秒");
+          console.log("摇奖总耗时：", this.drawLotteryTime, "秒");
           this.drawLotteryText = `模拟摇奖中，已耗时：${this.getTimeDurationText(
             this.drawLotteryTime
           )}`;
