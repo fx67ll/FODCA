@@ -9,7 +9,7 @@
     <view
       id="fx67ll-wx-extra-chart"
       class="fx67ll-chart-item"
-      :style="{ width: `${wxDomWidth}` }"
+      :style="{ height: `${wxDomHeight}`, paddingBottom: '44rpx' }"
       ><qiun-data-charts type="bar" :opts="opts" :chartData="chartData" />
     </view>
     <!-- #endif -->
@@ -60,8 +60,8 @@ export default {
             categoryGap: 2,
           },
         },
-        wxDomWidth: "calc(100vh - 44rpx)",
       },
+      wxDomHeight: "",
     };
   },
   onReady() {
@@ -77,8 +77,7 @@ export default {
       getExtraList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
-            self.countChartHeight(res.rows.length);
-            self.formatChartData(res.rows);
+            self.countChartHeight(res.rows);
           } else {
             uni.showToast({
               title: "暂无外快盈亏记录数据！",
@@ -95,7 +94,8 @@ export default {
         }
       });
     },
-    countChartHeight(length) {
+    countChartHeight(chartDataList) {
+      const length = chartDataList.length;
       // #ifdef H5
       if (length <= 9) {
         document.getElementsByClassName("fx67ll-chart-item")[0].style.height =
@@ -108,11 +108,12 @@ export default {
       // #endif
       // #ifdef MP-WEIXIN
       if (length <= 9) {
-        this.wxDomWidth = "calc(100vh - 44rpx)";
+        this.wxDomHeight = "calc(100vh - 44rpx)";
       } else {
-        this.wxDomWidth = `${100 * length}px`;
+        this.wxDomHeight = `${100 * length}px`;
       }
       // #endif
+      this.formatChartData(chartDataList);
     },
     formatChartData(list) {
       const cateList = [];
