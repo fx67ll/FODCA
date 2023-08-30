@@ -4,7 +4,8 @@
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
           <uni-swipe-action-item
-            :right-options="actionOptions"
+            :left-options="leftActionOptions"
+            :right-options="rightActionOptions"
             @click="(e) => handleActionClick(e, item)"
           >
             <uni-section :title="item.createTime" type="line">
@@ -105,7 +106,15 @@ export default {
         top: "4rpx",
         padding: "0 14rpx",
       },
-      actionOptions: [
+      leftActionOptions: [
+        {
+          text: "拷贝至剪切板",
+          style: {
+            backgroundColor: "#ffa940",
+          },
+        },
+      ],
+      rightActionOptions: [
         {
           text: "取消",
           style: {
@@ -127,6 +136,7 @@ export default {
     // this.$refs.paging.reload();
   },
   methods: {
+    // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
       const queryParams = {
@@ -137,9 +147,6 @@ export default {
         .then((res) => {
           if (res?.code === 200) {
             if (res?.rows && res?.rows?.length > 0) {
-              // console.log("queryLogList", res.rows);
-              // self.logList = self.formatLogList(res.rows);
-              // console.log("formatLogList", self.logList);
               // 将请求的结果数组传递给z-paging
               self.$refs.paging.complete(self.formatLogList(res.rows));
             } else {
@@ -166,6 +173,7 @@ export default {
           self.$refs.paging.complete(false);
         });
     },
+    // 整理log数据适配显示
     formatLogList(list) {
       const self = this;
       const listResult = [];
@@ -178,6 +186,7 @@ export default {
           winFlag,
           chaseList: [],
           recordList: [],
+          weekType: item?.weekType,
         };
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
@@ -187,8 +196,8 @@ export default {
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "固定追号",
               updateTime:
-                self.spliceUpdateTime(item?.updateTime) ||
-                self.spliceUpdateTime(item?.createTime) ||
+                self.subStrUpdateTime(item?.updateTime) ||
+                self.subStrUpdateTime(item?.createTime) ||
                 "暂无数据",
               chaseNumber: ita || "暂无数据",
               winText: self.getWinText(winFlag, item?.winningPrice),
@@ -201,8 +210,8 @@ export default {
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: self.getTitleByWeekType(item?.weekType),
               updateTime:
-                self.spliceUpdateTime(item?.updateTime) ||
-                self.spliceUpdateTime(item?.createTime) ||
+                self.subStrUpdateTime(item?.updateTime) ||
+                self.subStrUpdateTime(item?.createTime) ||
                 "暂无数据",
               recordNumber: itb || "暂无数据",
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
@@ -214,6 +223,7 @@ export default {
       });
       return listResult;
     },
+    // 根据当前星期几来获取标题
     getTitleByWeekType(type) {
       if (["1", "3", "6"].includes(type?.toString())) {
         return "随机大乐透";
@@ -223,13 +233,15 @@ export default {
         return "异常数据";
       }
     },
-    spliceUpdateTime(time) {
+    // 截取更新时间
+    subStrUpdateTime(time) {
       if (time && time.length === 19) {
         return time.substring(2, 16);
       } else {
         return null;
       }
     },
+    // 根据当前星期几来获取随机马赛克图片
     getImgRandomByWeekType(type) {
       if (["1", "3", "6"].includes(type?.toString())) {
         return 6;
@@ -239,6 +251,7 @@ export default {
         return 5;
       }
     },
+    // 格式化是否中奖信息
     getWinText(flag, price) {
       if (flag === "Y" && parseInt(price) > 0) {
         return `中奖${price}元`;
@@ -246,9 +259,11 @@ export default {
         return "未中奖";
       }
     },
+    // 获取1-1023范围的随机整数
     getRandomIndex() {
       return Math.floor(Math.random() * 1023) + 1;
     },
+    // 删除log接口调用
     deleteLog(id) {
       const self = this;
       delLog(id).then((res) => {
@@ -269,27 +284,155 @@ export default {
         }
       });
     },
-    handleActionClick(e, record) {
+    // 删除log强制提示
+    checkDelLog(logDelItem) {
       const self = this;
-      if (e?.index === 1) {
-        showConfirm(
-          `删除后数据无法恢复，请确认是否删除创建时间为：${record?.createTime} 的历史号码记录？`,
-          "警告"
-        ).then((res) => {
-          if (res?.confirm && record?.logId) {
-            // console.log("handleActionClick", e, record);
-            if (diffTimeStrFromNow(record?.createTime) <= -24) {
-              // console.log(diffTimeStrFromNow(record?.createTime));
-              uni.showToast({
-                title: "记录创建时间已超过24小时，不允许删除操作！",
-                icon: "none",
-                duration: 1998,
-              });
-            } else {
-              self.deleteLog(record.logId);
-            }
+      showConfirm(
+        `删除后数据无法恢复，请确认是否删除创建时间为：${logDelItem?.createTime} 的历史号码记录？`,
+        "警告"
+      ).then((res) => {
+        if (res?.confirm && logDelItem?.logId) {
+          if (diffTimeStrFromNow(logDelItem?.createTime) <= -24) {
+            uni.showToast({
+              title: "记录创建时间已超过24小时，不允许删除操作！",
+              icon: "none",
+              duration: 1998,
+            });
+          } else {
+            self.deleteLog(logDelItem.logId);
           }
-        });
+        }
+      });
+    },
+    // 格式化需要拷贝到剪切板的文字数据
+    formatCopyContent(copyDataList, listKey) {
+      const txtResList = [];
+      copyDataList.forEach((itemA) => {
+        let txtRes = "";
+        if (itemA[listKey]) {
+          const tmpListAlpha = itemA[listKey].split("-");
+          if (tmpListAlpha && tmpListAlpha.length > 0) {
+            tmpListAlpha.forEach((itemB, indexB) => {
+              const tmpListBeta = itemB.split(",");
+              if (indexB === 0) {
+                tmpListBeta.forEach((itemC, indexC) => {
+                  if (indexC !== tmpListBeta.length - 1) {
+                    txtRes = txtRes.concat(`${itemC}   `);
+                  } else {
+                    txtRes = txtRes.concat(`${itemC}  -  `);
+                  }
+                });
+              }
+              if (indexB === 1) {
+                tmpListBeta.forEach((itemD, indexD) => {
+                  if (indexD !== tmpListBeta.length - 1) {
+                    txtRes = txtRes.concat(`${itemD}   `);
+                  } else {
+                    txtRes = txtRes.concat(`${itemD}`);
+                  }
+                });
+              }
+            });
+            txtResList.push(txtRes);
+          }
+        } else {
+          console.error("待处理的数组key不存在！");
+        }
+      });
+      return txtResList;
+    },
+    // 拼接处理需要返回的字符串
+    concatTxtList(txtList) {
+      let concatResTxt = "";
+      txtList.forEach((item, index) => {
+        if (index !== txtList.length - 1) {
+          // #ifdef H5
+          concatResTxt = concatResTxt.concat(`  ${item} `, "\n");
+          // #endif
+          // #ifdef MP-WEIXIN
+          concatResTxt = concatResTxt.concat(`  ${item} `, "\r\n", "\r\n");
+          // #endif
+        } else {
+          concatResTxt = concatResTxt.concat(`  ${item} `);
+        }
+      });
+      return concatResTxt;
+    },
+    // 拷贝至剪切板
+    copyLuckyNumber(logCopyItem) {
+      const self = this;
+
+      // 接受log参数
+      const tdWeek = logCopyItem?.weekType.toString();
+      const chList = logCopyItem?.chaseList;
+      const reList = logCopyItem?.recordList;
+      const luckyCount = chList.length + reList.length;
+
+      // 处理追号和买的号
+      let copyContentList = [];
+      if (chList && chList.length > 0) {
+        copyContentList = copyContentList.concat(
+          this.formatCopyContent(chList, "chaseNumber")
+        );
+      }
+      if (reList && reList.length > 0) {
+        copyContentList = copyContentList.concat(
+          this.formatCopyContent(reList, "recordNumber")
+        );
+      }
+      const copyContentBody = this.concatTxtList(copyContentList);
+
+      // 拼接标题和主体
+      let copyContentTxt = "";
+      if (tdWeek === "1" || tdWeek === "3" || tdWeek === "6") {
+        // #ifdef H5
+        const copyContentTitleH5 = "  老板买" + luckyCount + "注自选号码大乐透 \n";
+        copyContentTxt = copyContentTitleH5 + copyContentBody;
+        // #endif
+        // #ifdef MP-WEIXIN
+        const copyContentTitleWX = "  老板买" + luckyCount + "注自选号码大乐透 \r\n \r\n";
+        copyContentTxt = copyContentTitleWX + copyContentBody;
+        // #endif
+      }
+      if (tdWeek === "2" || tdWeek === "4" || tdWeek === "7") {
+        // #ifdef H5
+        const copyContentTitleH5 = "  老板买" + luckyCount + "注自选号码双色球 \n";
+        copyContentTxt = copyContentTitleH5 + copyContentBody;
+        // #endif
+        // #ifdef MP-WEIXIN
+        const copyContentTitleWX = "  老板买" + luckyCount + "注自选号码双色球 \r\n \r\n";
+        copyContentTxt = copyContentTitleWX + copyContentBody;
+        // #endif
+      }
+
+      // 处理剪切板函数
+      uni.setClipboardData({
+        data: copyContentTxt,
+        showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
+        success: function (res) {
+          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
+          // #ifdef H5
+          // 微信不支持关闭复制成功提示所以暂时只支持H5
+          self.isNeedCloseDrawer("已为您成功复制到剪切板");
+          // #endif
+        },
+        fail: function (err) {
+          uni.showToast({
+            title: "卧槽复制失败了！请联系管理员处理! ",
+            icon: "none",
+            duration: 1998,
+          });
+          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
+        },
+      });
+    },
+    // 侧滑组件事件处理
+    handleActionClick(e, record) {
+      if (e?.position === "right" && e?.index === 1) {
+        this.checkDelLog(record);
+      }
+      if (e?.position === "left" && e?.index === 0) {
+        this.copyLuckyNumber(record);
       }
     },
   },
