@@ -33,10 +33,10 @@
                   >
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ itb.updateTime }}
+                        {{ ita.updateTime }}
                       </view>
                       <view>
-                        <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
+                        <uni-badge :text="ita.winText" :custom-style="badgeCustomStyle" />
                       </view>
                     </template>
                   </uni-list-chat>
@@ -69,12 +69,34 @@
                     :title="itb.title"
                     :note="itb.recordNumber"
                   >
-                    <template v-slot:default v-if="itb.winFlag">
+                    <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ itb.updateTime }}
                       </view>
                       <view>
                         <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
+                      </view>
+                    </template>
+                  </uni-list-chat>
+                </view>
+
+                <view v-if="item.winFlag === 'Y'">
+                  <uni-list-chat
+                    v-for="itb in item.winningList"
+                    :key="itb.numKey"
+                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?isNeedMoreMosaic=N"
+                    :title="itb.title"
+                    :note="itb.winningNumber"
+                  >
+                    <template v-slot:default>
+                      <view :style="{ fontSize: '12px', color: '#999' }">
+                        {{ itb.updateTime }}
+                      </view>
+                      <view>
+                        <uni-badge
+                          :text="itb.winText"
+                          :custom-style="badgeCustomStyleWin"
+                        />
                       </view>
                     </template>
                   </uni-list-chat>
@@ -106,6 +128,14 @@ export default {
         top: "4rpx",
         padding: "0 14rpx",
       },
+      badgeCustomStyleWin: {
+        backgroundColor: "#ffa940",
+        zoom: 1.2,
+        position: "relative",
+        left: "14rpx",
+        top: "4rpx",
+        padding: "0 14rpx",
+      },
       leftActionOptions: [
         {
           text: "拷贝至剪切板",
@@ -119,6 +149,12 @@ export default {
           text: "取消",
           style: {
             backgroundColor: "#4096ff",
+          },
+        },
+        {
+          text: "修改",
+          style: {
+            backgroundColor: "#2ecc71",
           },
         },
         {
@@ -186,19 +222,18 @@ export default {
           winFlag,
           chaseList: [],
           recordList: [],
+          winningList: [],
           weekType: item?.weekType,
         };
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
+        const wl = item?.winningNumber?.split("/") || [];
         if (cl.length > 0) {
           cl.forEach((ita) => {
             tmpObj.chaseList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "固定追号",
-              updateTime:
-                self.subStrUpdateTime(item?.updateTime) ||
-                self.subStrUpdateTime(item?.createTime) ||
-                "暂无数据",
+              updateTime: self.subStrUpdateTime(item?.createTime) || "暂无数据",
               chaseNumber: ita || "暂无数据",
               winText: self.getWinText(winFlag, item?.winningPrice),
             });
@@ -209,13 +244,22 @@ export default {
             tmpObj.recordList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: self.getTitleByWeekType(item?.weekType),
-              updateTime:
-                self.subStrUpdateTime(item?.updateTime) ||
-                self.subStrUpdateTime(item?.createTime) ||
-                "暂无数据",
+              updateTime: self.subStrUpdateTime(item?.updateTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
               winText: self.getWinText(winFlag, item?.winningPrice),
+            });
+          });
+        }
+        if (wl.length > 0) {
+          wl.forEach((itc) => {
+            tmpObj.winningList.push({
+              numKey: new Date().getTime() + self.getRandomIndex(),
+              title: "当日开奖号码",
+              updateTime: "☆(￣▽￣)/$:*",
+              winningNumber: itc || "暂无数据",
+              imgRandom: self.getImgRandomByWeekType(item?.weekType),
+              winText: "恭喜今日中奖",
             });
           });
         }
@@ -426,10 +470,17 @@ export default {
         },
       });
     },
+    // 修改号码历史记录详情
+    editLogInfo(logId) {
+      this.$tab.navigateTo(`/pages/lottery/log/edit?lotteryId=${logId}`);
+    },
     // 侧滑组件事件处理
     handleActionClick(e, record) {
-      if (e?.position === "right" && e?.index === 1) {
+      if (e?.position === "right" && e?.index === 2) {
         this.checkDelLog(record);
+      }
+      if (e?.position === "right" && e?.index === 1) {
+        this.editLogInfo(record?.logId);
       }
       if (e?.position === "left" && e?.index === 0) {
         this.copyLuckyNumber(record);
