@@ -1,4 +1,5 @@
 import moment from '@/node_modules/moment';
+import CryptoJS from "@/node_modules/crypto-js";
 
 // 快速排序
 export function quickSort(tempArr) {
@@ -36,4 +37,11 @@ export function diffTimeStrFromNow(timeStr) {
   // 以下是一些常用的时间间隔单位：
   // years-年数、months-月数、weeks-周数、days-天数、hours-小时数、minutes-分钟数、 seconds-秒数、milliseconds-毫秒数
   return moment(timeStr, 'YYYY-MM-DD HH:mm:ss').diff(moment(), 'hours');
+}
+
+// 解密函数
+export function decryptString(encryptedText, key) {
+  const decryptedBytes = CryptoJS.AES.decrypt(encryptedText, key);
+  const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+  return decryptedText;
 }
