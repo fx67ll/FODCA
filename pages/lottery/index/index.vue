@@ -1,7 +1,7 @@
 <template>
   <view class="fx67ll-tools-box">
-    <div class="fx67ll-btn-box">
-      <div class="fx67ll-btn-item fx67ll-btn-item-two">
+    <view class="fx67ll-btn-box">
+      <view class="fx67ll-btn-item fx67ll-btn-item-two">
         <button
           class="fx67ll-btn-default"
           type="default"
@@ -23,9 +23,9 @@
           :size="iconSize"
           v-if="isNetworkLoading || countLoading || isDrawLoading"
         ></uni-icons>
-      </div>
+      </view>
       <!-- 只允许超级管理员fx67ll使用图片上传自动分析的功能，后续视情况开放 -->
-      <div
+      <view
         class="fx67ll-btn-item fx67ll-btn-item-two"
         v-if="userName && userName === 'fx67ll'"
       >
@@ -58,8 +58,8 @@
           :size="iconSize"
           v-if="isNetworkLoading || countLoading || isDrawLoading"
         ></uni-icons>
-      </div>
-      <div class="fx67ll-btn-item" v-if="!isDrawLoading">
+      </view>
+      <view class="fx67ll-btn-item" v-if="!isDrawLoading">
         <button
           class="fx67ll-btn-default"
           type="warn"
@@ -68,8 +68,8 @@
         >
           {{ drawLotteryText }}
         </button>
-      </div>
-      <div class="fx67ll-btn-item fx67ll-btn-item-two" v-if="isDrawLoading">
+      </view>
+      <view class="fx67ll-btn-item fx67ll-btn-item-two" v-if="isDrawLoading">
         <button
           class="fx67ll-btn-default"
           type="warn"
@@ -84,8 +84,8 @@
           :size="iconSize"
           @click="stopDrawLottery"
         ></uni-icons>
-      </div>
-      <div class="fx67ll-btn-item">
+      </view>
+      <view class="fx67ll-btn-item">
         <button
           class="fx67ll-btn-default"
           type="warn"
@@ -98,12 +98,12 @@
               : `正在为您计算今日运势：${luckyRandomProgrss}%`
           }}
         </button>
-      </div>
-    </div>
-    <div class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
-      <div class="fx67ll-lucky-bumber">{{ settingInfo.todayLuckyNumber }}</div>
-      <div class="fx67ll-lucky-title">今日推荐幸运数字</div>
-    </div>
+      </view>
+    </view>
+    <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
+      <view class="fx67ll-lucky-bumber">{{ settingInfo.todayLuckyNumber }}</view>
+      <view class="fx67ll-lucky-title">今日推荐幸运数字</view>
+    </view>
 
     <!-- 页面底部抽屉 -->
     <zb-drawer
@@ -115,9 +115,9 @@
       :height="drawerHeight"
       :before-close="handleDrawerClose"
     >
-      <div v-if="showType === 'luckyNumber'">
-        <div id="luckyNumberText" class="fx67ll-number-box">
-          <div
+      <view v-if="showType === 'luckyNumber'">
+        <view id="luckyNumberText" class="fx67ll-number-box">
+          <view
             class="fx67ll-number-item"
             v-for="item in luckyNumberList"
             :key="item.timeStamp"
@@ -129,11 +129,11 @@
             <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">{{
               itemSecond.num
             }}</span>
-          </div>
-        </div>
+          </view>
+        </view>
 
         <!-- #ifdef H5 -->
-        <div class="fx67ll-drawer-btn-box h5">
+        <view class="fx67ll-drawer-btn-box h5">
           <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
             拷贝至剪切板
           </button>
@@ -145,11 +145,11 @@
           >
             保存到云端
           </button>
-        </div>
+        </view>
         <!-- #endif -->
 
         <!-- #ifdef MP-WEIXIN -->
-        <div class="fx67ll-drawer-btn-box">
+        <view class="fx67ll-drawer-btn-box">
           <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
             拷贝至剪切板
           </button>
@@ -161,27 +161,28 @@
           >
             保存到云端
           </button>
-        </div>
+        </view>
         <!-- #endif -->
-      </div>
+      </view>
 
-      <div class="fx67ll-drawer-img" v-if="showType === 'luckyPhoto'">
-        <!-- <uni-icons class="fx67ll-img-icon" type="trash" size="24" color="#BFBFBF" @click="deleteImportImg"></uni-icons> -->
-        <div class="fx67ll-ocr-tag">
+      <view class="fx67ll-drawer-img" v-if="showType === 'luckyPhoto'">
+        <view class="fx67ll-ocr-tag">
           <span v-for="item in ocrTagList" :key="item.timeStamp">{{
             item.words || "--"
           }}</span>
-        </div>
-        <img
-          class="fx67ll-img-lottery"
-          :src="lotteryTicketArr[0]"
-          @click="previewImportImg"
-        />
-        <div class="fx67ll-fake-bottom"></div>
-      </div>
+        </view>
+        <view class="fx67ll-img-lottery">
+          <view class="fx67ll-img-lottery-title">本次百度OCR识别的照片:</view>
+          <img
+            :src="lotteryTicketArr[0]"
+            @click="previewImportImg"
+            :style="{ width: `${ocrImgDomWidth}` }"
+          />
+        </view>
+      </view>
 
-      <div class="fx67ll-drawer-setting" v-if="showType === 'luckySetting'">
-        <div class="fx67ll-setting-item">
+      <view class="fx67ll-drawer-setting" v-if="showType === 'luckySetting'">
+        <view class="fx67ll-setting-item">
           <span>需要随机输出的注数</span>
           <uni-number-box
             :min="1"
@@ -189,38 +190,38 @@
             v-model="settingInfo.luckyCount"
             @change="luckyCountChange"
           ></uni-number-box>
-        </div>
-        <div class="fx67ll-setting-item">
+        </view>
+        <view class="fx67ll-setting-item">
           <span>是否允许出现重复串号</span>
           <switch
             class="fx67ll-setting-switch"
             :checked="settingInfo.isNeedRepeat"
             @change="isNeedRepeatChange"
           />
-        </div>
-        <div class="fx67ll-setting-item">
+        </view>
+        <view class="fx67ll-setting-item">
           <span>当日幸运数字是否要包含在内</span>
           <switch
             class="fx67ll-setting-switch"
             :checked="settingInfo.isNeedLuckyNumber"
             @change="isNeedLuckyNumberChange"
           />
-        </div>
-        <div class="fx67ll-setting-item">
+        </view>
+        <view class="fx67ll-setting-item">
           <span>当日是否仅允许生成一次随机</span>
           <switch
             class="fx67ll-setting-switch"
             :checked="settingInfo.isOnlyFirstToday"
             @change="isOnlyFirstTodayChange"
           />
-        </div>
-        <div class="fx67ll-setting-tip">
+        </view>
+        <view class="fx67ll-setting-tip">
           Tip-1：修改其他设置会重置
           <text>"当日是否仅允许生成一次随机"</text> 设置，请手动重新配置即可
-        </div>
-        <div class="fx67ll-setting-tip">
+        </view>
+        <view class="fx67ll-setting-tip">
           Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端
-        </div>
+        </view>
         <!-- #ifdef H5 -->
         <button
           class="fx67ll-btn-save fx67ll-btn-save-h5"
@@ -241,7 +242,7 @@
           保存设置到云端
         </button>
         <!-- #endif -->
-      </div>
+      </view>
     </zb-drawer>
   </view>
 </template>
@@ -261,6 +262,12 @@ import { showConfirm } from "@/utils/common";
 // lottery相关api
 import { getSetting, updateSetting, addSetting } from "@/api/lottery/setting";
 import { getLogList, addLog } from "@/api/lottery/log";
+// 获取加密配置
+// #ifdef MP-WEIXIN
+import { getSecretConfig } from "@/api/secret/key.js";
+import { decryptString } from "@/utils/index";
+import { getCryptoSaltKey } from "@/neverUploadToGithub";
+// #endif
 export default {
   components: {
     uniIcons,
@@ -356,10 +363,10 @@ export default {
       isNetworkLoading: false,
       // 图片上传百分比
       pictureUploadNumber: 0,
-      // 本次上传的分析图片本地地址
-      pickForUploadPictureLocalUrl: null,
       // 百度OCR分析之后的结果列表
       ocrTagList: [],
+      // 百度OCR识别的图片宽度
+      ocrImgDomWidth: "",
     };
   },
   watch: {
@@ -386,36 +393,34 @@ export default {
   onShow() {
     // 显示当前时间
     this.showNowTime();
+    // 设置图片显示宽度
+    this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
   },
   onHide() {
     // 增加一下保存的频率
     this.saveLuckySettingDebounce(true);
-    // 销毁时清除定时器
-    clearInterval(this.timer);
-    clearTimeout(this.luckyTimer);
-    clearTimeout(this.fakeDrawTimer);
-    this.timer = null;
-    this.luckyTimer = null;
-    this.fakeDrawTimer = null;
-    // 隐藏时停止计时
-    if (this.isDrawLoading) {
-      this.stopDrawLottery();
-    }
+    // 退出页面时清理所有定时器
+    this.clearAllTimer();
   },
   onUnload() {
-    // 销毁时清除定时器
-    clearInterval(this.timer);
-    clearTimeout(this.luckyTimer);
-    clearTimeout(this.fakeDrawTimer);
-    this.timer = null;
-    this.luckyTimer = null;
-    this.fakeDrawTimer = null;
-    // 隐藏时停止计时
-    if (this.isDrawLoading) {
-      this.stopDrawLottery();
-    }
+    // 页面销毁时清理所有定时器
+    this.clearAllTimer();
   },
   methods: {
+    // 清理所有定时器
+    clearAllTimer() {
+      // 销毁时清除定时器
+      clearInterval(this.timer);
+      clearTimeout(this.luckyTimer);
+      clearTimeout(this.fakeDrawTimer);
+      this.timer = null;
+      this.luckyTimer = null;
+      this.fakeDrawTimer = null;
+      // 隐藏时停止计时
+      if (this.isDrawLoading) {
+        this.stopDrawLottery();
+      }
+    },
     // 保存设置到服务端
     // noToast，默认不用传，传true表示不会提示保存成功或失败的信息，传false表示正常提示
     saveLuckySetting(isNoNeedToast) {
@@ -929,7 +934,7 @@ export default {
       luckyContent = document
         .getElementById("luckyNumberText")
         .innerHTML.replace(/(<\/?span.*?>)/g, " ")
-        .replace(/<\/?div.*?>/gi, "\n");
+        .replace(/<\/?view.*?>/gi, "\n");
       // #endif
       // #ifdef MP-WEIXIN
       luckyContent = this.packageContextForWX();
@@ -1107,7 +1112,7 @@ export default {
       this.pictureUploadNumber = 0;
     },
     // 百度OCR结果返回之后的回调
-    ocrResultCallBack(ocrCallBackRes) {
+    ocrResultCallBack(ocrCallBackRes, baiduOcrFileUrl) {
       console.log("ocrCallBackRes", ocrCallBackRes);
       // 关闭加载状态
       this.afterPicUploadFinished();
@@ -1134,19 +1139,23 @@ export default {
           duration: 1998,
         });
       }
-      // 打开回显结果的弹窗
-      this.showType = "luckyPhoto";
+
+      // 设置OCR识别弹窗显示的识别图片
       this.lotteryTicketArr = [];
-      // this.lotteryTicketArr.push(this.pickForUploadPictureLocalUrl);
+      this.lotteryTicketArr.push(baiduOcrFileUrl);
+      // 清除弹窗标题的定时器
+      clearInterval(this.timer);
+      this.timer = null;
+      this.drawerTitle = "百度OCR分析识别结果";
+      // 打开弹窗
+      this.showType = "luckyPhoto";
       this.drawerHeight = "80%";
       this.drawerType = 0;
       this.isShowDrawer = true;
     },
     // 使用百度OCR分析，注意！！！百度OCR识别需要先获取鉴权信息~
-    analysisByBaiduOcr(fileCloudUrl) {
+    analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl) {
       const self = this;
-      const ocrPubKey = "";
-      const ocrSecKey = "";
       uni
         .request({
           method: "POST",
@@ -1184,7 +1193,7 @@ export default {
               dataType: "json",
               success: function (baiduOcrRes) {
                 // console.log("baiduOcrRes", baiduOcrRes);
-                self.ocrResultCallBack(baiduOcrRes);
+                self.ocrResultCallBack(baiduOcrRes, fileCloudUrl);
               },
               fail: (err) => {
                 uni.showToast({
@@ -1212,16 +1221,28 @@ export default {
           self.afterPicUploadFinished();
         });
     },
+    // 获取百度OCR分析必须的配置
+    qryBaiduOcrConfig(fileCloudUrl) {
+      const self = this;
+      getSecretConfig({ secretKey: "ocrPubKey" }).then((res) => {
+        if (res && res?.rows && res?.rows.length > 0) {
+          const ocrPubKey = decryptString(res.rows[0].secretValue, getCryptoSaltKey());
+          getSecretConfig({ secretKey: "ocrSecKey" }).then((res) => {
+            if (res && res?.rows && res?.rows.length > 0) {
+              const ocrSecKey = decryptString(
+                res.rows[0].secretValue,
+                getCryptoSaltKey()
+              );
+              self.analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl);
+            }
+          });
+        }
+      });
+    },
     // 上传图片到uniCloud
     uploadPicForBaiDuOcr(fileList) {
       const self = this;
       this.isNetworkLoading = true;
-      // #ifdef H5
-      this.pickForUploadPictureLocalUrl = fileList[0].path;
-      // #endif
-      // #ifdef MP-WEIXIN
-      this.pickForUploadPictureLocalUrl = fileList[0].tempFilePath;
-      // #endif
       uniCloud.uploadFile({
         // #ifdef H5
         filePath: fileList[0].path,
@@ -1241,7 +1262,7 @@ export default {
         success: (uploadFileRes) => {
           // console.log("uploadFileRes", uploadFileRes);
           if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
-            self.analysisByBaiduOcr(uploadFileRes?.fileID);
+            self.qryBaiduOcrConfig(uploadFileRes?.fileID);
           } else {
             self.afterPicUploadFinished();
           }
@@ -1338,22 +1359,6 @@ export default {
         },
       });
       // #endif
-    },
-    // 删除上传图片（功能暂时不需要）
-    deleteImportImg(type) {
-      const self = this;
-      uni.showModal({
-        title: "提示",
-        content: "是否删除当前照片",
-        success: function (res) {
-          if (res.confirm) {
-            // console.log('用户点击确定');
-            self.lotteryTicketArr = [];
-          } else if (res.cancel) {
-            // console.log('用户点击取消');
-          }
-        },
-      });
     },
     // 预览上传图片
     previewImportImg(type) {
