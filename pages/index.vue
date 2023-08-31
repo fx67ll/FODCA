@@ -10,7 +10,6 @@
 <script>
 import { getAvatar } from "@/api/system/user";
 import _ from "@/node_modules/underscore";
-import moment from "@/node_modules/moment";
 export default {
   data() {
     return {

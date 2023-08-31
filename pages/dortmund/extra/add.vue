@@ -188,7 +188,6 @@ export default {
       }
     },
     handleWinMoneyCount(extraMoney, seedMoney, preExtraMoney, preSeedMoney) {
-      console.log(extraMoney, seedMoney, preExtraMoney, preSeedMoney);
       const nowWinMoney = (
         parseFloat(extraMoney) -
         parseFloat(seedMoney) -
@@ -208,7 +207,7 @@ export default {
               duration: 1998,
             });
             setTimeout(() => {
-              self.$tab.navigateTo("/pages/dortmund/extra/index");
+              self.$tab.navigateBack("/pages/dortmund/extra/index");
             }, 1023);
           } else {
             uni.showToast({
