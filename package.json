@@ -1,9 +1,10 @@
 {
   "name": "fx67ll-app",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "fx67ll's Life App",
   "main": "main.js",
   "dependencies": {
+    "crypto-js": "^4.1.1",
     "moment": "^2.29.4",
     "underscore": "^1.13.6"
   },
