@@ -85,6 +85,12 @@
       }
     },
     {
+      "path": "pages/lottery/log/edit",
+      "style": {
+        "navigationBarTitleText": "修改历史号码记录"
+      }
+    },
+    {
       "path": "pages/dortmund/extra/index",
       "style": {
         "navigationBarTitleText": "外快盈亏管理"
