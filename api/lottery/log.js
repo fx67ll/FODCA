@@ -22,6 +22,23 @@ export function addLog(data) {
 export function delLog(lotteryId) {
   return request({
     url: '/lottery/log/deleteLogByIdForApp/' + lotteryId,
-    method: 'delete'
-  })
+    method: 'delete',
+  });
+}
+
+// 查询号码记录详情
+export function getLogInfo(lotteryId) {
+  return request({
+    url: `/lottery/log/getLotteryLogInfoForApp/${lotteryId}`,
+    method: 'get',
+  });
+}
+
+// 修改每日号码记录
+export function editLog(data) {
+  return request({
+    url: '/lottery/log/editLotteryLogForApp',
+    method: 'put',
+    data: data,
+  });
 }
