@@ -1,11 +1,12 @@
 import store from '@/store';
-import config from '@/config';
+import systemConfig from '@/config';
 import { getToken } from '@/utils/auth';
 import errorCode from '@/utils/errorCode';
 import { toast, showConfirm, tansParams } from '@/utils/common';
 
 let timeout = 10000;
-const baseUrl = config.baseUrl;
+const baseUrl = systemConfig.baseUrl;
+const whiteApi = systemConfig.white_api;
 
 const request = config => {
   // 是否需要设置 token
@@ -14,7 +15,7 @@ const request = config => {
 
   // 如果原来就没有token，直接跳转登录界面
   // 如果有token，说明之前登陆过，就让后端验证token是否失效
-  if (!getToken() && config?.url !== '/captchaImage' && config?.url !== '/login') {
+  if (!getToken() && !whiteApi.includes(config?.url)) {
     uni.reLaunch({
       url: '/pages/login',
     });
