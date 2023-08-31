@@ -88,6 +88,11 @@
 <script>
 import { getCodeImg } from "@/api/login";
 import _ from "@/node_modules/underscore";
+// #ifdef MP-WEIXIN
+import { getSecretConfig } from "@/api/secret/key.js";
+import { decryptString } from "@/utils/index";
+import { getCryptoSaltKey } from "@/neverUploadToGithub";
+// #endif
 
 export default {
   data() {
@@ -109,8 +114,31 @@ export default {
   },
   created() {
     this.getCode();
+    // #ifdef MP-WEIXIN
+    this.getDefaultLoginInfo();
+    // #endif
   },
   methods: {
+    // 填入默认账号密码
+    getDefaultLoginInfo() {
+      const self = this;
+      getSecretConfig({ secretKey: "loginName" }).then((res) => {
+        if (res && res?.rows && res?.rows.length > 0) {
+          self.loginForm.username = decryptString(
+            res.rows[0].secretValue,
+            getCryptoSaltKey()
+          );
+        }
+      });
+      getSecretConfig({ secretKey: "loginPassword" }).then((res) => {
+        if (res && res?.rows && res?.rows.length > 0) {
+          self.loginForm.password = decryptString(
+            res.rows[0].secretValue,
+            getCryptoSaltKey()
+          );
+        }
+      });
+    },
     // 用户注册
     handleUserRegister() {
       this.$tab.redirectTo(`/pages/register`);
