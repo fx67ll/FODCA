@@ -165,21 +165,91 @@
         <!-- #endif -->
       </view>
 
-      <view class="fx67ll-drawer-img" v-if="showType === 'luckyPhoto'">
-        <view class="fx67ll-ocr-tag">
-          <span v-for="item in ocrTagList" :key="item.timeStamp">{{
-            item.words || "--"
-          }}</span>
+      <scroll-view
+        scroll-y="true"
+        class="fx67ll-drawer-img"
+        v-if="showType === 'luckyPhoto'"
+      >
+        <view class="fx67ll-drawer-tip"
+          >请注意！每次的分析结果数据不会保存到云端，关闭当前弹窗后将无法再次获取历史识别结果~</view
+        >
+        <view class="fx67ll-ocr-lottery">
+          <view class="fx67ll-drawer-title" v-if="!ocrTagList || ocrTagList.length < 1"
+            >本次OCR未识别到文字！</view
+          >
+
+          <view class="fx67ll-ocr-btn">
+            <button
+              type="warn"
+              v-if="
+                ocrTagList &&
+                ocrTagList.length > 0 &&
+                ocrTagCheckList &&
+                ocrTagCheckList.length > 0
+              "
+              @click="copyCheckTagText"
+            >
+              拷贝选中的文字至剪切板
+            </button>
+          </view>
+
+          <view
+            class="fx67ll-drawer-title"
+            v-if="
+              ocrTagList &&
+              ocrTagList.length > 0 &&
+              ocrTagCheckList &&
+              ocrTagCheckList.length === 0
+            "
+            >尝试点击识别结果中你需要的的文字分块吧！</view
+          >
+          <view
+            class="fx67ll-drawer-title"
+            v-if="
+              ocrTagList &&
+              ocrTagList.length > 0 &&
+              ocrTagCheckList &&
+              ocrTagCheckList.length > 0
+            "
+            >您已选中以下识别结果:</view
+          >
+          <view class="fx67ll-ocr-result" v-if="ocrTagList && ocrTagList.length > 0">
+            <span
+              v-for="(item, index) in ocrTagList"
+              :key="item.timeStamp"
+              :class="{
+                'fx67ll-ocr-tag': item.isCheck,
+                'fx67ll-ocr-tag-choose': item.isCheck,
+              }"
+              @click="changeTagStatus(index)"
+              ><text v-if="item.isCheck">{{ item.words || "--" }}</text>
+            </span>
+          </view>
+
+          <view class="fx67ll-drawer-title" v-if="ocrTagList && ocrTagList.length > 0"
+            >本次百度OCR识别的结果:</view
+          >
+          <view class="fx67ll-ocr-result" v-if="ocrTagList && ocrTagList.length > 0">
+            <span
+              v-for="(item, index) in ocrTagList"
+              :key="item.timeStamp"
+              :class="{ 'fx67ll-ocr-tag': true, 'fx67ll-ocr-tag-check': item.isCheck }"
+              @click="changeTagStatus(index)"
+              >{{ item.words || "--" }}
+            </span>
+          </view>
         </view>
-        <view class="fx67ll-img-lottery">
-          <view class="fx67ll-img-lottery-title">本次百度OCR识别的照片:</view>
-          <img
+
+        <view class="fx67ll-ocr-lottery">
+          <view class="fx67ll-drawer-title">本次百度OCR识别的照片:</view>
+          <!-- <img
             :src="lotteryTicketArr[0]"
             @click="previewImportImg"
             :style="{ width: `${ocrImgDomWidth}` }"
-          />
+          /> -->
+          <image mode="widthFix" :src="lotteryTicketArr[0]" @click="previewImportImg" />
         </view>
-      </view>
+      </scroll-view>
 
       <view class="fx67ll-drawer-setting" v-if="showType === 'luckySetting'">
         <view class="fx67ll-setting-item">
@@ -365,8 +435,10 @@ export default {
       pictureUploadNumber: 0,
       // 百度OCR分析之后的结果列表
       ocrTagList: [],
-      // 百度OCR识别的图片宽度
-      ocrImgDomWidth: "",
+      // 百度OCR分析之后的结果选中的列表
+      ocrTagCheckList: [],
+      // 百度OCR识别的图片宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
+      // ocrImgDomWidth: "",
     };
   },
   watch: {
@@ -389,13 +461,13 @@ export default {
     this.initLuckyNumber();
     // 初始化缓存设置
     this.initCacheSetting();
-  },
-  onShow() {
     // 显示当前时间
     this.showNowTime();
-    // 设置图片显示宽度
-    this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
   },
+  // onShow() {
+  //   // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
+  //   this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
+  // },
   onHide() {
     // 增加一下保存的频率
     this.saveLuckySettingDebounce(true);
@@ -1111,12 +1183,75 @@ export default {
       this.isNetworkLoading = false;
       this.pictureUploadNumber = 0;
     },
+    // 拷贝选中的识别结果文字字块
+    copyCheckTagText() {
+      const self = this;
+      let copyResTxt = "";
+      this.ocrTagCheckList.forEach((item, index) => {
+        if (item?.isCheck) {
+          if (index === self.ocrTagCheckList.length - 1) {
+            copyResTxt = copyResTxt.concat(item?.words);
+          } else {
+            copyResTxt = copyResTxt.concat(item?.words + ",");
+          }
+        }
+      });
+      console.log("copyResTxt", copyResTxt);
+      uni.setClipboardData({
+        data: copyResTxt,
+        showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
+        success: function (res) {
+          // #ifdef H5
+          // 微信不支持关闭复制成功提示所以暂时只支持H5
+          uni.showToast({
+            title: "已为您成功复制到剪切板! ",
+            icon: "none",
+            duration: 1998,
+          });
+          // #endif
+          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
+        },
+        fail: function (err) {
+          uni.showToast({
+            title: "卧槽复制失败了！请联系管理员处理! ",
+            icon: "none",
+            duration: 1998,
+          });
+          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
+        },
+      });
+    },
+    // 修改识别结果的tag状态
+    changeTagStatus(tagIndex) {
+      const self = this;
+      this.ocrTagList[tagIndex].isCheck = !this.ocrTagList[tagIndex].isCheck;
+      this.ocrTagCheckList = [];
+      this.ocrTagList.forEach((item) => {
+        if (item?.isCheck) {
+          self.ocrTagCheckList.push({ ...item });
+        }
+      });
+    },
+    // OCR识别成功之后打开弹窗显示识别的图片
+    afterBaiduOcrSuccess(baiduOcrFileUrl) {
+      // 设置OCR识别弹窗显示的识别图片
+      this.lotteryTicketArr = [];
+      this.lotteryTicketArr.push(baiduOcrFileUrl);
+      // 清除弹窗标题的定时器
+      clearInterval(this.timer);
+      this.timer = null;
+      this.drawerTitle = "待处理分析结果";
+      // 打开弹窗
+      this.showType = "luckyPhoto";
+      this.drawerHeight = "80%";
+      this.drawerType = 0;
+      this.isShowDrawer = true;
+    },
     // 百度OCR结果返回之后的回调
     ocrResultCallBack(ocrCallBackRes, baiduOcrFileUrl) {
       console.log("ocrCallBackRes", ocrCallBackRes);
       // 关闭加载状态
       this.afterPicUploadFinished();
-      console.log("words_result", ocrCallBackRes?.data?.words_result);
       // 存储分析结果
       if (
         ocrCallBackRes?.data?.words_result &&
@@ -1127,11 +1262,11 @@ export default {
         ocrResList.forEach((item, index) => {
           corTempList.push({
             words: item?.words,
+            isCheck: false,
             timeStamp: new Date().getTime() + index,
           });
         });
         this.ocrTagList = [...corTempList];
-        console.log("ocrTagList", this.ocrTagList);
       } else {
         uni.showToast({
           title: "百度OCR识别结果为空，请联系管理员！",
@@ -1139,19 +1274,7 @@ export default {
           duration: 1998,
         });
       }
-
-      // 设置OCR识别弹窗显示的识别图片
-      this.lotteryTicketArr = [];
-      this.lotteryTicketArr.push(baiduOcrFileUrl);
-      // 清除弹窗标题的定时器
-      clearInterval(this.timer);
-      this.timer = null;
-      this.drawerTitle = "百度OCR分析识别结果";
-      // 打开弹窗
-      this.showType = "luckyPhoto";
-      this.drawerHeight = "80%";
-      this.drawerType = 0;
-      this.isShowDrawer = true;
+      this.afterBaiduOcrSuccess(baiduOcrFileUrl);
     },
     // 使用百度OCR分析，注意！！！百度OCR识别需要先获取鉴权信息~
     analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl) {
@@ -1345,8 +1468,36 @@ export default {
         mediaType: ["image"],
         sourceType: ["album"],
         // sizeType	Array.<string>	['original', 'compressed']	否	仅对 mediaType 为 image 时有效，是否压缩所选文件
-        sizeType: ["original"],
-        maxDuration: 30,
+        sizeType: ["original", "compressed"],
+        camera: "back",
+        success(chooseImageRes) {
+          self.pickLocalPhotoCallBack(0, chooseImageRes?.tempFiles || null);
+        },
+        fail(err) {
+          self.pickLocalPhotoCallBack(1, err);
+        },
+        complete(res) {
+          self.pickLocalPhotoCallBack(2, res);
+        },
+      });
+      // #endif
+    },
+    // 使用摄像头扫码
+    useCamera() {
+      const self = this;
+      // #ifdef H5
+      uni.showToast({
+        title: "H5拍照识别功能开发中！目前仅支持微信小程序拍照识别！",
+        icon: "none",
+        duration: 1998,
+      });
+      // #endif
+      // #ifdef MP-WEIXIN
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ["image"],
+        sourceType: ["camera"],
+        sizeType: ["original", "compressed"],
         camera: "back",
         success(chooseImageRes) {
           self.pickLocalPhotoCallBack(0, chooseImageRes?.tempFiles || null);
@@ -1374,23 +1525,6 @@ export default {
           },
         },
       });
-    },
-    // 使用摄像头扫码
-    useCamera() {
-      // #ifdef H5
-      uni.showToast({
-        title: "功能开发中",
-        icon: "none",
-        duration: 1998,
-      });
-      // #endif
-      // #ifdef MP-WEIXIN
-      uni.showToast({
-        title: "功能开发中",
-        icon: "none",
-        duration: 1998,
-      });
-      // #endif
     },
     // 计时用工具函数
     // start: 时间差开始
