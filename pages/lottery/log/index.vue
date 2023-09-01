@@ -17,9 +17,17 @@
                     avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
                     :title="ita.title"
                     :note="ita.chaseNumber"
-                    :time="ita.updateTime"
-                    :badge-text="ita.winText"
-                  >
+                    ><template v-slot:default>
+                      <view :style="{ fontSize: '12px', color: '#999' }">
+                        {{ ita.updateTime }}
+                      </view>
+                      <view>
+                        <uni-badge
+                          :text="ita.winText"
+                          :custom-style="badgeCustomStyleNotWinShort"
+                        />
+                      </view>
+                    </template>
                   </uni-list-chat>
                 </view>
 
@@ -52,9 +60,17 @@
                     "
                     :title="itb.title"
                     :note="itb.recordNumber"
-                    :time="itb.updateTime"
-                    :badge-text="itb.winText"
-                  >
+                    ><template v-slot:default>
+                      <view :style="{ fontSize: '12px', color: '#999' }">
+                        {{ itb.updateTime }}
+                      </view>
+                      <view>
+                        <uni-badge
+                          :text="itb.winText"
+                          :custom-style="badgeCustomStyleNotWinShort"
+                        />
+                      </view>
+                    </template>
                   </uni-list-chat>
                 </view>
 
@@ -80,7 +96,7 @@
                   </uni-list-chat>
                 </view>
 
-                <view v-if="item.winFlag === 'Y'">
+                <view v-if="item.winningList.length > 0">
                   <uni-list-chat
                     v-for="itb in item.winningList"
                     :key="itb.numKey"
@@ -95,7 +111,11 @@
                       <view>
                         <uni-badge
                           :text="itb.winText"
-                          :custom-style="badgeCustomStyleWin"
+                          :custom-style="
+                            item.winFlag === 'Y'
+                              ? badgeCustomStyleWin
+                              : badgeCustomStyleNotWinLong
+                          "
                         />
                       </view>
                     </template>
@@ -124,7 +144,15 @@ export default {
         backgroundColor: "#2ecc71",
         zoom: 1.2,
         position: "relative",
-        left: "14rpx",
+        left: "6rpx",
+        top: "4rpx",
+        padding: "0 14rpx",
+      },
+      badgeCustomStyleNotWinShort: {
+        backgroundColor: "#ff5a5f",
+        zoom: 1.2,
+        position: "relative",
+        left: "6rpx",
         top: "4rpx",
         padding: "0 14rpx",
       },
@@ -133,6 +161,14 @@ export default {
         zoom: 1.2,
         position: "relative",
         left: "14rpx",
+        top: "4rpx",
+        padding: "0 14rpx",
+      },
+      badgeCustomStyleNotWinLong: {
+        backgroundColor: "#ff5a5f",
+        zoom: 1.2,
+        position: "relative",
+        left: "12rpx",
         top: "4rpx",
         padding: "0 14rpx",
       },
@@ -228,7 +264,8 @@ export default {
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
         const wl = item?.winningNumber?.split("/") || [];
-        if (cl.length > 0) {
+        console.log(wl);
+        if (cl.length > 0 && cl[0] !== "") {
           cl.forEach((ita) => {
             tmpObj.chaseList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
@@ -239,7 +276,7 @@ export default {
             });
           });
         }
-        if (rl.length > 0) {
+        if (rl.length > 0 && rl[0] !== "") {
           rl.forEach((itb) => {
             tmpObj.recordList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
@@ -251,20 +288,21 @@ export default {
             });
           });
         }
-        if (wl.length > 0) {
+        if (wl.length > 0 && wl[0] !== "") {
           wl.forEach((itc) => {
             tmpObj.winningList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "当日开奖号码",
-              updateTime: "☆(￣▽￣)/$:*",
+              updateTime: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
-              winText: "恭喜今日中奖",
+              winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "该追号未中奖",
             });
           });
         }
         listResult.push({ ...tmpObj });
       });
+      console.log("listResult", listResult);
       return listResult;
     },
     // 根据当前星期几来获取标题
