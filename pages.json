@@ -1,6 +1,12 @@
 {
   "pages": [
     {
+      "path": "pages/dortmund/extra/target",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/index",
       "style": {
         "navigationStyle": "custom"
@@ -87,7 +93,7 @@
     {
       "path": "pages/lottery/log/edit",
       "style": {
-        "navigationBarTitleText": "修改历史号码记录"
+        "navigationBarTitleText": "修改号码记录"
       }
     },
     {
@@ -116,10 +122,10 @@
     "backgroundColor": "#ffffff",
     "list": [
       {
-        "pagePath": "pages/index",
+        "pagePath": "pages/dortmund/extra/target",
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
-        "text": "首页"
+        "text": "小目标"
       },
       {
         "pagePath": "pages/lottery/index/index",
