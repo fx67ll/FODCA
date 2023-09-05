@@ -1,59 +1,70 @@
 <template>
   <view class="fx67ll-form-box">
-    <uni-forms ref="form" :model="formParams" labelWidth="80px">
-      <uni-forms-item label="外快余额" name="extraMoney" required>
-        <uni-easyinput
-          v-model="formParams.extraMoney"
-          placeholder="请输入当前外快总金额"
-          @input="handleExtraMoneyChangeDubounce"
-          clearable
-        />
-      </uni-forms-item>
-      <uni-forms-item label="上次余额">
-        <uni-easyinput
-          v-model="preExtraData.extraMoney"
-          placeholder="暂无数据"
-          disabled
-        />
-      </uni-forms-item>
-      <uni-forms-item label="当前本金" name="seedMoney" required>
-        <uni-easyinput
-          v-model="formParams.seedMoney"
-          placeholder="请输入当前本金"
-          @input="handleSeedMoneyChangeDubounce"
-          clearable
-        />
-      </uni-forms-item>
-      <uni-forms-item label="上次本金">
-        <uni-easyinput v-model="preExtraData.seedMoney" placeholder="暂无数据" disabled />
-      </uni-forms-item>
-      <uni-forms-item label="目标盈利" name="targetMoney" required>
-        <uni-easyinput
-          v-model="formParams.targetMoney"
-          placeholder="请输入当前冲击的目标盈利"
-          clearable
-        />
-      </uni-forms-item>
-      <uni-forms-item label="是否盈利" name="isWin" required>
-        <uni-data-checkbox v-model="formParams.isWin" :localdata="isWinConfig" disabled />
-      </uni-forms-item>
-      <uni-forms-item label="盈亏金额" name="winMoney" required>
-        <uni-easyinput
-          v-model="formParams.winMoney"
-          placeholder="请输入外快盈亏金额"
-          disabled
-        />
-      </uni-forms-item>
-      <uni-forms-item label="盈亏备注" name="extraRemark">
-        <uni-easyinput
-          type="textarea"
-          v-model="formParams.extraRemark"
-          placeholder="请输入盈亏备注"
-          clearable
-        />
-      </uni-forms-item>
-    </uni-forms>
-    <button type="primary" @click="handleAddExtra">提交新增</button>
+    <view class="fx67ll-form-content">
+      <uni-forms ref="form" :model="formParams" labelWidth="80px">
+        <uni-forms-item label="外快余额" name="extraMoney" required>
+          <uni-easyinput
+            v-model="formParams.extraMoney"
+            placeholder="请输入当前外快总金额"
+            @input="handleExtraMoneyChangeDubounce"
+            clearable
+          />
+        </uni-forms-item>
+        <uni-forms-item label="上次余额">
+          <uni-easyinput
+            v-model="preExtraData.extraMoney"
+            placeholder="暂无数据"
+            disabled
+          />
+        </uni-forms-item>
+        <uni-forms-item label="当前本金" name="seedMoney" required>
+          <uni-easyinput
+            v-model="formParams.seedMoney"
+            placeholder="请输入当前本金"
+            @input="handleSeedMoneyChangeDubounce"
+            clearable
+          />
+        </uni-forms-item>
+        <uni-forms-item label="上次本金">
+          <uni-easyinput
+            v-model="preExtraData.seedMoney"
+            placeholder="暂无数据"
+            disabled
+          />
+        </uni-forms-item>
+        <uni-forms-item label="目标盈利" name="targetMoney" required>
+          <uni-easyinput
+            v-model="formParams.targetMoney"
+            placeholder="请输入当前冲击的目标盈利"
+            clearable
+          />
+        </uni-forms-item>
+        <uni-forms-item label="是否盈利" name="isWin" required>
+          <uni-data-checkbox
+            v-model="formParams.isWin"
+            :localdata="isWinConfig"
+            disabled
+          />
+        </uni-forms-item>
+        <uni-forms-item label="盈亏金额" name="winMoney" required>
+          <uni-easyinput
+            v-model="formParams.winMoney"
+            placeholder="请输入外快盈亏金额"
+            disabled
+          />
+        </uni-forms-item>
+        <uni-forms-item label="盈亏备注" name="extraRemark">
+          <uni-easyinput
+            type="textarea"
+            v-model="formParams.extraRemark"
+            placeholder="请输入盈亏备注"
+            clearable
+          />
+        </uni-forms-item>
+      </uni-forms>
+      <button type="primary" @click="handleAddExtra">提交新增</button></view
+    >
+    <view class="fx67ll-form-fake" />
   </view>
 </template>
 
