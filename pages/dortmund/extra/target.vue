@@ -1,6 +1,10 @@
 <template>
   <view class="fx67ll-chart-box">
-    <view id="fx67ll-wx-extra-chart" class="fx67ll-chart-target">
+    <view
+      id="fx67ll-wx-extra-chart"
+      class="fx67ll-chart-target"
+      :style="{ marginTop: `${getChartMarginTop}` }"
+    >
       <qiun-data-charts type="arcbar" :opts="opts" :chartData="chartData" />
     </view>
     <view class="fx67ll-txt-target">
@@ -30,7 +34,7 @@ export default {
       //您可以通过修改 config-ucharts.js 文件中下标为 ['bar'] 的节点来配置全局默认参数，如都是默认参数，此处可以不传 opts 。实际应用过程中 opts 只需传入与全局默认参数中不一致的【某一个属性】即可实现同类型的图表显示不同的样式，达到页面简洁的需求。
       opts: {
         title: {
-          name: "0.27%",
+          name: "0%",
           fontSize: 35,
           color: "#2ecc71",
         },
@@ -54,6 +58,11 @@ export default {
   },
   onReady() {
     this.queryExtraList();
+  },
+  computed: {
+    getChartMarginTop() {
+      return `${(uni.getSystemInfoSync().windowHeight - 288) / 2}px`;
+    },
   },
   methods: {
     queryExtraList() {
