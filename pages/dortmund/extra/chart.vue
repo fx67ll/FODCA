@@ -145,7 +145,7 @@ export default {
           },
         ],
         yAxis: {
-          min: -100,
+          min: 0,
         },
       };
       this.chartData = JSON.parse(JSON.stringify(chartOption));
