@@ -10,6 +10,13 @@
             clearable
           />
         </uni-forms-item>
+        <uni-forms-item label="落袋金额" name="saveMoney" required>
+          <uni-easyinput
+            v-model="formParams.saveMoney"
+            placeholder="请输入已经落袋为安的盈利金额"
+            clearable
+          />
+        </uni-forms-item>
         <uni-forms-item label="上次余额">
           <uni-easyinput
             v-model="preExtraData.extraMoney"
@@ -78,6 +85,7 @@ export default {
       formParams: {
         extraMoney: "",
         seedMoney: "",
+        saveMoney: "",
         targetMoney: "",
         isWin: "N",
         winMoney: "",
@@ -107,6 +115,14 @@ export default {
             {
               required: true,
               errorMessage: "当前本金不能为空",
+            },
+          ],
+        },
+        saveMoney: {
+          rules: [
+            {
+              required: true,
+              errorMessage: "已经落袋为安的盈利金额不能为空",
             },
           ],
         },
@@ -159,6 +175,7 @@ export default {
           if (res?.rows && res?.rows?.length > 0) {
             self.preExtraData = res.rows[0];
             self.formParams.seedMoney = res.rows[0]?.seedMoney;
+            self.formParams.saveMoney = res.rows[0]?.saveMoney;
             self.formParams.targetMoney = res.rows[0]?.targetMoney;
           } else {
             uni.showToast({
