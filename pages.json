@@ -1,13 +1,13 @@
 {
   "pages": [
     {
-      "path": "pages/dortmund/extra/target",
+      "path": "pages/index",
       "style": {
         "navigationStyle": "custom"
       }
     },
     {
-      "path": "pages/index",
+      "path": "pages/dortmund/extra/target",
       "style": {
         "navigationStyle": "custom"
       }
@@ -122,10 +122,10 @@
     "backgroundColor": "#ffffff",
     "list": [
       {
-        "pagePath": "pages/dortmund/extra/target",
+        "pagePath": "pages/index",
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
-        "text": "小目标"
+        "text": "首页"
       },
       {
         "pagePath": "pages/lottery/index/index",
