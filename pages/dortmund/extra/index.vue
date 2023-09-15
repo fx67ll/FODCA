@@ -13,7 +13,9 @@
                   :avatar="
                     'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + 6
                   "
-                  :title="`￥${item.extraMoney}`"
+                  :title="`￥${item.extraMoney}${
+                    item.saveMoney && item.saveMoney !== '0' ? ' / ￥' + item.saveMoney : ''
+                  }`"
                   :note="item.extraRemark"
                 >
                   <template v-slot:default>
