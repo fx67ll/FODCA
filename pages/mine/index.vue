@@ -67,12 +67,12 @@
             <view>外快盈亏管理</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
+        <!-- <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="staff" size="20"></uni-icons></view>
             <view>编辑资料</view>
           </view>
-        </view>
+        </view> -->
         <view class="list-cell list-cell-arrow" @click="handleAbout">
           <view class="menu-item-box">
             <view
@@ -120,9 +120,9 @@ export default {
     handleToExtraManagement() {
       this.$tab.navigateTo("/pages/dortmund/extra/index");
     },
-    handleToEditInfo() {
-      this.$tab.navigateTo("/pages/mine/info/edit");
-    },
+    // handleToEditInfo() {
+    //   this.$tab.navigateTo("/pages/mine/info/edit");
+    // },
     handleToSetting() {
       this.$tab.navigateTo("/pages/mine/setting/index");
     },
@@ -192,6 +192,10 @@ page {
   .content-section {
     position: relative;
     top: -50px;
+
+    .menu-list {
+      padding-bottom: 68px;
+    }
 
     .mine-actions {
       margin: 15px 15px;
