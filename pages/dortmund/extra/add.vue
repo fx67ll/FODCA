@@ -179,7 +179,7 @@ export default {
             self.formParams.targetMoney = res.rows[0]?.targetMoney;
           } else {
             uni.showToast({
-              title: "暂无外快盈亏记录数据！",
+              title: "暂无历史外快盈亏记录数据！",
               icon: "none",
               duration: 1998,
             });
