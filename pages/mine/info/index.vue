@@ -108,6 +108,6 @@ page {
 }
 
 .fx67ll-info-btn {
-  margin: 25px 15px 88px 15px;
+  margin: 10px 15px 88px 15px;
 }
 </style>
