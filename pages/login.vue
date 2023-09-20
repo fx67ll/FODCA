@@ -82,12 +82,25 @@
         }}</text>
       </view>
     </view>
+    <!-- #ifdef H5 -->
+    <div class="fx67ll-footer">
+      Designed & Powered by
+      <a href="https://nav.fx67ll.com" target="_blank">fx67ll</a>
+      Copyright© 2018- {{ nowYear }}
+      <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank">
+        皖ICP备18017174号
+      </a>
+    </div>
+    <!-- #endif -->
   </view>
 </template>
 
 <script>
 import { getCodeImg } from "@/api/login";
 import _ from "@/node_modules/underscore";
+// 日期时间处理
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
 // #ifdef MP-WEIXIN
 import { getSecretConfig } from "@/api/secret/key.js";
 import { decryptString } from "@/utils/index";
@@ -110,6 +123,8 @@ export default {
       },
       // 是否正在登陆标识
       isLoginLoading: false,
+      // 今年
+      nowYear: moment().format("YYYY"),
     };
   },
   created() {
@@ -297,5 +312,25 @@ page {
 
 uni-button[loading]:before {
   vertical-align: initial;
+}
+
+.fx67ll-footer {
+  padding: 20px 30px;
+  text-align: center;
+  position: absolute;
+  bottom: 0;
+  user-select: text;
+  z-index: 99999;
+  color: #bababa;
+  cursor: pointer;
+}
+
+.fx67ll-footer > a {
+  color: #bababa;
+  padding: 0 10px;
+}
+
+.fx67ll-footer > a:hover {
+  color: #42b983;
 }
 </style>
