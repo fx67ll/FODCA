@@ -52,6 +52,14 @@ export default {
             },
           ],
         },
+        sex: {
+          rules: [
+            {
+              required: true,
+              errorMessage: "用户性别不能为空",
+            },
+          ],
+        },
         phonenumber: {
           rules: [
             {

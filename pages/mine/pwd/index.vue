@@ -1,21 +1,21 @@
 <template>
   <view class="pwd-retrieve-container">
     <uni-forms ref="form" :value="user" labelWidth="80px">
-      <uni-forms-item name="oldPassword" label="旧密码">
+      <uni-forms-item name="oldPassword" label="旧密码" required>
         <uni-easyinput
           type="password"
           v-model="user.oldPassword"
           placeholder="请输入旧密码"
         />
       </uni-forms-item>
-      <uni-forms-item name="newPassword" label="新密码">
+      <uni-forms-item name="newPassword" label="新密码" required>
         <uni-easyinput
           type="password"
           v-model="user.newPassword"
           placeholder="请输入新密码"
         />
       </uni-forms-item>
-      <uni-forms-item name="confirmPassword" label="确认密码">
+      <uni-forms-item name="confirmPassword" label="确认密码" required>
         <uni-easyinput
           type="password"
           v-model="user.confirmPassword"
