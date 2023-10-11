@@ -83,14 +83,16 @@
       </view>
     </view>
     <!-- #ifdef H5 -->
-    <div class="fx67ll-footer">
-      Designed & Powered by
-      <a href="https://nav.fx67ll.com" target="_blank">fx67ll</a>
-      Copyright© 2018- {{ nowYear }}
-      <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank">
-        皖ICP备18017174号
-      </a>
-    </div>
+    <view class="fx67ll-footer-container">
+      <view class="fx67ll-footer">
+        Designed & Powered by
+        <a href="https://nav.fx67ll.com" target="_blank">fx67ll</a>
+        Copyright© 2018- {{ nowYear }}
+        <a href="https://beian.miit.gov.cn/#/Integrated/index" target="_blank">
+          皖ICP备18017174号
+        </a>
+      </view>
+    </view>
     <!-- #endif -->
   </view>
 </template>
@@ -314,23 +316,28 @@ uni-button[loading]:before {
   vertical-align: initial;
 }
 
-.fx67ll-footer {
-  padding: 20px 30px;
-  text-align: center;
-  position: absolute;
-  bottom: 0;
-  user-select: text;
-  z-index: 99999;
-  color: #bababa;
-  cursor: pointer;
-}
+.fx67ll-footer-container {
+  width: 100%;
+  margin-top: 23%;
+  background-color: #ffffff;
 
-.fx67ll-footer > a {
-  color: #bababa;
-  padding: 0 10px;
-}
+  .fx67ll-footer {
+    padding: 20px 30px;
+    margin: 0 auto;
+    text-align: center;
+    user-select: text;
+    z-index: 99999;
+    color: #bababa;
+    cursor: pointer;
 
-.fx67ll-footer > a:hover {
-  color: #42b983;
+    a {
+      color: #bababa;
+      padding: 0 10px;
+    }
+
+    a:hover {
+      color: #42b983;
+    }
+  }
 }
 </style>
