@@ -12,12 +12,22 @@
         "navigationStyle": "custom"
       }
     },
+    // #ifdef MP-WEIXIN
     {
       "path": "pages/login",
       "style": {
         "navigationBarTitleText": "登录"
       }
     },
+    // #endif
+    // #ifdef H5
+    {
+      "path": "pages/login",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    // #endif
     {
       "path": "pages/register",
       "style": {
