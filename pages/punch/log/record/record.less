@@ -1,0 +1,41 @@
+@import url('@/static/style/mixin.less');
+.fx67ll-punch-box {
+  padding: 10rpx;
+  .fx67ll-chart-punch {
+    width: 100%;
+  }
+  .fx67ll-txt-target {
+    color: #999999;
+    text-align: center;
+    font-size: 68rpx;
+    margin-top: 58rpx;
+    span:first-child {
+      color: #2ecc71;
+      padding-right: 18rpx;
+    }
+    span:last-child {
+      padding-left: 18rpx;
+    }
+  }
+  @icon-size: 100rpx;
+  @btn-gap: 0rpx;
+  .fx67ll-punch-btn {
+    width: 80%;
+    margin: 0 auto;
+    margin-top: 88rpx;
+    display: flex;
+    justify-content: space-between;
+    .fx67ll-btn-record {
+      width: calc(100% - @icon-size - @btn-gap);
+      line-height: 100rpx;
+    }
+    .fx67ll-btn-history {
+      width: @icon-size;
+      height: @icon-size;
+      margin-left: @btn-gap;
+      position: relative;
+      left: 35rpx;
+      top: 12rpx;
+    }
+  }
+}
