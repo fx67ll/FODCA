@@ -1,5 +1,11 @@
 {
   "pages": [
+    // {
+    //   "path": "pages/punch/log/record/record",
+    //   "style": {
+    //     "navigationBarTitleText": "打卡工时统计"
+    //   }
+    // },
     {
       "path": "pages/index",
       "style": {
@@ -7,7 +13,7 @@
       }
     },
     {
-      "path": "pages/dortmund/extra/target",
+      "path": "pages/dortmund/extra/target/target",
       "style": {
         "navigationStyle": "custom"
       }
@@ -95,33 +101,45 @@
       }
     },
     {
-      "path": "pages/lottery/log/index",
+      "path": "pages/lottery/log/index/index",
       "style": {
         "navigationBarTitleText": "历史号码记录"
       }
     },
     {
-      "path": "pages/lottery/log/edit",
+      "path": "pages/lottery/log/edit/edit",
       "style": {
         "navigationBarTitleText": "修改号码记录"
       }
     },
     {
-      "path": "pages/dortmund/extra/index",
+      "path": "pages/dortmund/extra/index/index",
       "style": {
         "navigationBarTitleText": "外快盈亏管理"
       }
     },
     {
-      "path": "pages/dortmund/extra/add",
+      "path": "pages/dortmund/extra/add/add",
       "style": {
         "navigationBarTitleText": "新增外快记录"
       }
     },
     {
-      "path": "pages/dortmund/extra/chart",
+      "path": "pages/dortmund/extra/chart/chart",
       "style": {
         "navigationBarTitleText": "外快盈亏走势"
+      }
+    },
+    {
+      "path": "pages/punch/log/record/record",
+      "style": {
+        "navigationBarTitleText": "打卡工时统计"
+      }
+    },
+    {
+      "path": "pages/punch/log/index/index",
+      "style": {
+        "navigationBarTitleText": "历史打卡记录"
       }
     }
   ],
@@ -133,6 +151,7 @@
     "list": [
       {
         "pagePath": "pages/index",
+        // "pagePath": "pages/punch/log/record/record",
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
         "text": "首页"

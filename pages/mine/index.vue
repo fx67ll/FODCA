@@ -67,6 +67,12 @@
             <view>外快盈亏管理</view>
           </view>
         </view>
+        <view class="list-cell list-cell-arrow" @click="handleToPunchLog">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
+            <view>打卡工时统计</view>
+          </view>
+        </view>
         <!-- <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="staff" size="20"></uni-icons></view>
@@ -115,10 +121,13 @@ export default {
       this.$tab.navigateTo("/pages/mine/info/index");
     },
     handleToLogHistory() {
-      this.$tab.navigateTo("/pages/lottery/log/index");
+      this.$tab.navigateTo("/pages/lottery/log/index/index");
     },
     handleToExtraManagement() {
-      this.$tab.navigateTo("/pages/dortmund/extra/index");
+      this.$tab.navigateTo("/pages/dortmund/extra/index/index");
+    },
+    handleToPunchLog() {
+      this.$tab.navigateTo("/pages/punch/log/record/record");
     },
     // handleToEditInfo() {
     //   this.$tab.navigateTo("/pages/mine/info/edit");
