@@ -235,7 +235,7 @@ export default {
               duration: 1998,
             });
             setTimeout(() => {
-              self.$tab.navigateBack("/pages/dortmund/extra/index");
+              self.$tab.navigateBack("/pages/dortmund/extra/index/index");
             }, 1023);
           } else {
             uni.showToast({

@@ -140,7 +140,7 @@ export default {
               duration: 1998,
             });
             setTimeout(() => {
-              self.$tab.navigateBack("/pages/lottery/log/index");
+              self.$tab.navigateBack("/pages/lottery/log/index/index");
             }, 1023);
           } else {
             uni.showToast({

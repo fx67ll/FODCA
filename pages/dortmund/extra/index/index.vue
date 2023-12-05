@@ -160,10 +160,10 @@ export default {
   methods: {
     handleFabTrigger(e) {
       if (e?.index === 0) {
-        this.$tab.navigateTo("/pages/dortmund/extra/add");
+        this.$tab.navigateTo("/pages/dortmund/extra/add/add");
       }
       if (e?.index === 1) {
-        this.$tab.navigateTo("/pages/dortmund/extra/chart");
+        this.$tab.navigateTo("/pages/dortmund/extra/chart/chart");
       }
       this.$refs.fab.close();
     },

@@ -264,7 +264,7 @@ export default {
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
         const wl = item?.winningNumber?.split("/") || [];
-        console.log(wl);
+        // console.log("wl", wl);
         if (cl.length > 0 && cl[0] !== "") {
           cl.forEach((ita) => {
             tmpObj.chaseList.push({
@@ -302,7 +302,7 @@ export default {
         }
         listResult.push({ ...tmpObj });
       });
-      console.log("listResult", listResult);
+      // console.log("listResult", listResult);
       return listResult;
     },
     // 根据当前星期几来获取标题
