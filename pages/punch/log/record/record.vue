@@ -13,7 +13,9 @@
       <span>300000</span>
     </view>
     <view class="fx67ll-punch-btn">
-      <button class="fx67ll-btn-record" type="primary">记录打卡时间</button>
+      <button class="fx67ll-btn-record" type="primary" @click="punchInOrOut">
+        记录打卡时间
+      </button>
       <uni-icons
         class="fx67ll-btn-history"
         type="wallet"
@@ -101,6 +103,13 @@ export default {
             duration: 1998,
           });
         }
+      });
+    },
+    punchInOrOut() {
+      uni.showToast({
+        title: "功能开发中！",
+        icon: "none",
+        duration: 1998,
       });
     },
     goToHistoryLogList() {
