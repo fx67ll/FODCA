@@ -50,14 +50,6 @@ export default {
         },
       ],
       rules: {
-        winningNumber: {
-          rules: [
-            {
-              required: true,
-              errorMessage: "中奖号码不能为空",
-            },
-          ],
-        },
         isWin: {
           rules: [
             {
