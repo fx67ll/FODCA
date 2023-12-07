@@ -54,8 +54,8 @@ import { showConfirm } from "@/utils/common";
 
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
 
-import moment from "@/node_modules/moment";
-import "@/node_modules/moment/locale/zh-cn";
+// import moment from "@/node_modules/moment";
+// import "@/node_modules/moment/locale/zh-cn";
 
 export default {
   components: { uniListChat },
@@ -191,7 +191,7 @@ export default {
       }
       if (e?.index === 2) {
         showConfirm(
-          `删除后数据无法恢复，请确认是否删除创建时间为：${record?.createTime} 的历史打卡记录？`,
+          `删除后数据无法恢复，请确认是否删除打卡时间为：${record?.updateTime} 的历史打卡记录？`,
           "警告"
         ).then((res) => {
           if (res?.confirm && record?.punchId) {
