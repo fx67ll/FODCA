@@ -1,11 +1,5 @@
 {
   "pages": [
-    // {
-    //   "path": "pages/punch/log/record/record",
-    //   "style": {
-    //     "navigationBarTitleText": "打卡工时统计"
-    //   }
-    // },
     {
       "path": "pages/index",
       "style": {
@@ -133,7 +127,7 @@
     {
       "path": "pages/punch/log/record/record",
       "style": {
-        "navigationBarTitleText": "打卡工时统计"
+        "navigationBarTitleText": "新增打卡记录"
       }
     },
     {
@@ -151,7 +145,6 @@
     "list": [
       {
         "pagePath": "pages/index",
-        // "pagePath": "pages/punch/log/record/record",
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
         "text": "首页"
