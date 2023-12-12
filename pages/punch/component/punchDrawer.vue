@@ -45,13 +45,22 @@
           </picker>
         </view>
       </view>
+      <view class="fx67ll-punch-item">
+        <view class="fx67ll-punch-item-title">打卡备注</view>
+        <view class="fx67ll-punch-item-remark">
+          <uni-easyinput
+            :value="punchRemark"
+            placeholder="请输入..."
+            maxlength="1023"
+            @input="punchRemarkChange"
+          />
+        </view>
+      </view>
       <view class="fx67ll-punch-btn">
         <button class="fx67ll-btn-submit" type="primary" @click="submitPunchLogForm">
           {{ isAdd ? "新增" : "修改" }}打卡记录
         </button>
-        <button class="fx67ll-btn-cancel" type="warn" @click="closeDrawer">
-          取消
-        </button>
+        <button class="fx67ll-btn-cancel" type="warn" @click="closeDrawer">取消</button>
       </view>
     </view>
   </zb-drawer>
@@ -92,13 +101,14 @@ export default {
       // 定时器对象
       timer: null,
       // Drawer组件相关参数
-      drawerHeight: "340px",
+      drawerHeight: "360px",
       drawerTitle: moment().format("YYYY-MM-DD hh:mm:ss dddd"),
       // 选择器组件相关参数
       punchTypeArr: ["上班打卡", "下班打卡"],
       punchTypeIndex: 0,
       punchDate: currentDate,
       punchTime: moment().format("HH:mm"),
+      punchRemark: "",
     };
   },
   watch: {
@@ -110,6 +120,7 @@ export default {
         // 每次打开弹窗的时候重新获取当前默认打卡时间和类型
         this.punchTime = moment().format("HH:mm");
         this.getDefaultPunchType();
+        this.punchRemark = "";
       }
     },
     punchInfo(newValue, oldValue) {
@@ -119,10 +130,11 @@ export default {
         newValue?.punchType &&
         newValue?.updateTime
       ) {
-        const { punchType, updateTime } = newValue;
+        const { punchType, updateTime, punchRemark } = newValue;
         this.punchTypeIndex = punchType === "1" ? 0 : punchType === "2" ? 1 : 2;
         this.punchDate = updateTime.substr(0, 10);
         this.punchTime = updateTime.substring(11, 16);
+        this.punchRemark = punchRemark || "";
       }
     },
   },
@@ -176,6 +188,10 @@ export default {
     punchTimeChange: function (e) {
       this.punchTime = e.detail.value;
     },
+    // 输入打卡备注
+    punchRemarkChange: function (e) {
+      this.punchRemark = e;
+    },
     // 获取打卡日期
     getPunchDate(type) {
       const date = new Date();
@@ -197,8 +213,9 @@ export default {
       const self = this;
       const formParams = {
         punchType: (parseInt(self.punchTypeIndex, 10) + 1).toString(),
-        updateTime: `${self.punchDate} ${self.punchTime}:${moment().format("ss")}`,
-        punchRemark: "", // 预留，后期如果需要可以直接加上
+        // updateTime: `${self.punchDate} ${self.punchTime}:${moment().format("ss")}`,
+        updateTime: `${self.punchDate} ${self.punchTime}:00}`,
+        punchRemark: self.punchRemark,
       };
       const punchParams = self.isAdd
         ? formParams
