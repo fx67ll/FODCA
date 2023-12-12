@@ -43,10 +43,19 @@
         </view>
       </uni-swipe-action>
     </z-paging-mini>
+    <punchDrawer
+      :isShowPunchDrawer="isShowEditDrawer"
+      :isAdd="false"
+      :punchInfo="editPunchInfo"
+      @hideDrawer="setIsShowDrawer"
+      @reloadPunchList="queryPunchList"
+    />
   </view>
 </template>
 
 <script>
+import punchDrawer from "../../component/punchDrawer.vue";
+
 import { getPunchLogList, delPunchLog } from "@/api/punch/log";
 
 import { diffTimeStrFromNow } from "@/utils/index";
@@ -58,7 +67,7 @@ import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-lis
 // import "@/node_modules/moment/locale/zh-cn";
 
 export default {
-  components: { uniListChat },
+  components: { uniListChat, punchDrawer },
   data() {
     return {
       punchList: [],
@@ -82,6 +91,9 @@ export default {
           },
         },
       ],
+      // Drawer组件相关参数
+      isShowEditDrawer: false,
+      editPunchInfo: {},
     };
   },
   methods: {
@@ -99,7 +111,6 @@ export default {
     //     // 将当前数据项添加到以该日期为键的数组中
     //     aggregatedData[date].push(item);
     //   });
-
     //   // 转换聚合数据对象为数组
     //   const result = Object.keys(aggregatedData).map((date) => ({
     //     date,
@@ -155,9 +166,14 @@ export default {
           self.$refs.paging.complete(false);
         });
     },
-    // 修改历史打卡记录详情
-    editLogInfo(punchId) {
-      // this.$tab.navigateTo(`/pages/punch/log/edit/edit?lotteryId=${punchId}`);
+    // 关闭修改打卡记录抽屉
+    editPunchLogInfo(punchInfo) {
+      this.editPunchInfo = { ...punchInfo };
+      this.isShowEditDrawer = true;
+    },
+    // 关闭修改打卡记录抽屉
+    setIsShowDrawer(val) {
+      this.isShowEditDrawer = val;
     },
     deletePunch(punchId) {
       const self = this;
@@ -182,12 +198,7 @@ export default {
     handleActionClick(e, record) {
       const self = this;
       if (e?.index === 1) {
-        // this.editPunchLogInfo(record?.punchId);
-        uni.showToast({
-          title: "功能开发中！",
-          icon: "none",
-          duration: 1998,
-        });
+        this.editPunchLogInfo(record);
       }
       if (e?.index === 2) {
         showConfirm(
