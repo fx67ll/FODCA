@@ -6,12 +6,12 @@
       class="fx67ll-chart-punch"
       :style="{ marginTop: `${getChartMarginTop}` }"
     >
-      <qiun-data-charts type="arcbar" :opts="opts" :chartData="chartData" />
+      <qiun-data-charts type="arcbar" :opts="chartOpts" :chartData="chartData" />
     </view>
     <view class="fx67ll-txt-target" v-if="!isShowAddDrawer">
-      <span>{{ nowMoney }}</span>
+      <span>{{ punchWorkHours }}</span>
       <span>/</span>
-      <span>300000</span>
+      <span>{{ targetWorkHours }}</span>
     </view>
     <view class="fx67ll-punch-btn" v-if="!isShowAddDrawer">
       <button class="fx67ll-btn-record" type="primary" @click="showPunchDrawerForAddLog">
@@ -33,9 +33,13 @@
 </template>
 
 <script>
-import punchDrawer from "../../component/punchDrawer.vue";
+import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
 
-import { getExtraList } from "@/api/dortmund/extra";
+import { getWorkTotalTime } from "@/api/punch/log";
+import { getInfo } from "@/api/login";
+
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
 
 export default {
   components: {
@@ -43,26 +47,27 @@ export default {
   },
   data() {
     return {
-      nowMoney: 0,
-      targetMoney: 300000,
+      punchWorkHours: 0,
+      targetWorkHours: 300000,
       chartData: {
         series: [
           {
-            name: "本月累计工时",
+            name: "本月工时进度",
             color: "#2ecc71",
             data: 0,
           },
         ],
       },
       //您可以通过修改 config-ucharts.js 文件中下标为 ['bar'] 的节点来配置全局默认参数，如都是默认参数，此处可以不传 opts 。实际应用过程中 opts 只需传入与全局默认参数中不一致的【某一个属性】即可实现同类型的图表显示不同的样式，达到页面简洁的需求。
-      opts: {
+      chartOpts: {
         title: {
           name: "0%",
           fontSize: 35,
           color: "#2ecc71",
+          offsetY: -8,
         },
         subtitle: {
-          name: "本月累计工时",
+          name: "本月工时进度",
           fontSize: 25,
           color: "#999999",
         },
@@ -82,7 +87,7 @@ export default {
     };
   },
   onReady() {
-    this.queryPunchLogList();
+    this.queryPunchLogTotalTime();
   },
   computed: {
     getChartMarginTop() {
@@ -90,35 +95,75 @@ export default {
     },
   },
   methods: {
-    // 查询打卡记录列表
-    queryPunchLogList() {
+    // 查询打卡工时统计
+    queryPunchLogTotalTime() {
       const self = this;
-      const queryParams = {
-        pageNum: 1,
-        pageSize: 1,
-      };
-      getExtraList(queryParams).then((res) => {
-        if (res?.code === 200) {
-          if (res?.rows && res?.rows?.length > 0 && res.rows[0]?.extraMoney) {
-            self.nowMoney = res.rows[0]?.extraMoney;
-            const targetPercent = parseFloat(res.rows[0].extraMoney) / 300000;
-            self.chartData.series[0].data = targetPercent.toFixed(4);
-            self.opts.title.name = `${(targetPercent * 100).toFixed(2)}%`;
+
+      const weekDays = self.queryWeekdaysCount();
+      this.targetWorkHours = weekDays * 8.5;
+
+      getInfo().then((res) => {
+        const user = res?.user;
+        const username =
+          user == null || user.userName == "" || user.userName == null
+            ? ""
+            : user.userName;
+
+        const queryParams = {
+          pageNum: 1,
+          pageSize: 999999999,
+        };
+
+        if (username === "fx67ll") {
+          queryParams.updateBy = username;
+        }
+
+        getWorkTotalTime(queryParams).then((res) => {
+          if (res?.code === 200) {
+            if (res?.rows && res?.rows?.length > 0) {
+              console.log(res?.rows);
+              const punchData = res?.rows[0];
+              self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
+              self.chartData.series[0].data = (
+                punchData?.totalWorkHours / self.targetWorkHours
+              ).toFixed(3);
+              self.chartOpts.title.name = `${(
+                (self.punchWorkHours / self.targetWorkHours) *
+                100
+              ).toFixed(1)}%`;
+              self.chartData.series[0].name = `${moment().month() + 1}月工时进度`;
+              self.chartOpts.subtitle.name = `${moment().month() + 1}月工时进度`;
+            } else {
+              uni.showToast({
+                title: "暂无工时统计数据！",
+                icon: "none",
+                duration: 1998,
+              });
+            }
           } else {
             uni.showToast({
-              title: "暂无外快盈亏记录数据！",
+              title: "工时统计查询失败！",
               icon: "none",
               duration: 1998,
             });
           }
-        } else {
-          uni.showToast({
-            title: "查询外快盈亏记录失败！",
-            icon: "none",
-            duration: 1998,
-          });
-        }
+        });
       });
+    },
+    // 查询某年某月的工作日数量
+    queryWeekdaysCount() {
+      const year = moment().year();
+      const month = moment().month() + 1;
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      let count = 0;
+      for (let day = new Date(firstDay); day <= lastDay; day.setDate(day.getDate() + 1)) {
+        if (day.getDay() !== 0 && day.getDay() !== 6) {
+          count++;
+        }
+      }
+      // console.log(`在${year}年${month}月共有${count}个工作日。`);
+      return count;
     },
     // 打开新增打卡记录抽屉
     showPunchDrawerForAddLog() {
