@@ -10,7 +10,7 @@
     <view class="fx67ll-txt-target">
       <span>{{ nowMoney }}</span>
       <span>/</span>
-      <span>300000</span>
+      <span>{{ targetMoney }}</span>
     </view>
   </view>
 </template>
@@ -37,6 +37,7 @@ export default {
           name: "0%",
           fontSize: 35,
           color: "#2ecc71",
+          offsetY: -8,
         },
         subtitle: {
           name: "小目标已完成",
