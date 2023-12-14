@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import punchDrawer from "../../component/punchDrawer.vue";
+import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
 
 import { getPunchLogList, delPunchLog } from "@/api/punch/log";
 
