@@ -8,7 +8,7 @@
             :right-options="rightActionOptions"
             @click="(e) => handleActionClick(e, item)"
           >
-            <uni-section :title="item.createTime" type="line">
+            <uni-section :title="item.logTitle" type="line">
               <uni-list :border="true">
                 <view v-if="item.winFlag !== 'Y'">
                   <uni-list-chat
@@ -127,19 +127,45 @@
         </view>
       </uni-swipe-action>
     </z-paging-mini>
+    <uni-popup ref="inputDialog" type="dialog">
+      <uni-popup-dialog
+        ref="inputClose"
+        mode="input"
+        :title="dateCodeQryTip"
+        :placeholder="dateCodeQryPlaceHolder"
+        :value="formParams.dateCodeValue"
+        @confirm="handleDateCodeDialogConfirm"
+      ></uni-popup-dialog>
+    </uni-popup>
   </view>
 </template>
 
 <script>
-import { getLogList, delLog } from "@/api/lottery/log";
+import { getLogList, delLog, editLog } from "@/api/lottery/log";
 import { diffTimeStrFromNow } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
+
+// 获取加密配置
+import { getSecretConfig } from "@/api/secret/key.js";
+import { decryptString } from "@/utils/index";
+import { getCryptoSaltKey } from "@/neverUploadToGithub";
+import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
+import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
+import { RFC_2822 } from "moment";
+
 export default {
-  components: { uniListChat },
+  components: { uniListChat, uniPopup, uniPopupDialog },
   data() {
     return {
       logList: [],
+      formParams: {
+        lotteryId: "",
+        dateCode: "",
+        numberType: "",
+      },
+      dateCodeQryTip: "提示：必要查询条件缺失",
+      dateCodeQryPlaceHolder: "请输入彩票期号",
       badgeCustomStyle: {
         backgroundColor: "#2ecc71",
         zoom: 1.2,
@@ -177,6 +203,12 @@ export default {
           text: "拷贝至剪切板",
           style: {
             backgroundColor: "#ffa940",
+          },
+        },
+        {
+          text: "查询开奖号码",
+          style: {
+            backgroundColor: "#ff4d4f",
           },
         },
       ],
@@ -254,12 +286,15 @@ export default {
         const tmpObj = {
           logId: item?.lotteryId,
           logKey: new Date().getTime() + self.getRandomIndex(),
-          createTime: item?.createTime || "暂无数据",
+          logTitle: `彩票期号：${item?.dateCode || "-"}`,
+          dateCode: item?.dateCode,
           winFlag,
           chaseList: [],
           recordList: [],
           winningList: [],
           weekType: item?.weekType,
+          numberType: item?.numberType,
+          createTime: item?.createTime || "暂无数据",
         };
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
@@ -510,10 +545,11 @@ export default {
     },
     // 修改号码历史记录详情
     editLogInfo(logId) {
-      this.$tab.navigateTo(`/pages/lottery/log/edit?lotteryId=${logId}`);
+      this.$tab.navigateTo(`/pages/lottery/log/edit/edit?lotteryId=${logId}`);
     },
     // 侧滑组件事件处理
     handleActionClick(e, record) {
+      const self = this;
       if (e?.position === "right" && e?.index === 2) {
         this.checkDelLog(record);
       }
@@ -523,6 +559,225 @@ export default {
       if (e?.position === "left" && e?.index === 0) {
         this.copyLuckyNumber(record);
       }
+      if (e?.position === "left" && e?.index === 1) {
+        this.checkRecordData(record);
+      }
+    },
+    // 查询中奖信息前确认是否有彩票期号
+    checkRecordData(record) {
+      this.formParams.lotteryId = record?.logId;
+      this.formParams.numberType = record?.numberType;
+      if (record?.numberType !== 1 && record?.numberType !== 2) {
+        uni.showToast({
+          title: "数据异常，请联系管理员！",
+          icon: "none",
+          duration: 1998,
+        });
+        return;
+      }
+      if (record?.winningList && record.winningList.length > 0) {
+        uni.showToast({
+          title: "已查询过中奖信息，无需再次查询！",
+          icon: "none",
+          duration: 1998,
+        });
+      } else if (record?.dateCode) {
+        this.qryRewardQueryConfig(record?.dateCode, record?.numberType);
+      } else {
+        this.formatCreateDate(record?.createTime, record?.numberType);
+        this.$refs.inputDialog.open();
+      }
+    },
+    // 获取创建日期
+    formatCreateDate(time) {
+      const originalDate = new Date(time);
+      const year = originalDate.getFullYear().toString().substring(2);
+      const month = originalDate.getMonth() + 1; // 月份从0开始，需要加1
+      const day = originalDate.getDate();
+      const formattedDate = `${year}年${month}月${day}日`;
+      const lotteryTypeText = nType === 1 ? "大乐透" : "双色球";
+      this.dateCodeQryPlaceHolder = `请输入${formattedDate + lotteryTypeText}的期号`;
+    },
+    // 修改彩票期号信息
+    handleDateCodeDialogConfirm(dateCodeVal) {
+      const self = this;
+      this.formParams.dateCode = dateCodeVal;
+      editLog(this.formParams).then((res) => {
+        if (res?.code === 200) {
+          self.qryRewardQueryConfig(dateCodeVal, self.formParams.numberType);
+        } else {
+          uni.showToast({
+            title: "彩票期号记录失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
+    },
+    // 查询外部网站所需要的配置
+    qryRewardQueryConfig(logDateCode, logNumType) {
+      const self = this;
+      if (logDateCode && logNumType) {
+        uni.showLoading({
+          title: "查询ing...",
+        });
+        getSecretConfig({ secretKey: "qryLotteryRewardAppId" })
+          .then((res) => {
+            if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
+              const qryLotteryRewardAppId = decryptString(
+                res.rows[0].secretValue,
+                getCryptoSaltKey()
+              );
+              getSecretConfig({ secretKey: "qryLotteryRewardAppSecret" })
+                .then((res) => {
+                  if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
+                    const qryLotteryRewardAppSecret = decryptString(
+                      res.rows[0].secretValue,
+                      getCryptoSaltKey()
+                    );
+                    self.queryLotteryRewardInfo(
+                      qryLotteryRewardAppId,
+                      qryLotteryRewardAppSecret,
+                      logDateCode,
+                      logNumType
+                    );
+                  } else {
+                    uni.showToast({
+                      title: "查询中奖信息查询接口配置项AppSecret失败！",
+                      icon: "none",
+                      duration: 1998,
+                    });
+                  }
+                })
+                .catch((error) => {
+                  console.error("查询中奖信息查询接口配置项AppSecret异常：" + error);
+                  uni.hideLoading();
+                });
+            } else {
+              uni.showToast({
+                title: "查询中奖信息查询接口配置项AppId失败！",
+                icon: "none",
+                duration: 1998,
+              });
+            }
+          })
+          .catch((error) => {
+            console.error("查询中奖信息查询接口配置项AppId异常：" + error);
+            uni.hideLoading();
+          });
+      } else {
+        uni.showToast({
+          title: "缺少必要查询条件，请联系管理员！",
+          icon: "none",
+          duration: 1998,
+        });
+      }
+    },
+    // 通过第三方站点查询开奖号码
+    queryLotteryRewardInfo(appId, appSecret, dCode, nType) {
+      const self = this;
+      uni
+        .request({
+          url: "https://www.mxnzp.com/api/lottery/common/aim_lottery",
+          data: {
+            app_id: appId,
+            app_secret: appSecret,
+            expect: dCode,
+            code: nType === 1 ? "cjdlt" : "ssq",
+          },
+          method: "GET",
+        })
+        .then((res) => {
+          // console.log(res);
+          // console.log(res[1]?.data);
+          // console.log(res[1]?.data?.data);
+          // const egObj = {
+          //   openCode: "05,26,33,35,15+09+01",
+          //   code: "cjdlt",
+          //   expect: "2024032",
+          //   name: "超级大乐透",
+          //   time: "2024-03-23 21:26:16",
+          // };
+          if (res && res?.length > 1) {
+            const resMsg = res[1]?.data?.msg || "-";
+            const resData = res[1]?.data?.data || {};
+            if (resData?.openCode) {
+              self.formatWinningNumber(resData.openCode);
+            } else {
+              uni.showToast({
+                title: `第三方站点开奖号码查询失败！报错信息：${resMsg}`,
+                icon: "none",
+                duration: 1998,
+              });
+            }
+          } else {
+            uni.showToast({
+              title: "外部接口异常，请联系管理员！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        })
+        .catch((error) => {
+          uni.hideLoading();
+          uni.showToast({
+            title: `开奖号码查询出现异常，请联系管理员！报错信息：${error}`,
+            icon: "none",
+            duration: 1998,
+          });
+        });
+    },
+    // 格式化中奖号码
+    formatWinningNumber(winNum) {
+      // 将第一个匹配的加号替换为减号，第二个匹配的加号替换为逗号
+      const originalString = winNum.replace(/\+/, "-").replace(/\+/, ",");
+      // 以 - 分割字符串为两部分
+      const splitByDash = originalString.split("-");
+      // 以逗号分割第一个数组并从小到大排序
+      const firstArray = splitByDash[0]
+        .split(",")
+        .map(Number)
+        .sort((a, b) => a - b);
+      // 以逗号分割第二个数组并从小到大排序
+      const secondArray = splitByDash[1]
+        .split(",")
+        .map(Number)
+        .sort((a, b) => a - b);
+      // 将两个数组分别通过逗号组合成新的字符串
+      const firstString = firstArray.join(",");
+      const secondString = secondArray.join(",");
+      // 将两个字符串通过-连接
+      const resultString = firstString + "-" + secondString;
+      // 保存结果字符串
+      this.saveWinningNumber(resultString);
+    },
+    // 保存中奖号码
+    saveWinningNumber(winNum) {
+      const self = this;
+      const saveParams = {
+        lotteryId: self.formParams.lotteryId,
+        winningNumber: winNum,
+      };
+      editLog(saveParams)
+        .then((res) => {
+          if (res?.code === 200) {
+            uni.showToast({
+              title: "开奖号码保存成功！",
+              icon: "none",
+              duration: 1998,
+            });
+          } else {
+            uni.showToast({
+              title: "开奖号码保存失败！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        })
+        .finally(() => {
+          self.$refs.inputDialog.close();
+          uni.hideLoading();
+        });
     },
   },
 };
