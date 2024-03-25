@@ -1348,16 +1348,28 @@ export default {
     qryBaiduOcrConfig(fileCloudUrl) {
       const self = this;
       getSecretConfig({ secretKey: "ocrPubKey" }).then((res) => {
-        if (res && res?.rows && res?.rows.length > 0) {
+        if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
           const ocrPubKey = decryptString(res.rows[0].secretValue, getCryptoSaltKey());
           getSecretConfig({ secretKey: "ocrSecKey" }).then((res) => {
-            if (res && res?.rows && res?.rows.length > 0) {
+            if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
               const ocrSecKey = decryptString(
                 res.rows[0].secretValue,
                 getCryptoSaltKey()
               );
               self.analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl);
+            } else {
+              uni.showToast({
+                title: "查询百度OCR分析配置项SecretKey失败！",
+                icon: "none",
+                duration: 1998,
+              });
             }
+          });
+        } else {
+          uni.showToast({
+            title: "查询百度OCR分析配置项PublicKey失败！",
+            icon: "none",
+            duration: 1998,
           });
         }
       });
