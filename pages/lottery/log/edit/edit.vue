@@ -1,7 +1,14 @@
 <template>
   <view class="fx67ll-form-box">
     <uni-forms ref="form" :model="formParams" labelWidth="80px">
-      <uni-forms-item label="中奖号码" name="winningNumber" required>
+      <uni-forms-item label="彩票期号" name="dateCode">
+        <uni-easyinput
+          v-model="formParams.dateCode"
+          placeholder="请输入彩票期号"
+          clearable
+        />
+      </uni-forms-item>
+      <uni-forms-item label="中奖号码" name="winningNumber">
         <uni-easyinput
           v-model="formParams.winningNumber"
           placeholder="请输入中奖号码"
@@ -34,6 +41,7 @@ export default {
     return {
       formParams: {
         lotteryId: "",
+        dateCode: "",
         winningNumber: "",
         isWin: "N",
         winningPrice: "",
@@ -100,6 +108,7 @@ export default {
           if (res?.data) {
             self.formParams = {
               ...self.formParams,
+              dateCode: res?.data?.dateCode,
               winningNumber: res?.data?.winningNumber,
               isWin: res?.data?.isWin,
               winningPrice: res?.data?.winningPrice,
