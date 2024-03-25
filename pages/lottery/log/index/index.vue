@@ -589,13 +589,13 @@ export default {
       }
     },
     // 获取创建日期
-    formatCreateDate(time) {
+    formatCreateDate(time, type) {
       const originalDate = new Date(time);
       const year = originalDate.getFullYear().toString().substring(2);
       const month = originalDate.getMonth() + 1; // 月份从0开始，需要加1
       const day = originalDate.getDate();
       const formattedDate = `${year}年${month}月${day}日`;
-      const lotteryTypeText = nType === 1 ? "大乐透" : "双色球";
+      const lotteryTypeText = type === 1 ? "大乐透" : "双色球";
       this.dateCodeQryPlaceHolder = `请输入${formattedDate + lotteryTypeText}的期号`;
     },
     // 修改彩票期号信息
@@ -775,8 +775,9 @@ export default {
           }
         })
         .finally(() => {
-          self.$refs.inputDialog.close();
           uni.hideLoading();
+          self.$refs.inputDialog.close();
+          self.queryLogList();
         });
     },
   },
