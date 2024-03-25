@@ -704,11 +704,20 @@ export default {
             if (resData?.openCode) {
               self.formatWinningNumber(resData.openCode);
             } else {
+              // #ifdef MP-WEIXIN
+              uni.showToast({
+                title: `查询失败！报错信息：${resMsg}`,
+                icon: "none",
+                duration: 1998,
+              });
+              // #endif
+              // #ifdef H5
               uni.showToast({
                 title: `第三方站点开奖号码查询失败！报错信息：${resMsg}`,
                 icon: "none",
                 duration: 1998,
               });
+              // #endif
             }
           } else {
             uni.showToast({
