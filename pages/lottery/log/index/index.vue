@@ -19,7 +19,7 @@
                     :note="ita.chaseNumber"
                     ><template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ ita.updateTime }}
+                        {{ ita.createTime }}
                       </view>
                       <view>
                         <uni-badge
@@ -41,7 +41,7 @@
                   >
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ ita.updateTime }}
+                        {{ ita.createTime }}
                       </view>
                       <view>
                         <uni-badge :text="ita.winText" :custom-style="badgeCustomStyle" />
@@ -106,7 +106,7 @@
                   >
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ itb.updateTime }}
+                        {{ itb.winningText }}
                       </view>
                       <view>
                         <uni-badge
@@ -131,6 +131,7 @@
       <uni-popup-dialog
         ref="inputClose"
         mode="input"
+        v-if="isNeedInitDialog"
         :title="dateCodeQryTip"
         :placeholder="dateCodeQryPlaceHolder"
         :value="formParams.dateCodeValue"
@@ -166,6 +167,7 @@ export default {
       },
       dateCodeQryTip: "提示：必要查询条件缺失",
       dateCodeQryPlaceHolder: "请输入彩票期号",
+      isNeedInitDialog: false,
       badgeCustomStyle: {
         backgroundColor: "#2ecc71",
         zoom: 1.2,
@@ -305,7 +307,7 @@ export default {
             tmpObj.chaseList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "固定追号",
-              updateTime: self.subStrUpdateTime(item?.createTime) || "暂无数据",
+              createTime: self.subStrUpdateTime(item?.createTime) || "暂无数据",
               chaseNumber: ita || "暂无数据",
               winText: self.getWinText(winFlag, item?.winningPrice),
             });
@@ -328,10 +330,10 @@ export default {
             tmpObj.winningList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "当日开奖号码",
-              updateTime: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
+              winningText: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
-              winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "该追号未中奖",
+              winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "本期未中奖",
             });
           });
         }
@@ -585,6 +587,7 @@ export default {
         this.qryRewardQueryConfig(record?.dateCode, record?.numberType);
       } else {
         this.formatCreateDate(record?.createTime, record?.numberType);
+        this.isNeedInitDialog = true;
         this.$refs.inputDialog.open();
       }
     },
@@ -784,9 +787,16 @@ export default {
           }
         })
         .finally(() => {
-          uni.hideLoading();
+          self.formParams = {
+            lotteryId: "",
+            dateCode: "",
+            numberType: "",
+          };
           self.$refs.inputDialog.close();
-          self.queryLogList();
+          self.isNeedInitDialog = false;
+          uni.hideLoading();
+          // self.queryLogList();
+          self.$refs.paging.reload();
         });
     },
   },
