@@ -16,47 +16,33 @@
           >
             <uni-section :title="item.logTitle" type="line">
               <uni-list :border="true">
-                <view v-if="item.winFlag !== 'Y'">
+                <view>
                   <uni-list-chat
                     v-for="ita in item.chaseList"
                     :key="ita.numKey"
                     avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
                     :title="ita.title"
                     :note="ita.chaseNumber"
-                    ><template v-slot:default>
+                  >
+                    <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ ita.createTime }}
                       </view>
                       <view>
                         <uni-badge
                           :text="ita.winText"
-                          :custom-style="badgeCustomStyleNotWinShort"
+                          :custom-style="
+                            ita.isRed && item.winFlag === 'Y'
+                              ? badgeCustomStyle
+                              : badgeCustomStyleNotWinShort
+                          "
                         />
                       </view>
                     </template>
                   </uni-list-chat>
                 </view>
 
-                <view v-if="item.winFlag === 'Y'">
-                  <uni-list-chat
-                    v-for="ita in item.chaseList"
-                    :key="ita.numKey"
-                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
-                    :title="ita.title"
-                    :note="ita.chaseNumber"
-                  >
-                    <template v-slot:default>
-                      <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ ita.createTime }}
-                      </view>
-                      <view>
-                        <uni-badge :text="ita.winText" :custom-style="badgeCustomStyle" />
-                      </view>
-                    </template>
-                  </uni-list-chat>
-                </view>
-
-                <view v-if="item.winFlag !== 'Y'">
+                <view>
                   <uni-list-chat
                     v-for="itb in item.recordList"
                     :key="itb.numKey"
@@ -66,37 +52,20 @@
                     "
                     :title="itb.title"
                     :note="itb.recordNumber"
-                    ><template v-slot:default>
+                  >
+                    <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ itb.updateTime }}
                       </view>
                       <view>
                         <uni-badge
                           :text="itb.winText"
-                          :custom-style="badgeCustomStyleNotWinShort"
+                          :custom-style="
+                            itb.isRed && item.winFlag === 'Y'
+                              ? badgeCustomStyle
+                              : badgeCustomStyleNotWinShort
+                          "
                         />
-                      </view>
-                    </template>
-                  </uni-list-chat>
-                </view>
-
-                <view v-if="item.winFlag === 'Y'">
-                  <uni-list-chat
-                    v-for="itb in item.recordList"
-                    :key="itb.numKey"
-                    :avatar="
-                      'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-                      itb.imgRandom
-                    "
-                    :title="itb.title"
-                    :note="itb.recordNumber"
-                  >
-                    <template v-slot:default>
-                      <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ itb.updateTime }}
-                      </view>
-                      <view>
-                        <uni-badge :text="itb.winText" :custom-style="badgeCustomStyle" />
                       </view>
                     </template>
                   </uni-list-chat>
@@ -149,7 +118,11 @@
 
 <script>
 import { getLogList, delLog, editLog } from "@/api/lottery/log";
-import { diffTimeStrFromNow } from "@/utils/index";
+import {
+  diffTimeStrFromNow,
+  compareStringsBasic,
+  compareStringsCheckIsLowestReward,
+} from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
 
@@ -251,6 +224,17 @@ export default {
     // this.$refs.paging.reload();
   },
   onShow() {
+    // console.log(compareStringsBasic("7,26,33,35,15-9,1", "7,26,33,35,15,9-1"));
+    // console.log(compareStringsBasic("1,4,5,8,10,23,5", "4,7,8,10,23-4,9"));
+    // console.log(compareStringsBasic("1,4,5,8,10,23-5", "4,7,8,10,23-4-9"));
+    // console.log(compareStringsBasic("1,4,5,8,10,23,5", ""));
+    // console.log(compareStringsBasic("1,4,5,8,10,23-5", "1,4,5,8,10,23-4"));
+    // console.log(compareStringsBasic("7,26,33,35,15-1,9", "17,26,33,35,25-1,19"));
+    // console.log(compareStringsBasic("7,26,33,35,15-1,9", "7,26,33,35,15-1,9"));
+    // compareStringsCheckIsLowestReward("7,26,33,35,15-1,9", "17,26,33,35,15-1,9");
+    // compareStringsCheckIsLowestReward("7,26,33,35,15-2,9", "17,26,33,35,15-1,9");
+    // compareStringsCheckIsLowestReward("7,26,33,35,15,1-9", "17,26,33,35,15,1-29");
+    // compareStringsCheckIsLowestReward("17,26,33,35,15,1-29", "17,26,33,35,15,1-29");
     this.queryLogList(this.queryParams);
   },
   methods: {
@@ -301,8 +285,6 @@ export default {
         const tmpObj = {
           logId: item?.lotteryId,
           logKey: new Date().getTime() + self.getRandomIndex(),
-          // logTitle: `彩票期号：${item?.dateCode || "-"}`,
-
           logTitle:
             item?.numberType === 1
               ? `超级大乐透期号：${item?.dateCode || "-"}`
@@ -324,24 +306,34 @@ export default {
         // console.log("wl", wl);
         if (cl.length > 0 && cl[0] !== "") {
           cl.forEach((ita) => {
+            const isRed =
+              !wl[0] ||
+              compareStringsCheckIsLowestReward(ita, wl[0]) ||
+              compareStringsBasic(ita, wl[0]) > 2;
             tmpObj.chaseList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: "固定追号",
               createTime: self.subStrUpdateTime(item?.createTime) || "暂无数据",
               chaseNumber: ita || "暂无数据",
-              winText: self.getWinText(winFlag, item?.winningPrice),
+              isRed,
+              winText: self.getWinText(winFlag, item?.winningPrice, isRed),
             });
           });
         }
         if (rl.length > 0 && rl[0] !== "") {
           rl.forEach((itb) => {
+            const isRed =
+              !wl[0] ||
+              compareStringsCheckIsLowestReward(itb, wl[0]) ||
+              compareStringsBasic(itb, wl[0]) > 2;
             tmpObj.recordList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
               title: self.getTitleByWeekType(item?.weekType),
               updateTime: self.subStrUpdateTime(item?.updateTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
+              isRed,
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
-              winText: self.getWinText(winFlag, item?.winningPrice),
+              winText: self.getWinText(winFlag, item?.winningPrice, isRed),
             });
           });
         }
@@ -391,8 +383,8 @@ export default {
       }
     },
     // 格式化是否中奖信息
-    getWinText(flag, price) {
-      if (flag === "Y" && parseInt(price) > 0) {
+    getWinText(flag, price, redFlag) {
+      if (flag === "Y" && parseInt(price) > 0 && redFlag) {
         return `中奖${price}元`;
       } else {
         return "未中奖";
@@ -759,7 +751,7 @@ export default {
           });
         });
     },
-    // 格式化中奖号码
+    // 格式化中奖号码，原格式为逗号+加号拼接，转换成我的逗号+横杠来拼接
     formatWinningNumber(winNum) {
       // 将第一个匹配的加号替换为减号，第二个匹配的加号替换为逗号
       const originalString = winNum.replace(/\+/, "-").replace(/\+/, ",");
