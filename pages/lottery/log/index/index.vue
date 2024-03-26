@@ -1,6 +1,12 @@
 <template>
   <view class="fx67ll-log-box">
-    <z-paging-mini ref="paging" v-model="logList" @query="queryLogList">
+    <z-paging-mini
+      ref="paging"
+      back-to-top-bottom="30rpx"
+      :auto-show-back-to-top="true"
+      v-model="logList"
+      @query="queryLogList"
+    >
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
           <uni-swipe-action-item
@@ -153,13 +159,16 @@ import { decryptString } from "@/utils/index";
 import { getCryptoSaltKey } from "@/neverUploadToGithub";
 import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
-import { RFC_2822 } from "moment";
 
 export default {
   components: { uniListChat, uniPopup, uniPopupDialog },
   data() {
     return {
       logList: [],
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+      },
       formParams: {
         lotteryId: "",
         dateCode: "",
@@ -241,15 +250,19 @@ export default {
     // this.queryLogList();
     // this.$refs.paging.reload();
   },
+  onShow() {
+    this.queryLogList(this.queryParams);
+  },
   methods: {
     // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
-      const queryParams = {
+      const pageParams = {
         pageNum,
         pageSize,
       };
-      getLogList(queryParams)
+      this.queryParams = { ...pageParams };
+      getLogList(pageParams)
         .then((res) => {
           if (res?.code === 200) {
             if (res?.rows && res?.rows?.length > 0) {
@@ -288,7 +301,14 @@ export default {
         const tmpObj = {
           logId: item?.lotteryId,
           logKey: new Date().getTime() + self.getRandomIndex(),
-          logTitle: `彩票期号：${item?.dateCode || "-"}`,
+          // logTitle: `彩票期号：${item?.dateCode || "-"}`,
+
+          logTitle:
+            item?.numberType === 1
+              ? `超级大乐透期号：${item?.dateCode || "-"}`
+              : item?.numberType === 2
+              ? `双色球期号：${item?.dateCode || "-"}`
+              : "-",
           dateCode: item?.dateCode,
           winFlag,
           chaseList: [],
@@ -329,7 +349,7 @@ export default {
           wl.forEach((itc) => {
             tmpObj.winningList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
-              title: "当日开奖号码",
+              title: "本期开奖号码",
               winningText: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
               imgRandom: self.getImgRandomByWeekType(item?.weekType),
@@ -795,8 +815,7 @@ export default {
           self.$refs.inputDialog.close();
           self.isNeedInitDialog = false;
           uni.hideLoading();
-          // self.queryLogList();
-          self.$refs.paging.reload();
+          self.queryLogList(self.queryParams);
         });
     },
   },
