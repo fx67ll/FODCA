@@ -1,6 +1,12 @@
 <template>
   <view class="fx67ll-extra-box">
-    <z-paging-mini ref="paging" v-model="punchList" @query="queryPunchList">
+    <z-paging-mini
+      ref="paging"
+      back-to-top-bottom="30rpx"
+      :auto-show-back-to-top="true"
+      v-model="punchList"
+      @query="queryPunchList"
+    >
       <uni-swipe-action>
         <view class="fx67ll-extra-item" v-for="item in punchList" :key="item.punchId">
           <uni-swipe-action-item
