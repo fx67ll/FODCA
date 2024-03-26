@@ -1,6 +1,12 @@
 <template>
   <view class="fx67ll-extra-box">
-    <z-paging-mini ref="paging" v-model="extraList" @query="queryExtraList">
+    <z-paging-mini
+      ref="paging"
+      back-to-top-bottom="30rpx"
+      :auto-show-back-to-top="true"
+      v-model="extraList"
+      @query="queryExtraList"
+    >
       <uni-swipe-action>
         <view class="fx67ll-extra-item" v-for="item in extraList" :key="item.extraId">
           <uni-swipe-action-item
@@ -14,7 +20,9 @@
                     'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + 6
                   "
                   :title="`￥${item.extraMoney}${
-                    item.saveMoney && item.saveMoney !== '0' ? ' / ￥' + item.saveMoney : ''
+                    item.saveMoney && item.saveMoney !== '0'
+                      ? ' / ￥' + item.saveMoney
+                      : ''
                   }`"
                   :note="item.extraRemark"
                 >
