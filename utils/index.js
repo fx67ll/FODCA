@@ -46,6 +46,21 @@ export function decryptString(encryptedText, key) {
   return decryptedText;
 }
 
+// 判断一个数字是否在某个数字数组中至少出现过三次
+export function hasNumberAppearedTwiceOrMore(arr, num) {
+  let count = 0;
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] === num) {
+      count++;
+
+      if (count >= 3) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // 校验两个字符串格式是否一致
 function compareStringFormats(str1, str2) {
   const backArr1 = str1.split('-')[1].split(',');
@@ -105,6 +120,160 @@ export function compareStringsCheckIsLowestReward(str1, str2) {
   // 对比后半区号码
   const backStr1 = str1.split('-')[1];
   const backStr2 = str2.split('-')[1];
-  console.log(111, backStr1, backStr2);
   return backStr1 === backStr2;
+}
+
+// 返回中奖信息
+export function checkLotteryResult(lotteryType, recordNumStr, winNumStr) {
+  const frontNumbers = recordNumStr.split('-')[0].split(',');
+  const backNumbers = recordNumStr.split('-')[1].split(',');
+  const winningFrontNumbers = winNumStr.split('-')[0].split(',');
+  const winningBackNumbers = winNumStr.split('-')[1].split(',');
+
+  console.log(lotteryType, frontNumbers, backNumbers, winningFrontNumbers, winningBackNumbers);
+
+  const result = {
+    prizeLevel: 0,
+    prizeText: '',
+    prizeAmount: 0,
+  };
+
+  const frontMatchCount = frontNumbers.filter(num => winningFrontNumbers.includes(num)).length;
+  const backMatchCount = backNumbers.filter(num => winningBackNumbers.includes(num)).length;
+  const totalMatchCount = frontMatchCount + backMatchCount;
+
+  if (lotteryType === 1) {
+    // 一等奖奖金为浮动奖金
+    // 二等奖奖金为浮动奖金
+    // 三等奖固定奖金10000元
+    // 四等奖固定奖金3000元
+    // 五等奖固定奖金300元
+    // 六等奖固定奖金200元
+    // 七等奖固定奖金100元
+    // 八等奖固定奖金15元
+    // 九等奖固定奖金5元
+    switch (totalMatchCount) {
+      case 7:
+        result.prizeLevel = 1;
+        result.prizeText = '一等奖';
+        result.prizeAmount = 10000000;
+        break;
+      case 6:
+        if (backMatchCount === 2) {
+          result.prizeLevel = 4;
+          result.prizeText = '四等奖';
+          result.prizeAmount = 3000;
+        } else if (backMatchCount === 1) {
+          result.prizeLevel = 2;
+          result.prizeText = '二等奖';
+          result.prizeAmount = 5000000;
+        }
+        break;
+      case 5:
+        if (backMatchCount === 2) {
+          result.prizeLevel = 6;
+          result.prizeText = '六等奖';
+          result.prizeAmount = 200;
+        } else if (backMatchCount === 1) {
+          result.prizeLevel = 5;
+          result.prizeText = '五等奖';
+          result.prizeAmount = 300;
+        } else {
+          result.prizeLevel = 5;
+          result.prizeText = '三等奖';
+          result.prizeAmount = 10000;
+        }
+        break;
+      case 4:
+        if (backMatchCount > 0) {
+          result.prizeLevel = 8;
+          result.prizeText = '八等奖';
+          result.prizeAmount = 15;
+        } else {
+          result.prizeLevel = 7;
+          result.prizeText = '七等奖';
+          result.prizeAmount = 100;
+        }
+        break;
+      case 3:
+        result.prizeLevel = 9;
+        result.prizeText = '九等奖';
+        result.prizeAmount = 5;
+        break;
+      case 2:
+        if (backMatchCount === 2) {
+          result.prizeLevel = 9;
+          result.prizeText = '九等奖';
+          result.prizeAmount = 5;
+        }
+        break;
+      default:
+        result.prizeText = '未中奖';
+        break;
+    }
+  }
+
+  if (lotteryType === 2) {
+    // 一等奖奖金为浮动奖金
+    // 二等奖奖金为浮动奖金
+    // 三等奖固定奖金3000元
+    // 四等奖固定奖金200元
+    // 五等奖固定奖金10元
+    // 六等奖固定奖金5元
+    switch (totalMatchCount) {
+      case 7:
+        result.prizeLevel = 1;
+        result.prizeText = '一等奖';
+        result.prizeAmount = 5000000;
+        break;
+      case 6:
+        if (backMatchCount === 1) {
+          result.prizeLevel = 3;
+          result.prizeText = '三等奖';
+          result.prizeAmount = 3000;
+        } else {
+          result.prizeLevel = 2;
+          result.prizeText = '二等奖';
+          result.prizeAmount = 100000;
+        }
+        break;
+      case 5:
+        result.prizeLevel = 4;
+        result.prizeText = '四等奖';
+        result.prizeAmount = 200;
+        break;
+      case 4:
+        result.prizeLevel = 5;
+        result.prizeText = '五等奖';
+        result.prizeAmount = 10;
+        break;
+      case 3:
+        if (backMatchCount === 1) {
+          result.prizeLevel = 6;
+          result.prizeText = '六等奖';
+          result.prizeAmount = 5;
+        }
+        break;
+      case 2:
+        if (backMatchCount === 1) {
+          result.prizeLevel = 6;
+          result.prizeText = '六等奖';
+          result.prizeAmount = 5;
+        }
+        break;
+      case 1:
+        if (backMatchCount === 1) {
+          result.prizeLevel = 6;
+          result.prizeText = '六等奖';
+          result.prizeAmount = 5;
+        }
+        break;
+      default:
+        result.prizeText = '未中奖';
+        break;
+    }
+  }
+
+  console.log(result);
+  return result;
 }

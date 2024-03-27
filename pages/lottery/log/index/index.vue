@@ -117,11 +117,13 @@
 </template>
 
 <script>
-import { getLogList, delLog, editLog } from "@/api/lottery/log";
+import { getLogList, delLog, editLog, getLogInfo } from "@/api/lottery/log";
 import {
   diffTimeStrFromNow,
   compareStringsBasic,
   compareStringsCheckIsLowestReward,
+  hasNumberAppearedTwiceOrMore,
+  checkLotteryResult,
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
@@ -150,6 +152,7 @@ export default {
       dateCodeQryTip: "提示：必要查询条件缺失",
       dateCodeQryPlaceHolder: "请输入彩票期号",
       isNeedInitDialog: false,
+      lastSearchRewardInfoLotteryIds: [],
       badgeCustomStyle: {
         backgroundColor: "#2ecc71",
         zoom: 1.2,
@@ -190,7 +193,7 @@ export default {
           },
         },
         {
-          text: "查询开奖号码",
+          text: "查询开奖信息",
           style: {
             backgroundColor: "#ff4d4f",
           },
@@ -224,17 +227,6 @@ export default {
     // this.$refs.paging.reload();
   },
   onShow() {
-    // console.log(compareStringsBasic("7,26,33,35,15-9,1", "7,26,33,35,15,9-1"));
-    // console.log(compareStringsBasic("1,4,5,8,10,23,5", "4,7,8,10,23-4,9"));
-    // console.log(compareStringsBasic("1,4,5,8,10,23-5", "4,7,8,10,23-4-9"));
-    // console.log(compareStringsBasic("1,4,5,8,10,23,5", ""));
-    // console.log(compareStringsBasic("1,4,5,8,10,23-5", "1,4,5,8,10,23-4"));
-    // console.log(compareStringsBasic("7,26,33,35,15-1,9", "17,26,33,35,25-1,19"));
-    // console.log(compareStringsBasic("7,26,33,35,15-1,9", "7,26,33,35,15-1,9"));
-    // compareStringsCheckIsLowestReward("7,26,33,35,15-1,9", "17,26,33,35,15-1,9");
-    // compareStringsCheckIsLowestReward("7,26,33,35,15-2,9", "17,26,33,35,15-1,9");
-    // compareStringsCheckIsLowestReward("7,26,33,35,15,1-9", "17,26,33,35,15,1-29");
-    // compareStringsCheckIsLowestReward("17,26,33,35,15,1-29", "17,26,33,35,15,1-29");
     this.queryLogList(this.queryParams);
   },
   methods: {
@@ -303,7 +295,6 @@ export default {
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
         const wl = item?.winningNumber?.split("/") || [];
-        // console.log("wl", wl);
         if (cl.length > 0 && cl[0] !== "") {
           cl.forEach((ita) => {
             const isRed =
@@ -351,7 +342,6 @@ export default {
         }
         listResult.push({ ...tmpObj });
       });
-      // console.log("listResult", listResult);
       return listResult;
     },
     // 根据当前星期几来获取标题
@@ -544,7 +534,11 @@ export default {
           console.log("uni.setClipboardData - success: " + JSON.stringify(res));
           // #ifdef H5
           // 微信不支持关闭复制成功提示所以暂时只支持H5
-          self.isNeedCloseDrawer("已为您成功复制到剪切板");
+          uni.showToast({
+            title: "已为您成功复制到剪切板! ",
+            icon: "none",
+            duration: 1998,
+          });
           // #endif
         },
         fail: function (err) {
@@ -579,8 +573,9 @@ export default {
     },
     // 查询中奖信息前确认是否有彩票期号
     checkRecordData(record) {
-      this.formParams.lotteryId = record?.logId;
-      this.formParams.numberType = record?.numberType;
+      const self = this;
+      self.formParams.lotteryId = record?.logId;
+      self.formParams.numberType = record?.numberType;
       if (record?.numberType !== 1 && record?.numberType !== 2) {
         uni.showToast({
           title: "数据异常，请联系管理员！",
@@ -590,17 +585,33 @@ export default {
         return;
       }
       if (record?.winningList && record.winningList.length > 0) {
-        uni.showToast({
-          title: "已查询过中奖信息，无需再次查询！",
-          icon: "none",
-          duration: 1998,
-        });
+        self.lastSearchRewardInfoLotteryIds.push(record?.logId);
+        if (
+          hasNumberAppearedTwiceOrMore(self.lastSearchRewardInfoLotteryIds, record?.logId)
+        ) {
+          showConfirm("您似乎对查询结果不满意，是否需要强制为您再次查询开奖信息？").then(
+            (res) => {
+              if (res?.confirm) {
+                self.lastSearchRewardInfoLotteryIds = self.lastSearchRewardInfoLotteryIds.filter(
+                  (recordLogId) => recordLogId !== record?.logId
+                );
+                self.qryRewardQueryConfig(record?.dateCode, record?.numberType);
+              }
+            }
+          );
+        } else {
+          uni.showToast({
+            title: "已查询过开奖信息，无需再次查询！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
       } else if (record?.dateCode) {
-        this.qryRewardQueryConfig(record?.dateCode, record?.numberType);
+        self.qryRewardQueryConfig(record?.dateCode, record?.numberType);
       } else {
-        this.formatCreateDate(record?.createTime, record?.numberType);
-        this.isNeedInitDialog = true;
-        this.$refs.inputDialog.open();
+        self.formatCreateDate(record?.createTime, record?.numberType);
+        self.isNeedInitDialog = true;
+        self.$refs.inputDialog.open();
       }
     },
     // 获取创建日期
@@ -703,9 +714,7 @@ export default {
           method: "GET",
         })
         .then((res) => {
-          // console.log(res);
-          // console.log(res[1]?.data);
-          // console.log(res[1]?.data?.data);
+          // 外部接口返回示例
           // const egObj = {
           //   openCode: "05,26,33,35,15+09+01",
           //   code: "cjdlt",
@@ -785,11 +794,11 @@ export default {
       editLog(saveParams)
         .then((res) => {
           if (res?.code === 200) {
-            uni.showToast({
-              title: "开奖号码保存成功！",
-              icon: "none",
-              duration: 1998,
-            });
+            self.checkIsGetReward(
+              self.formParams.lotteryId,
+              self.formParams.numberType,
+              winNum
+            );
           } else {
             uni.showToast({
               title: "开奖号码保存失败！",
@@ -809,6 +818,101 @@ export default {
           uni.hideLoading();
           self.queryLogList(self.queryParams);
         });
+    },
+    // 查询号码详情并检查是否中奖
+    checkIsGetReward(logId, numTp, winNum) {
+      const self = this;
+      getLogInfo(logId).then((res) => {
+        if (res?.code === 200) {
+          if (res?.data) {
+            const recordNumStrList = res?.data?.recordNumber?.split("/") || [];
+            const chaseNumStrList = res?.data?.chaseNumber?.split("/") || [];
+            let totalRewardCount = 0;
+            let totalRewardPrize = 0;
+            recordNumStrList.forEach((item) => {
+              const resultTmp = checkLotteryResult(numTp, item, winNum);
+              if (resultTmp?.prizeLevel > 0) {
+                totalRewardCount = totalRewardCount + 1;
+                totalRewardPrize = totalRewardPrize + resultTmp?.prizeAmount;
+              }
+            });
+            chaseNumStrList.forEach((item) => {
+              const resultTmp = checkLotteryResult(numTp, item, winNum);
+              if (resultTmp?.prizeLevel > 0) {
+                totalRewardCount = totalRewardCount + 1;
+                totalRewardPrize = totalRewardPrize + resultTmp?.prizeAmount;
+              }
+            });
+            if (totalRewardCount > 0) {
+              const numTypeText = numTp === 1 ? "大乐透" : numTp === 2 ? "双色球" : "";
+              showConfirm(
+                `恭喜您中奖了！本期所购${numTypeText}中共计${totalRewardCount}注号码中奖，初步预计奖金￥${totalRewardPrize}！是否需要为您记录中奖信息？`
+              ).then((res) => {
+                if (res?.confirm) {
+                  self.saveRewardInfo(logId, "Y", totalRewardPrize);
+                }
+              });
+              // // #ifdef H5
+              // uni.showToast({
+              //   title: `恭喜您中奖了！本期所购${numTypeText}中共计${totalRewardCount}注号码中奖，初步预计奖金￥${totalRewardPrize}！`,
+              //   icon: "none",
+              //   duration: 1998,
+              // });
+              // // #endif
+              // // #ifdef MP-WEIXIN
+              // uni.showToast({
+              //   title: `恭喜您${totalRewardCount}注${numTypeText}中奖，初步预计奖金￥${totalRewardPrize}！`,
+              //   icon: "none",
+              //   duration: 1998,
+              // });
+              // // #endif
+            } else {
+              uni.showToast({
+                title: "开奖号码保存成功！本期未中奖！",
+                icon: "none",
+                duration: 1998,
+              });
+            }
+          } else {
+            uni.showToast({
+              title: "开奖号码保存成功！未查询到本期购买记录！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        } else {
+          uni.showToast({
+            title: "开奖号码保存成功！本期购买记录查询失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
+    },
+    // 保存中奖信息
+    saveRewardInfo(lotteryId, isWin, winningPrice) {
+      const self = this;
+      const saveParams = {
+        lotteryId,
+        isWin,
+        winningPrice,
+      };
+      editLog(saveParams).then((res) => {
+        if (res?.code === 200) {
+          uni.showToast({
+            title: "中奖信息保存成功！",
+            icon: "none",
+            duration: 1998,
+          });
+          self.queryLogList(self.queryParams);
+        } else {
+          uni.showToast({
+            title: "中奖信息保存失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
     },
   },
 };
