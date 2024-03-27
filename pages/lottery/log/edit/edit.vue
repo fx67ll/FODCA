@@ -18,7 +18,12 @@
       <uni-forms-item label="是否中奖" name="isWin" required>
         <uni-data-checkbox v-model="formParams.isWin" :localdata="isConfig" />
       </uni-forms-item>
-      <uni-forms-item label="中奖金额" name="winningPrice" required>
+      <uni-forms-item
+        label="中奖金额"
+        name="winningPrice"
+        required
+        v-if="formParams.isWin === 'Y'"
+      >
         <uni-easyinput
           v-model="formParams.winningPrice"
           placeholder="请输入中奖金额"
@@ -133,6 +138,8 @@ export default {
     handleEditLog() {
       const self = this;
       this.$refs.form.validate().then((valRes) => {
+        self.formParams.winningPrice =
+          self.formParams.isWin === "Y" ? self.formParams.winningPrice : "";
         editLog(self.formParams).then((res) => {
           if (res?.code === 200) {
             uni.showToast({
