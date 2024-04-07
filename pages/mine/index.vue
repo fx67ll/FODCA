@@ -61,7 +61,7 @@
         <view
           class="list-cell list-cell-arrow"
           @click="handleToExtraManagement"
-          v-if="userName && userName === 'fx67ll'"
+          v-if="userName && userName === 'fx67ll' && isNeedWaiKuai"
         >
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="gift" size="20"></uni-icons></view>
@@ -100,6 +100,11 @@
 </template>
 
 <script>
+// 获取加密配置
+import { getSecretConfig } from "@/api/secret/key.js";
+import { decryptString } from "@/utils/index";
+import { getCryptoSaltKey } from "@/neverUploadToGithub";
+
 export default {
   data() {
     return {
@@ -107,6 +112,8 @@ export default {
       userName: this.$store.state.user.name,
       version: getApp().globalData.config.appInfo.version,
       globalConfig: getApp().globalData.config,
+      // 是否需要外快的配置项
+      isNeedWaiKuai: false,
     };
   },
   computed: {
@@ -116,6 +123,9 @@ export default {
     windowHeight() {
       return uni.getSystemInfoSync().windowHeight - 50;
     },
+  },
+  onLoad() {
+    this.getWKConfig();
   },
   methods: {
     handleToInfo() {
@@ -157,6 +167,17 @@ export default {
       this.$tab.navigateTo(
         `/pages/common/webview/index?title=${site.title}&url=${site.url}`
       );
+    },
+    getWKConfig() {
+      const self = this;
+      getSecretConfig({ secretKey: "isNeedWaiKuai" }).then((res) => {
+        if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
+          self.isNeedWaiKuai = JSON.parse(
+            decryptString(res.rows[0].secretValue, getCryptoSaltKey()) || 'false'
+          );
+          console.log("wkConfig", self.isNeedWaiKuai);
+        }
+      });
     },
   },
 };

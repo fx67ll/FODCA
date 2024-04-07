@@ -7,6 +7,8 @@
       v-model="logList"
       @query="queryLogList"
     >
+    <!-- top插件，不可以直接使用v-if，可以在二级元素使用 -->
+      <!-- <view slot="top">我是固定在顶部的view</view> -->
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
           <uni-swipe-action-item
