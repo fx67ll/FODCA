@@ -277,3 +277,47 @@ export function checkLotteryResult(lotteryType, recordNumStr, winNumStr) {
   console.log(result);
   return result;
 }
+
+// 返回当日号码类型
+export function mapLotteryNumberType(todayWeek) {
+  if (todayWeek === '1' || todayWeek === '3' || todayWeek === '6') {
+    return '1';
+  } else if (todayWeek === '2' || todayWeek === '4' || todayWeek === '7') {
+    return '2';
+  } else {
+    return '';
+  }
+}
+
+// 按出现频次从高到低返回数字，可以指定返回数组的最大长度
+export function sortNumberByFrequency(arr, maxLength) {
+  // 使用对象来统计数字出现的次数
+  let count = {};
+  arr.forEach(num => {
+      count[num] = (count[num] || 0) + 1;
+  });
+
+  // 将对象转换为数组，并按出现次数和先后顺序排序
+  let sorted = Object.entries(count).sort((a, b) => {
+      if (a[1] !== b[1]) {
+          return b[1] - a[1]; // 按出现次数从高到低排序
+      } else {
+          return arr.indexOf(parseInt(a[0])) - arr.indexOf(parseInt(b[0])); // 如果出现次数相同，按先后顺序排序
+      }
+  });
+
+  // 提取排序后的数字
+  let result = sorted.map(item => parseInt(item[0]));
+
+  // 根据传入的最大长度截取数组
+  if (maxLength && maxLength < result.length) {
+      result = result.slice(0, maxLength);
+  }
+
+  return result;
+}
+
+// 将数字数组按从小到大的顺序排列并返回
+export function sortNumberByAscending(arr) {
+  return arr.slice().sort((a, b) => a - b);
+}
