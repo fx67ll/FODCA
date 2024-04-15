@@ -39,7 +39,7 @@
             >上传照片自动分析</span
           >
           <span v-if="parseInt(pictureUploadNumber) === 0 && isNetworkLoading"
-            >功能正在初始化...</span
+            >正在努力上传中...</span
           >
           <span v-if="parseInt(pictureUploadNumber) !== 0"
             >上传进度:{{ pictureUploadNumber }}%, 正在解析数据中...</span
@@ -352,6 +352,7 @@ import {
   sortNumberByAscending,
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
+import { getToken } from "@/utils/auth";
 // lottery相关api
 import { getSetting, updateSetting, addSetting } from "@/api/lottery/setting";
 import { getLogList, addLog } from "@/api/lottery/log";
@@ -1524,26 +1525,64 @@ export default {
     uploadPicForBaiDuOcr(fileList) {
       const self = this;
       this.isNetworkLoading = true;
-      uniCloud.uploadFile({
+      // uniCloud.uploadFile({
+      //   // #ifdef H5
+      //   filePath: fileList[0].path,
+      //   cloudPath: fileList[0].name,
+      //   // #endif
+      //   // #ifdef MP-WEIXIN
+      //   filePath: fileList[0].tempFilePath,
+      //   cloudPath: moment().format("YYYY-MM-DD hh:mm:ss"),
+      //   // #endif
+      //   // 后续添加进度条功能，先用百分比代替
+      //   onUploadProgress: function (progressEvent) {
+      //     const percentLoadingPercent = Math.round(
+      //       (progressEvent.loaded * 100) / progressEvent.total
+      //     );
+      //     self.pictureUploadNumber = parseInt(percentLoadingPercent);
+      //   },
+      //   success: (uploadFileRes) => {
+      //     // console.log("uploadFileRes", uploadFileRes);
+      //     if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
+      //       self.qryBaiduOcrConfig(uploadFileRes?.fileID);
+      //     } else {
+      //       self.afterPicUploadFinished();
+      //     }
+      //   },
+      //   fail: (err) => {
+      //     uni.showToast({
+      //       title: "uniCloud图片上传接口调用失败，请联系管理员！",
+      //       icon: "none",
+      //       duration: 1998,
+      //     });
+      //     console.error("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
+      //     self.afterPicUploadFinished();
+      //   },
+      //   complete: (res) => {
+      //     console.log("uniCloud图片上传接口调用完成: " + JSON.stringify(res));
+      //   },
+      // });
+      uni.uploadFile({
+        url: "https://vip.fx67ll.com/vip-api/common/upload", //仅为示例，非真实的接口地址
         // #ifdef H5
         filePath: fileList[0].path,
-        cloudPath: fileList[0].name,
         // #endif
         // #ifdef MP-WEIXIN
         filePath: fileList[0].tempFilePath,
-        cloudPath: moment().format("YYYY-MM-DD hh:mm:ss"),
         // #endif
-        // 后续添加进度条功能，先用百分比代替
-        onUploadProgress: function (progressEvent) {
-          const percentLoadingPercent = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          self.pictureUploadNumber = parseInt(percentLoadingPercent);
+        name: "file",
+        header: {
+          Authorization: `Bearer ${getToken()}`,
+          "Content-Type": "multipart/form-data",
         },
         success: (uploadFileRes) => {
           // console.log("uploadFileRes", uploadFileRes);
-          if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
-            self.qryBaiduOcrConfig(uploadFileRes?.fileID);
+          if (uploadFileRes && uploadFileRes?.statusCode === 200 && uploadFileRes?.data) {
+            const uploadFileResData = JSON.parse(uploadFileRes?.data);
+            // console.log("uploadFileResData", uploadFileResData);
+            if (uploadFileResData?.code === 200 && uploadFileResData?.url) {
+              self.qryBaiduOcrConfig(uploadFileResData?.url);
+            }
           } else {
             self.afterPicUploadFinished();
           }
