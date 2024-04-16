@@ -727,7 +727,7 @@ export default {
     },
     // #endif
     // 显示今日随机号码
-    getLuckyNumber() {
+    async getLuckyNumber() {
       if (this.todayWeek === "5") {
         uni.showToast({
           title: "非常抱歉，今天是星期五，不提供随机号码选择~",
@@ -741,7 +741,8 @@ export default {
           // 如果打开了需要统计过往开奖号码中的高频数字的开关，则先处理并返回统计的一注再继续往下处理
           // 后期也是在这里处理追号的查询
           if (this.settingInfo.isNeedAddPastRewardNumber) {
-            this.searchPastNumberFilterByFrequency();
+            const pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
+            this.packageRandomList(pastNumObjTmp);
           } else {
             this.packageRandomList();
           }
@@ -759,14 +760,13 @@ export default {
       }
     },
     // 查询过往指定期数的中奖号码，并将数据处理成纯数字数组，使用工具类提取出现频率最高的数字
-    searchPastNumberFilterByFrequency() {
-      const self = this;
+    async searchPastNumberFilterByFrequency() {
       const queryParams = {
         pageNum: 1,
         pageSize: this.settingInfo.pastCheckCount || 23,
         numberType: mapLotteryNumberType(this.todayWeek),
       };
-      getLogList(queryParams).then((res) => {
+      const pastData = await getLogList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
             let frontResultArr = [];
@@ -780,39 +780,82 @@ export default {
                 backResultArr = [...backResultArr, ...arrThiTmp];
               }
             });
-            if (mapLotteryNumberType(this.todayWeek) === "1") {
-              const resultTmpObjDLT = {
-                timeStamp: new Date().getTime(),
-                lotteryNumberFirst: sortNumberByAscending(
-                  sortNumberByFrequency(frontResultArr, 5)
-                ),
-                lotteryNumberSecond: sortNumberByAscending(
-                  sortNumberByFrequency(backResultArr, 2)
-                ),
-              };
-              self.packageRandomList(resultTmpObjDLT);
+            if (frontResultArr && backResultArr) {
+              if (
+                mapLotteryNumberType(this.todayWeek) === "1" &&
+                frontResultArr.length > 4 &&
+                backResultArr.length > 1
+              ) {
+                const resultTmpObjDLT = {
+                  timeStamp: new Date().getTime(),
+                  lotteryNumberFirst: sortNumberByAscending(
+                    sortNumberByFrequency(frontResultArr, 5)
+                  ),
+                  lotteryNumberSecond: sortNumberByAscending(
+                    sortNumberByFrequency(backResultArr, 2)
+                  ),
+                };
+                return resultTmpObjDLT;
+              }
+              if (
+                mapLotteryNumberType(this.todayWeek) === "2" &&
+                frontResultArr.length > 5 &&
+                backResultArr.length > 0
+              ) {
+                const resultTmpObjSSQ = {
+                  timeStamp: new Date().getTime(),
+                  lotteryNumberFirst: sortNumberByAscending(
+                    sortNumberByFrequency(frontResultArr, 6)
+                  ),
+                  lotteryNumberSecond: sortNumberByAscending(
+                    sortNumberByFrequency(backResultArr, 1)
+                  ),
+                };
+                return resultTmpObjSSQ;
+              }
+
+              return null;
+            } else {
+              return null;
             }
-            if (mapLotteryNumberType(this.todayWeek) === "2") {
-              const resultTmpObjSSQ = {
-                timeStamp: new Date().getTime(),
-                lotteryNumberFirst: sortNumberByAscending(
-                  sortNumberByFrequency(frontResultArr, 6)
-                ),
-                lotteryNumberSecond: sortNumberByAscending(
-                  sortNumberByFrequency(backResultArr, 1)
-                ),
-              };
-              self.packageRandomList(resultTmpObjSSQ);
-            }
+          } else {
+            // #ifdef H5
+            uni.showToast({
+              title:
+                "历史号码数据为空，过往高频中奖号码生成失败！已为您自动补充一注随机号码~",
+              icon: "none",
+              duration: 1998,
+            });
+            // #endif
+            // #ifdef MP-WEIXIN
+            uni.showToast({
+              title: "过往高频中奖号码生成失败！",
+              icon: "none",
+              duration: 1998,
+            });
+            // #endif
+            return null;
           }
         } else {
+          // #ifdef H5
+          uni.showToast({
+            title:
+              "历史号码数据接口异常，过往高频中奖号码生成失败！已为您自动补充一注随机号码~",
+            icon: "none",
+            duration: 1998,
+          });
+          // #endif
+          // #ifdef MP-WEIXIN
           uni.showToast({
             title: "过往高频中奖号码生成失败！",
             icon: "none",
             duration: 1998,
           });
+          // #endif
+          return null;
         }
       });
+      return pastData || null;
     },
     // 判断当日是否只允许出现一注随机号码的配置是否生效
     // 先判断，是否配置了只显示当日第一注随机号码，则不再重复生成随机号码
@@ -892,13 +935,15 @@ export default {
       let randomInitLength = this.settingInfo.luckyCount;
 
       if (this.userName && this.userName === "fx67ll") {
-        randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
-          ? this.settingInfo.luckyCount - 2
-          : this.settingInfo.luckyCount - 1;
-      }else{
-        randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
-          ? this.settingInfo.luckyCount - 1
-          : this.settingInfo.luckyCount;
+        randomInitLength =
+          this.settingInfo.isNeedAddPastRewardNumber && pastHighFreNumber
+            ? this.settingInfo.luckyCount - 2
+            : this.settingInfo.luckyCount - 1;
+      } else {
+        randomInitLength =
+          this.settingInfo.isNeedAddPastRewardNumber && pastHighFreNumber
+            ? this.settingInfo.luckyCount - 1
+            : this.settingInfo.luckyCount;
       }
 
       if (mapLotteryNumberType(this.todayWeek) === "1") {
