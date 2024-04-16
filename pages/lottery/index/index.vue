@@ -796,10 +796,10 @@ export default {
               const resultTmpObjSSQ = {
                 timeStamp: new Date().getTime(),
                 lotteryNumberFirst: sortNumberByAscending(
-                  sortNumberByFrequency(frontResultArr, 5)
+                  sortNumberByFrequency(frontResultArr, 6)
                 ),
                 lotteryNumberSecond: sortNumberByAscending(
-                  sortNumberByFrequency(backResultArr, 2)
+                  sortNumberByFrequency(backResultArr, 1)
                 ),
               };
               self.packageRandomList(resultTmpObjSSQ);
@@ -914,7 +914,7 @@ export default {
         }
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
-        if (userName && userName === "fx67ll") {
+        if (this.userName && this.userName === "fx67ll") {
           this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberSSQ));
         }
 
@@ -1415,6 +1415,8 @@ export default {
         });
         this.ocrTagList = [...corTempList];
       } else {
+        this.ocrTagList = [];
+        this.ocrTagCheckList = [];
         uni.showToast({
           title: "百度OCR识别结果为空，请联系管理员！",
           icon: "none",
