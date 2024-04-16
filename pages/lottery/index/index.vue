@@ -32,7 +32,7 @@
         <button
           class="fx67ll-btn-default"
           type="default"
-          @click="importLuckyImg"
+          @click="pickImportLuckyImg"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           <span v-if="parseInt(pictureUploadNumber) === 0 && !isNetworkLoading"
@@ -804,12 +804,6 @@ export default {
               };
               self.packageRandomList(resultTmpObjSSQ);
             }
-          } else {
-            uni.showToast({
-              title: "过往高频中奖号码生成失败！",
-              icon: "none",
-              duration: 1998,
-            });
           }
         } else {
           uni.showToast({
@@ -895,6 +889,18 @@ export default {
     // 组装今日随机号码
     packageRandomList(pastHighFreNumber) {
       this.luckyNumberList = [];
+      let randomInitLength = this.settingInfo.luckyCount;
+
+      if (this.userName && this.userName === "fx67ll") {
+        randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
+          ? this.settingInfo.luckyCount - 2
+          : this.settingInfo.luckyCount - 1;
+      }else{
+        randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
+          ? this.settingInfo.luckyCount - 1
+          : this.settingInfo.luckyCount;
+      }
+
       if (mapLotteryNumberType(this.todayWeek) === "1") {
         if (this.userName && this.userName === "fx67ll") {
           this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberDLT));
@@ -904,9 +910,6 @@ export default {
           this.luckyNumberList.push(this.packageTempObjForWX(pastHighFreNumber));
         }
 
-        const randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
-          ? this.settingInfo.luckyCount - 2
-          : this.settingInfo.luckyCount - 1;
         for (var i = 0; i < randomInitLength; i++) {
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("DLT", i))
@@ -922,9 +925,6 @@ export default {
           this.luckyNumberList.push(this.packageTempObjForWX(pastHighFreNumber));
         }
 
-        const randomInitLength = this.settingInfo.isNeedAddPastRewardNumber
-          ? this.settingInfo.luckyCount - 2
-          : this.settingInfo.luckyCount - 1;
         for (var i = 0; i < randomInitLength; i++) {
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("SSQ", i))
@@ -1255,7 +1255,7 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
       // #ifdef H5
-      this.drawerHeight = "540px";
+      this.drawerHeight = "510px";
       // #endif
       // #ifdef MP-WEIXIN
       this.drawerHeight = "490px";
@@ -1635,8 +1635,8 @@ export default {
         console.log("相册选择接口调用完成: " + JSON.stringify(pickCallBackRes));
       }
     },
-    // 上传图片
-    importLuckyImg() {
+    // 选取需要上传的图片
+    pickImportLuckyImg() {
       const self = this;
       // #ifdef H5
       uni.chooseImage({
