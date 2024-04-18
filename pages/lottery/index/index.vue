@@ -1362,7 +1362,7 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
       // #ifdef H5
-      this.drawerHeight = "400px";
+      this.drawerHeight = "420px";
       // #endif
       // #ifdef MP-WEIXIN
       this.drawerHeight = "490px";
