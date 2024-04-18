@@ -354,7 +354,12 @@ import {
 import { showConfirm } from "@/utils/common";
 import { getToken } from "@/utils/auth";
 // lottery相关api
-import { getSetting, updateSetting, addSetting } from "@/api/lottery/setting";
+import {
+  getSetting,
+  updateSetting,
+  addSetting,
+  getChaseNumberSetting,
+} from "@/api/lottery/setting";
 import { getLogList, addLog } from "@/api/lottery/log";
 // 获取加密配置
 // #ifdef MP-WEIXIN
@@ -738,13 +743,14 @@ export default {
         this.showType = "luckyNumber";
         // 是否允许再次生成随机号码
         if (this.checkIsOnlyFirstTodayConfig()) {
-          // 如果打开了需要统计过往开奖号码中的高频数字的开关，则先处理并返回统计的一注再继续往下处理
           // 后期也是在这里处理追号的查询
+          const chasingNumObjTmp = await this.queryDailyChasingNumber();
+          // 如果打开了需要统计过往开奖号码中的高频数字的开关，则先处理并返回统计的一注再继续往下处理
           if (this.settingInfo.isNeedAddPastRewardNumber) {
             const pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
-            this.packageRandomList(pastNumObjTmp);
+            this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
           } else {
-            this.packageRandomList();
+            this.packageRandomList(chasingNumObjTmp);
           }
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
@@ -857,6 +863,48 @@ export default {
       });
       return pastData || null;
     },
+    // 查询每日追号的配置
+    async queryDailyChasingNumber() {
+      const queryParams = {
+        weekType: parseInt(this.todayWeek),
+        numberType: parseInt(mapLotteryNumberType(this.todayWeek)),
+      };
+      const chasingNumber = await getChaseNumberSetting(queryParams).then((res) => {
+        if (res?.code === 200) {
+          if (res?.rows && res?.rows?.length > 0) {
+            if (res?.rows[0]?.chaseNumber) {
+              const arrFir = res?.rows[0]?.chaseNumber?.split("-");
+              if (arrFir && arrFir.length > 1) {
+                const resultChasingNumberTmpObj = {
+                  timeStamp: new Date().getTime(),
+                  lotteryNumberFirst: arrFir[0]?.split(",") || [],
+                  lotteryNumberSecond: arrFir[1]?.split(",") || [],
+                };
+                // console.log("resultChasingNumberTmpObj", resultChasingNumberTmpObj);
+                return resultChasingNumberTmpObj;
+              }
+              return null;
+            }
+            return null;
+          } else {
+            uni.showToast({
+              title: "每日追号配置查询为空！",
+              icon: "none",
+              duration: 1998,
+            });
+            return null;
+          }
+        } else {
+          uni.showToast({
+            title: "每日追号配置查询失败！",
+            icon: "none",
+            duration: 1998,
+          });
+          return null;
+        }
+      });
+      return chasingNumber || null;
+    },
     // 判断当日是否只允许出现一注随机号码的配置是否生效
     // 先判断，是否配置了只显示当日第一注随机号码，则不再重复生成随机号码
     // 再判断，如果配了只生成随机一注，则再判断当天是否生成过
@@ -930,7 +978,7 @@ export default {
       }
     },
     // 组装今日随机号码
-    packageRandomList(pastHighFreNumber) {
+    packageRandomList(chasingNumber, pastHighFreNumber) {
       this.luckyNumberList = [];
       let randomInitLength = this.settingInfo.luckyCount;
 
@@ -948,7 +996,14 @@ export default {
 
       if (mapLotteryNumberType(this.todayWeek) === "1") {
         if (this.userName && this.userName === "fx67ll") {
-          this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberDLT));
+          if (
+            chasingNumber?.lotteryNumberFirst?.length === 5 &&
+            chasingNumber?.lotteryNumberSecond?.length === 2
+          ) {
+            this.luckyNumberList.push(this.packageTempObjForWX(chasingNumber));
+          } else {
+            this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberDLT));
+          }
         }
 
         if (pastHighFreNumber) {
@@ -963,7 +1018,14 @@ export default {
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
         if (this.userName && this.userName === "fx67ll") {
-          this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberSSQ));
+          if (
+            chasingNumber?.lotteryNumberFirst?.length === 6 &&
+            chasingNumber?.lotteryNumberSecond?.length === 1
+          ) {
+            this.luckyNumberList.push(this.packageTempObjForWX(chasingNumber));
+          } else {
+            this.luckyNumberList.push(this.packageTempObjForWX(this.luckyNumberSSQ));
+          }
         }
 
         if (pastHighFreNumber) {
@@ -983,7 +1045,7 @@ export default {
       }
       // 如果打开了需要包含当日幸运数字就需要重新摇号
       if (!this.checkHasTodayLuckyNumber()) {
-        this.packageRandomList(pastHighFreNumber);
+        this.packageRandomList(chasingNumber, pastHighFreNumber);
       }
     },
     // 判断是否包含当日的幸运数字

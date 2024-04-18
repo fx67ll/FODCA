@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-// 查询固定追号配置详细
+// 查询号码生成配置详细
 export function getSetting() {
   return request({
     url: '/lottery/setting/getLotterySettingConfigForApp',
@@ -8,7 +8,7 @@ export function getSetting() {
   });
 }
 
-// 修改固定追号配置
+// 修改号码生成配置
 export function updateSetting(data) {
   return request({
     url: '/lottery/setting/editLotterySettingConfigForApp',
@@ -17,11 +17,20 @@ export function updateSetting(data) {
   });
 }
 
-// 新增固定追号配置
+// 新增号码生成配置
 export function addSetting(data) {
   return request({
     url: '/lottery/setting/addLotterySettingConfigForApp',
     method: 'post',
     data: data,
+  });
+}
+
+// 查询固定追号信息
+export function getChaseNumberSetting(query) {
+  return request({
+    url: '/lottery/chase/getLotteryChaseSettingsForApp',
+    method: 'get',
+    params: query,
   });
 }
