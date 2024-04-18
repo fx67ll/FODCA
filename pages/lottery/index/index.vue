@@ -297,7 +297,7 @@
           <span>需要总结的过往期数</span>
           <uni-number-box
             :min="1"
-            :max="44"
+            :max="1023"
             v-model="settingInfo.pastCheckCount"
             @change="pastCheckCountChange"
           ></uni-number-box>
@@ -1362,7 +1362,7 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
       // #ifdef H5
-      this.drawerHeight = "510px";
+      this.drawerHeight = "400px";
       // #endif
       // #ifdef MP-WEIXIN
       this.drawerHeight = "490px";
