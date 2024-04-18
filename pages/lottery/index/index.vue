@@ -1132,7 +1132,10 @@ export default {
     // 处理上传号码记录
     handleUplaodTodayNumber(todayNumber) {
       const self = this;
-      const fixNumList = [{ ...this.luckyNumberList[0] }];
+      const fixNumList = [];
+      if (this.userName && this.userName === "fx67ll") {
+        fixNumList.push({ ...this.luckyNumberList[0] });
+      }
       let todayNumType = "";
       if (["1", "3", "6"].includes(this.todayWeek)) {
         todayNumType = "1";
@@ -1143,7 +1146,8 @@ export default {
       this.isNetworkLoading = true;
       const addParams = {
         recordNumber: todayNumber,
-        chaseNumber: this.formatNumberListForUpload(fixNumList),
+        chaseNumber:
+          fixNumList.length > 0 ? this.formatNumberListForUpload(fixNumList) : "",
         numberType: todayNumType,
         weekType: this.todayWeek,
         hasMorePurchases: "N",
@@ -1166,8 +1170,11 @@ export default {
       const self = this;
       if (this.luckyNumberList && this.luckyNumberList.length > 0) {
         const buyingNumList = this.luckyNumberList.filter((item, index) => index > 0);
-        const todayNumber = this.formatNumberListForUpload(buyingNumList);
-
+        const todayNumber = this.formatNumberListForUpload(
+          self.userName && self.userName === "fx67ll"
+            ? buyingNumList
+            : self.luckyNumberList
+        );
         const queryParams = {
           pageNum: 1,
           pageSize: 1,
@@ -1362,7 +1369,7 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
       // #ifdef H5
-      this.drawerHeight = "450px";
+      this.drawerHeight = "460px";
       // #endif
       // #ifdef MP-WEIXIN
       this.drawerHeight = "490px";
