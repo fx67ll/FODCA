@@ -338,11 +338,14 @@
 // 官方组件库
 import uniIcons from "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue";
 import uniNumberBox from "@/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue";
+
 // underscores函数库
 import _ from "@/node_modules/underscore";
+
 // 日期时间处理
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
+
 // 各种工具类
 import {
   quickSort,
@@ -353,6 +356,7 @@ import {
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import { getToken } from "@/utils/auth";
+
 // lottery相关api
 import {
   getSetting,
@@ -361,11 +365,11 @@ import {
   getChaseNumberSetting,
 } from "@/api/lottery/setting";
 import { getLogList, addLog } from "@/api/lottery/log";
+
 // 获取加密配置
-// #ifdef MP-WEIXIN
 import { getSecretConfig } from "@/api/secret/key.js";
 import { getCryptoSaltKey } from "@/neverUploadToGithub";
-// #endif
+
 export default {
   components: {
     uniIcons,
@@ -743,15 +747,18 @@ export default {
         this.showType = "luckyNumber";
         // 是否允许再次生成随机号码
         if (this.checkIsOnlyFirstTodayConfig()) {
-          // 后期也是在这里处理追号的查询
-          const chasingNumObjTmp = await this.queryDailyChasingNumber();
+          let chasingNumObjTmp = null;
+          let pastNumObjTmp = null;
+          // 后期也是在这里处理追号的查询，目前是只有超管可以配置追号
+          if (this.userName && this.userName === "fx67ll") {
+            chasingNumObjTmp = await this.queryDailyChasingNumber();
+          }
           // 如果打开了需要统计过往开奖号码中的高频数字的开关，则先处理并返回统计的一注再继续往下处理
           if (this.settingInfo.isNeedAddPastRewardNumber) {
-            const pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
-            this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
-          } else {
-            this.packageRandomList(chasingNumObjTmp);
+            pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
           }
+          console.log("chasingNumObjTmp, pastNumObjTmp", chasingNumObjTmp, pastNumObjTmp);
+          this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
         }
@@ -819,7 +826,21 @@ export default {
                 };
                 return resultTmpObjSSQ;
               }
-
+              // #ifdef H5
+              uni.showToast({
+                title:
+                  "历史中奖号码数据为空，过往高频中奖号码生成失败！已为您自动补充一注随机号码~",
+                icon: "none",
+                duration: 1998,
+              });
+              // #endif
+              // #ifdef MP-WEIXIN
+              uni.showToast({
+                title: "过往高频中奖号码生成失败！",
+                icon: "none",
+                duration: 1998,
+              });
+              // #endif
               return null;
             } else {
               return null;
@@ -1637,7 +1658,7 @@ export default {
         }
       });
     },
-    // 上传图片到uniCloud
+    // 上传图片到uniCloud，目前是改为使用若依的上传接口
     uploadPicForBaiDuOcr(fileList) {
       const self = this;
       this.isNetworkLoading = true;
