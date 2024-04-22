@@ -896,10 +896,16 @@ export default {
             if (res?.rows[0]?.chaseNumber) {
               const arrFir = res?.rows[0]?.chaseNumber?.split("-");
               if (arrFir && arrFir.length > 1) {
+                const numFirTmp = (arrFir[0]?.split(",") || []).map((item) =>
+                  item ? parseInt(item) : ""
+                );
+                const numSecTmp = (arrFir[0]?.split(",") || []).map((item) =>
+                  item ? parseInt(item) : ""
+                );
                 const resultChasingNumberTmpObj = {
                   timeStamp: new Date().getTime(),
-                  lotteryNumberFirst: arrFir[0]?.split(",") || [],
-                  lotteryNumberSecond: arrFir[1]?.split(",") || [],
+                  lotteryNumberFirst: numFirTmp,
+                  lotteryNumberSecond: numSecTmp,
                 };
                 // console.log("resultChasingNumberTmpObj", resultChasingNumberTmpObj);
                 return resultChasingNumberTmpObj;
