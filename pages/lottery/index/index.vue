@@ -102,7 +102,7 @@
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{ settingInfo.todayLuckyNumber }}</view>
-      <view class="fx67ll-lucky-title">今日推荐幸运数字</view>
+      <view class="fx67ll-lucky-title">今日随机幸运数字</view>
     </view>
 
     <!-- 页面底部抽屉 -->
@@ -353,6 +353,7 @@ import {
   mapLotteryNumberType,
   sortNumberByFrequency,
   sortNumberByAscending,
+  isTwoOrThreeDaysAfterWithSameYearCheck,
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import { getToken } from "@/utils/auth";
@@ -388,6 +389,8 @@ export default {
       // 今日星期几
       todayWeek: moment().format("E"),
       // todayWeek: '4',
+      // 今日彩票编号
+      todayDateCode: null,
       // Drawer组件相关参数
       isShowDrawer: false,
       drawerHeight: "75%",
@@ -512,10 +515,12 @@ export default {
     this.initCacheSetting();
     // 显示当前时间
     this.showNowTime();
+    // 初始化最近官方彩票编号
+    this.initLastLotteryDateCode();
   },
   // onShow() {
-  //   // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
-  //   this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
+  //   // // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
+  //   // this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
   // },
   onHide() {
     // 增加一下保存的频率
@@ -726,6 +731,39 @@ export default {
         },
       });
       // #endif
+    },
+    // 从服务端初始化最近一条同类型记录的期号
+    initLastLotteryDateCode() {
+      const self = this;
+      this.todayDateCode = null;
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 1,
+        numberType: mapLotteryNumberType(this.todayWeek),
+      };
+      getLogList(queryParams).then((res) => {
+        if (res?.code === 200) {
+          if (res?.rows && res?.rows?.length > 0) {
+            const latestDate = res?.rows[0]?.createTime || "";
+            const latestDateFormat = moment(latestDate)?.format("YYYY-MM-DD") || "";
+            const nowDateFormat = moment()?.format("YYYY-MM-DD") || "";
+            console.log("queryLastLotteryID", latestDateFormat, nowDateFormat);
+            if (
+              latestDate &&
+              latestDateFormat &&
+              nowDateFormat &&
+              isTwoOrThreeDaysAfterWithSameYearCheck(latestDateFormat, nowDateFormat)
+            ) {
+              const latestOfficialDateCode = res?.rows[0]?.dateCode || "";
+              console.log("latestOfficialDateCode", res?.rows[0]?.dateCode);
+              self.todayDateCode = latestOfficialDateCode
+                ? parseInt(latestOfficialDateCode) + 1
+                : null;
+              console.log("todayDateCode", self.todayDateCode);
+            }
+          }
+        }
+      });
     },
     // #ifdef H5
     // 关闭摇奖设置弹窗时需重新加载之前保存的设置
@@ -1178,6 +1216,7 @@ export default {
         numberType: todayNumType,
         weekType: this.todayWeek,
         hasMorePurchases: "N",
+        dateCode: this.todayDateCode,
       };
       addLog(addParams).then((res) => {
         self.isNetworkLoading = false;

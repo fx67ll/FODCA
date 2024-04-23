@@ -294,16 +294,16 @@ export function sortNumberByFrequency(arr, maxLength) {
   // 使用对象来统计数字出现的次数
   let count = {};
   arr.forEach(num => {
-      count[num] = (count[num] || 0) + 1;
+    count[num] = (count[num] || 0) + 1;
   });
 
   // 将对象转换为数组，并按出现次数和先后顺序排序
   let sorted = Object.entries(count).sort((a, b) => {
-      if (a[1] !== b[1]) {
-          return b[1] - a[1]; // 按出现次数从高到低排序
-      } else {
-          return arr.indexOf(parseInt(a[0])) - arr.indexOf(parseInt(b[0])); // 如果出现次数相同，按先后顺序排序
-      }
+    if (a[1] !== b[1]) {
+      return b[1] - a[1]; // 按出现次数从高到低排序
+    } else {
+      return arr.indexOf(parseInt(a[0])) - arr.indexOf(parseInt(b[0])); // 如果出现次数相同，按先后顺序排序
+    }
   });
 
   // 提取排序后的数字
@@ -311,7 +311,7 @@ export function sortNumberByFrequency(arr, maxLength) {
 
   // 根据传入的最大长度截取数组
   if (maxLength && maxLength < result.length) {
-      result = result.slice(0, maxLength);
+    result = result.slice(0, maxLength);
   }
 
   return result;
@@ -320,4 +320,53 @@ export function sortNumberByFrequency(arr, maxLength) {
 // 将数字数组按从小到大的顺序排列并返回
 export function sortNumberByAscending(arr) {
   return arr.slice().sort((a, b) => a - b);
+}
+
+// 该方法传递两个参数，分别为上一个日期和当前日期
+// 首先判断，上一个日期和当前日期是否是同年，如果不同年直接返回false，不再作其他判断
+// 然后判断，当前日期是否是上一个日期的两天后，并判断两个日期之间是否有星期五的情况存在，如果有，则判断当前日期是否为上一个日期的三天后
+// 最后，如果没有星期五且间隔两天，就返回true，如果有星期五且间隔三天，也返回true，其余情况返回false
+export function isTwoOrThreeDaysAfterWithSameYearCheck(previousDate, currentDate) {
+  if (!previousDate || !currentDate) {
+    return false;
+  }
+
+  // 将输入的日期字符串转换为moment对象
+  const prevDate = moment(previousDate, 'YYYY-MM-DD');
+  const currDate = moment(currentDate, 'YYYY-MM-DD');
+
+  if (!prevDate || !currDate) {
+    return false;
+  }
+
+  // 首先检查年份是否相同
+  if (prevDate.year() !== currDate.year()) {
+    return false; // 如果年份不同，直接返回false
+  }
+
+  // 计算两个日期之间的天数差异
+  const diffDays = currDate.diff(prevDate, 'days');
+
+  // 初始化星期五的存在标志为false
+  let hasFriday = false;
+
+  // 遍历两个日期之间的每一天，检查是否存在星期五
+  for (let i = 1; i < diffDays; i++) {
+    if (prevDate.clone().add(i, 'days').day() === 5) {
+      hasFriday = true;
+      break;
+    }
+  }
+
+  // 根据是否存在星期五以及日期间隔，返回相应的布尔值
+  if (hasFriday && diffDays === 3) {
+    // 如果存在星期五且日期间隔为三天，则返回true
+    return true;
+  } else if (!hasFriday && diffDays === 2) {
+    // 如果不存在星期五且日期间隔为两天，则返回true
+    return true;
+  } else {
+    // 其他所有情况返回false
+    return false;
+  }
 }
