@@ -102,7 +102,7 @@
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{ settingInfo.todayLuckyNumber }}</view>
-      <view class="fx67ll-lucky-title">今日随机幸运数字</view>
+      <view class="fx67ll-lucky-title" @click="handleToLogHistory">今日随机幸运数字</view>
     </view>
 
     <!-- 页面底部抽屉 -->
@@ -2030,6 +2030,10 @@ export default {
           this.saveLuckySettingLocal();
         }
       }
+    },
+    // 跳转到历史号码记录列表的隐藏快捷方式
+    handleToLogHistory() {
+      this.$tab.navigateTo("/pages/lottery/log/index/index");
     },
     // 计时用工具函数，获取时分秒文字
     // start: 时间差开始
