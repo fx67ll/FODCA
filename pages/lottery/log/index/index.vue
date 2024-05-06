@@ -7,8 +7,40 @@
       v-model="logList"
       @query="queryLogList"
     >
-    <!-- top插件，不可以直接使用v-if，可以在二级元素使用 -->
-      <!-- <view slot="top">我是固定在顶部的view</view> -->
+      <!-- top插件，不可以直接使用v-if，可以在二级元素使用 -->
+      <view slot="top">
+        <view class="fx67ll-tab-box" v-if="logList && logList.length > 0">
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-active': parseInt(queryParams.numberType) === 1,
+            }"
+            @click="searchByNumberType(1)"
+            >大乐透</view
+          >
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-active': parseInt(queryParams.numberType) === 2,
+            }"
+            @click="searchByNumberType(2)"
+            >双色球</view
+          >
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-active': queryParams.isWin === 'Y',
+            }"
+            @click="searchByWinType"
+            >已中奖</view
+          >
+          <view
+            :class="['fx67ll-tab-item', 'fx67ll-tab-item-reset']"
+            @click="resetSearchFilter"
+            >重置</view
+          >
+        </view>
+      </view>
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
           <uni-swipe-action-item
@@ -145,6 +177,8 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
+        numberType: "",
+        isWin: "",
       },
       formParams: {
         lotteryId: "",
@@ -229,18 +263,14 @@ export default {
     // this.$refs.paging.reload();
   },
   onShow() {
-    this.queryLogList(this.queryParams);
+    this.resetSearchFilter();
   },
   methods: {
     // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
-      const pageParams = {
-        pageNum,
-        pageSize,
-      };
-      this.queryParams = { ...pageParams };
-      getLogList(pageParams)
+      this.queryParams = { ...self.queryParams, pageNum, pageSize };
+      getLogList(self.queryParams)
         .then((res) => {
           if (res?.code === 200) {
             if (res?.rows && res?.rows?.length > 0) {
@@ -818,7 +848,8 @@ export default {
           self.$refs.inputDialog.close();
           self.isNeedInitDialog = false;
           uni.hideLoading();
-          self.queryLogList(self.queryParams);
+          // self.queryLogList(self.queryParams);
+          self.queryLogList();
         });
     },
     // 查询号码详情并检查是否中奖
@@ -906,7 +937,8 @@ export default {
             icon: "none",
             duration: 1998,
           });
-          self.queryLogList(self.queryParams);
+          // self.queryLogList(self.queryParams);
+          self.queryLogList();
         } else {
           uni.showToast({
             title: "中奖信息保存失败！",
@@ -915,6 +947,37 @@ export default {
           });
         }
       });
+    },
+    // 重置筛选条件
+    resetSearchFilter() {
+      this.queryParams = {
+        pageNum: 1,
+        pageSize: 10,
+        numberType: null,
+        isWin: null,
+      };
+      this.queryLogList();
+      this.$refs.paging.reload();
+    },
+    // 通过号码类型筛选条件
+    searchByNumberType(numberType) {
+      const self = this;
+      this.queryParams = {
+        ...self.queryParams,
+        numberType,
+      };
+      this.queryLogList();
+      this.$refs.paging.reload();
+    },
+    // 通过是否中奖筛选条件
+    searchByWinType() {
+      const self = this;
+      this.queryParams = {
+        ...self.queryParams,
+        isWin: self.queryParams.isWin === "Y" ? null : "Y",
+      };
+      this.queryLogList();
+      this.$refs.paging.reload();
     },
   },
 };
