@@ -128,6 +128,10 @@ export default {
     queryPunchList(pageNum, pageSize) {
       const self = this;
 
+      uni.showLoading({
+        title: "查询数据中...",
+      });
+
       // const beginDayIndex = pageNum * pageSize + 1;
       // const endDayIndex = (pageNum - 1) * pageSize - 1;
       // const beginUpdateTime = moment().subtract(beginDayIndex, "days").format("YYYY-MM-DD");
@@ -170,6 +174,9 @@ export default {
         })
         .catch((res) => {
           self.$refs.paging.complete(false);
+        })
+        .finally(() => {
+          uni.hideLoading();
         });
     },
     // 关闭修改打卡记录抽屉
