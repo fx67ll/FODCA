@@ -9,37 +9,15 @@
     >
       <!-- top插件，不可以直接使用v-if，可以在二级元素使用 -->
       <view slot="top">
-        <view class="fx67ll-tab-box" v-if="logList && logList.length > 0">
-          <view
-            :class="{
-              'fx67ll-tab-item': true,
-              'fx67ll-tab-item-active': parseInt(queryParams.numberType) === 1,
-            }"
-            @click="searchByNumberType(1)"
-            >大乐透</view
-          >
-          <view
-            :class="{
-              'fx67ll-tab-item': true,
-              'fx67ll-tab-item-active': parseInt(queryParams.numberType) === 2,
-            }"
-            @click="searchByNumberType(2)"
-            >双色球</view
-          >
-          <view
-            :class="{
-              'fx67ll-tab-item': true,
-              'fx67ll-tab-item-active': queryParams.isWin === 'Y',
-            }"
-            @click="searchByWinType"
-            >已中奖</view
-          >
-          <view
-            :class="['fx67ll-tab-item', 'fx67ll-tab-item-reset']"
-            @click="resetSearchFilter"
-            >重置</view
-          >
-        </view>
+        <v-tabs
+          class="nav-tab-box nav-tab-box-four"
+          v-model="tabCurrentIndex"
+          v-if="punchFilterType === 1"
+          :tabs="tabDataList"
+          :scroll="false"
+          :lineScale="0.3"
+          @change="handleTabChange"
+        ></v-tabs>
       </view>
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
@@ -147,6 +125,113 @@
         @confirm="handleDateCodeDialogConfirm"
       ></uni-popup-dialog>
     </uni-popup>
+    <uni-fab
+      ref="fab"
+      :pattern="fabConfig.pattern"
+      :content="fabConfig.content"
+      :horizontal="fabConfig.horizontal"
+      :vertical="fabConfig.vertical"
+      :direction="fabConfig.direction"
+      @trigger="handleFabTrigger"
+    />
+    <zb-drawer
+      mode="bottom"
+      title="高级筛选"
+      height="320px"
+      :wrapperClosable="false"
+      :visible.sync="isShowDrawer"
+      :radius="true"
+    >
+      <view class="fx67ll-search-drawer">
+        <view class="fx67ll-tab-box" v-if="punchFilterType === 2">
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-type': true,
+              'fx67ll-tab-item-type-active': parseInt(queryParams.numberType) === 1,
+            }"
+            @click="setSearchFilterParams('numberType', 1)"
+          >
+            大乐透
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-type': true,
+              'fx67ll-tab-item-type-active': parseInt(queryParams.numberType) === 2,
+            }"
+            @click="setSearchFilterParams('numberType', 2)"
+          >
+            双色球
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-iswin': queryParams.isWin !== 'Y',
+              'fx67ll-tab-item-iswin-active': queryParams.isWin === 'Y',
+            }"
+            @click="setSearchFilterParams('isWin', queryParams.isWin === 'Y' ? 'N' : 'Y')"
+          >
+            {{
+              !queryParams.isWin
+                ? "是否中奖"
+                : `${queryParams.isWin === "Y" ? "已" : "未"}中奖`
+            }}
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-date': true,
+              'fx67ll-tab-item-date-active': searchFilterDateType === 'thisWeek',
+            }"
+            @click="setSearchFilterDateParams('thisWeek')"
+            >本周
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-date': true,
+              'fx67ll-tab-item-date-active': searchFilterDateType === 'thisMonth',
+            }"
+            @click="setSearchFilterDateParams('thisMonth')"
+            >本月
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-date': true,
+              'fx67ll-tab-item-date-active': searchFilterDateType === 'latestWeek',
+            }"
+            @click="setSearchFilterDateParams('latestWeek')"
+            >最近7天
+          </view>
+          <view
+            :class="{
+              'fx67ll-tab-item': true,
+              'fx67ll-tab-item-date': true,
+              'fx67ll-tab-item-date-active': searchFilterDateType === 'latestMonth',
+            }"
+            @click="setSearchFilterDateParams('latestMonth')"
+            >最近30天
+          </view>
+        </view>
+        <view class="fx67ll-tab-btn">
+          <button
+            class="fx67ll-tab-btn-search"
+            type="primary"
+            @click="handleDrawerSubmit"
+          >
+            查询
+          </button>
+          <button
+            class="fx67ll-tab-btn-reset"
+            @click="setSearchFilterParams('reset', true)"
+          >
+            重置条件
+          </button>
+        </view>
+      </view>
+    </zb-drawer>
   </view>
 </template>
 
@@ -161,6 +246,7 @@ import {
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
+import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
 // 获取加密配置
 import { getSecretConfig } from "@/api/secret/key.js";
@@ -169,16 +255,22 @@ import { getCryptoSaltKey } from "@/neverUploadToGithub";
 import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
 
+// 日期时间处理
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
+
 export default {
-  components: { uniListChat, uniPopup, uniPopupDialog },
+  components: { uniListChat, uniPopup, uniPopupDialog, vTabs },
   data() {
     return {
       logList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        numberType: "",
-        isWin: "",
+        numberType: null,
+        isWin: null,
+        beginCreateTime: null,
+        endCreateTime: null,
       },
       formParams: {
         lotteryId: "",
@@ -255,6 +347,59 @@ export default {
           },
         },
       ],
+      // 0-关闭筛选 1-快速筛选  2-高级筛选
+      punchFilterType: 0,
+      // 打开筛选的二级菜单入口配置
+      fabConfig: {
+        title: "uni-fab",
+        directionStr: "垂直",
+        horizontal: "left",
+        vertical: "bottom",
+        direction: "vertical",
+        pattern: {
+          icon: "search",
+          color: "#7A7E83",
+          backgroundColor: "#ffffff",
+          selectedColor: "#7A7E83",
+          buttonColor: "#2ecc71",
+          iconColor: "#ffffff",
+        },
+        is_color_type: false,
+        content: [
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=24",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=24",
+            text: "快速筛选",
+            active: false,
+          },
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
+            text: "高级筛选",
+            active: false,
+          },
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=10",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=10",
+            text: "重置筛选",
+            active: false,
+          },
+        ],
+      },
+      // 快速筛选当前激活索引
+      tabCurrentIndex: 0,
+      // 快速筛选类型
+      tabDataList: ["全部", "大乐透", "双色球", "已中奖"],
+      // 高级筛选弹窗
+      isShowDrawer: false,
+      // 高级筛选时间类型
+      searchFilterDateType: null,
     };
   },
   onLoad() {
@@ -269,6 +414,9 @@ export default {
     // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
+      if (!pageNum || !pageSize) {
+        return;
+      }
       this.queryParams = { ...self.queryParams, pageNum, pageSize };
       getLogList(self.queryParams)
         .then((res) => {
@@ -948,18 +1096,50 @@ export default {
         }
       });
     },
-    // 重置筛选条件
-    resetSearchFilter() {
+    // 底部筛选框点击
+    handleFabTrigger(e) {
+      if (e?.index === 0) {
+        this.punchFilterType = 1;
+        this.resetSearchFilter();
+      }
+      if (e?.index === 1) {
+        this.punchFilterType = 2;
+        this.isShowDrawer = true;
+      }
+      if (e?.index === 2) {
+        this.punchFilterType = 0;
+        this.resetSearchFilter();
+      }
+      this.$refs.fab.close();
+    },
+    // tab切换，快速筛选
+    handleTabChange(index) {
       this.queryParams = {
         pageNum: 1,
         pageSize: 10,
         numberType: null,
         isWin: null,
       };
+      if (index === 0) {
+        this.resetSearchFilter();
+      }
+      if (index === 1) {
+        this.searchByNumberType(1);
+      }
+      if (index === 2) {
+        this.searchByNumberType(2);
+      }
+      if (index === 3) {
+        this.searchByWinType("Y");
+      }
+    },
+    // 重置快速筛选条件，也就是查询全部初始状态数据
+    resetSearchFilter() {
+      this.setSearchFilterParams("reset");
       this.queryLogList();
       this.$refs.paging.reload();
     },
-    // 通过号码类型筛选条件
+    // 通过号码类型查询的快速筛选
     searchByNumberType(numberType) {
       const self = this;
       this.queryParams = {
@@ -969,15 +1149,107 @@ export default {
       this.queryLogList();
       this.$refs.paging.reload();
     },
-    // 通过是否中奖筛选条件
-    searchByWinType() {
+    // 通过是否中奖查询的快速筛选
+    searchByWinType(winType) {
       const self = this;
       this.queryParams = {
         ...self.queryParams,
-        isWin: self.queryParams.isWin === "Y" ? null : "Y",
+        isWin: winType,
       };
       this.queryLogList();
       this.$refs.paging.reload();
+    },
+    // 关闭高级筛选弹窗
+    handleDrawerClose() {
+      this.isShowDrawer = false;
+    },
+    // 提交高级筛选查询条件
+    handleDrawerSubmit() {
+      this.isShowDrawer = false;
+      this.queryLogList();
+      this.$refs.paging.reload();
+    },
+    // 设置高级筛选的查询参数
+    setSearchFilterParams(type, value) {
+      const self = this;
+      if (type === "reset") {
+        this.queryParams = {
+          pageNum: 1,
+          pageSize: 10,
+          numberType: null,
+          isWin: null,
+          beginCreateTime: null,
+          endCreateTime: null,
+        };
+        this.searchFilterDateType = null;
+        if (value) {
+          this.handleDrawerClose();
+        }
+      } else {
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          [type]: value,
+        };
+      }
+    },
+    setSearchFilterDateParams(type) {
+      const self = this;
+      const formatStr = "yyyy-MM-DD";
+      this.searchFilterDateType = type;
+      if (type === "thisWeek") {
+        const startOfWeek = moment().startOf("week").format(formatStr);
+        const endOfWeek = moment().endOf("week").format(formatStr);
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          beginCreateTime: startOfWeek,
+          endCreateTime: endOfWeek,
+        };
+      }
+      if (type === "thisMonth") {
+        const startOfMonth = moment().startOf("month").format(formatStr);
+        const endOfMonth = moment().endOf("month").format(formatStr);
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          beginCreateTime: startOfMonth,
+          endCreateTime: endOfMonth,
+        };
+      }
+      if (type === "latestWeek") {
+        const startLatestWeek = moment()
+          .subtract(6, "days")
+          .startOf("day")
+
+          .format(formatStr);
+        const endLatestWeek = moment().endOf("day").format(formatStr);
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          beginCreateTime: startLatestWeek,
+          endCreateTime: endLatestWeek,
+        };
+      }
+      if (type === "latestMonth") {
+        const startLatestMonth = moment()
+          .subtract(29, "days")
+          .startOf("day")
+
+          .format(formatStr);
+        const endLatestMonth = moment().endOf("day").format(formatStr);
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          beginCreateTime: startLatestMonth,
+          endCreateTime: endLatestMonth,
+        };
+      }
     },
   },
 };
