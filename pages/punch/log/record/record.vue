@@ -1,28 +1,55 @@
 <template>
   <view class="fx67ll-punch-box">
-    <view
-      v-if="!isShowAddDrawer"
-      id="fx67ll-wx-punch-chart"
-      class="fx67ll-chart-punch"
-      :style="{ marginTop: `${getChartMarginTop}` }"
-    >
-      <qiun-data-charts type="arcbar" :opts="chartOpts" :chartData="chartData" />
-    </view>
-    <view class="fx67ll-txt-target" v-if="!isShowAddDrawer">
-      <span>{{ punchWorkHours }}</span>
-      <span>/</span>
-      <span>{{ targetWorkHours }}</span>
-    </view>
-    <view class="fx67ll-punch-btn" v-if="!isShowAddDrawer">
-      <button class="fx67ll-btn-record" type="primary" @click="showPunchDrawerForAddLog">
-        记录打卡时间
-      </button>
-      <uni-icons
-        class="fx67ll-btn-history"
-        type="medal-filled"
-        :size="32"
-        @click="goToHistoryLogList"
-      ></uni-icons>
+    <view v-if="!isPunchLoading">
+      <view v-if="!isShowAddDrawer && checkHasChartData">
+        <view
+          v-if="!isShowAddDrawer"
+          id="fx67ll-wx-punch-chart"
+          class="fx67ll-chart-punch"
+          :class="{
+            'fade-show': !isPunchLoading,
+          }"
+          :style="{ marginTop: `${getChartMarginTop}` }"
+        >
+          <qiun-data-charts type="arcbar" :opts="chartOpts" :chartData="chartData" />
+        </view>
+        <view
+          class="fx67ll-txt-target"
+          :class="{
+            'fade-show-second': !isPunchLoading,
+          }"
+          v-if="!isShowAddDrawer"
+        >
+          <span>{{ punchWorkHours }}</span>
+          <span>/</span>
+          <span>{{ targetWorkHours }}</span>
+        </view>
+      </view>
+      <view class="no-data" v-if="!checkHasChartData && !isShowAddDrawer">
+        <img src="/static/images/no-data.png" />
+      </view>
+      <view
+        class="fx67ll-punch-btn"
+        :class="{
+          'fade-show-third': !isPunchLoading,
+        }"
+        v-if="!isShowAddDrawer"
+      >
+        <button
+          class="fx67ll-btn-record"
+          type="primary"
+          @click="showPunchDrawerForAddLog"
+        >
+          新增打卡
+        </button>
+        <button class="fx67ll-btn-history" @click="goToHistoryLogList">历史记录</button>
+        <!-- <uni-icons
+          class="fx67ll-btn-history"
+          type="medal-filled"
+          :size="32"
+          @click="goToHistoryLogList"
+        ></uni-icons> -->
+      </view>
     </view>
     <punchDrawer
       :isShowPunchDrawer="isShowAddDrawer"
@@ -47,6 +74,7 @@ export default {
   },
   data() {
     return {
+      isPunchLoading: true,
       punchWorkHours: 0,
       targetWorkHours: 300000,
       chartData: {
@@ -91,7 +119,19 @@ export default {
   },
   computed: {
     getChartMarginTop() {
-      return `${(uni.getSystemInfoSync().windowHeight - 400) / 2}px`;
+      return `${(uni.getSystemInfoSync().windowHeight - 440) / 2}px`;
+    },
+    checkHasChartData() {
+      if (
+        this.chartData &&
+        this.chartData?.series &&
+        this.chartData.series?.length > 0 &&
+        this.chartData.series[0].data &&
+        this.chartData.series[0].data > 0
+      ) {
+        return true;
+      }
+      return false;
     },
   },
   methods: {
@@ -99,56 +139,71 @@ export default {
     queryPunchLogTotalTime() {
       const self = this;
 
+      this.isPunchLoading = true;
+      uni.showLoading({
+        title: "查询数据中...",
+      });
+
       const weekDays = self.queryWeekdaysCount();
       this.targetWorkHours = weekDays * 8.5;
 
-      getInfo().then((res) => {
-        const user = res?.user;
-        const username =
-          user == null || user.userName == "" || user.userName == null
-            ? ""
-            : user.userName;
+      getInfo()
+        .then((res) => {
+          const user = res?.user;
+          const username =
+            user == null || user.userName == "" || user.userName == null
+              ? ""
+              : user.userName;
 
-        const queryParams = {
-          pageNum: 1,
-          pageSize: 999999999,
-        };
+          const queryParams = {
+            pageNum: 1,
+            pageSize: 999999999,
+          };
 
-        if (username === "fx67ll") {
-          queryParams.updateBy = username;
-        }
-
-        getWorkTotalTime(queryParams).then((res) => {
-          if (res?.code === 200) {
-            if (res?.rows && res?.rows?.length > 0) {
-              console.log(res?.rows);
-              const punchData = res?.rows[0];
-              self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
-              self.chartData.series[0].data = (
-                punchData?.totalWorkHours / self.targetWorkHours
-              ).toFixed(3);
-              self.chartOpts.title.name = `${(
-                (self.punchWorkHours / self.targetWorkHours) *
-                100
-              ).toFixed(1)}%`;
-              self.chartData.series[0].name = `${moment().month() + 1}月工时进度`;
-              self.chartOpts.subtitle.name = `${moment().month() + 1}月工时进度`;
-            } else {
-              uni.showToast({
-                title: "暂无工时统计数据！",
-                icon: "none",
-                duration: 1998,
-              });
-            }
-          } else {
-            uni.showToast({
-              title: "工时统计查询失败！",
-              icon: "none",
-              duration: 1998,
-            });
+          if (username === "fx67ll") {
+            queryParams.updateBy = username;
           }
+
+          getWorkTotalTime(queryParams)
+            .then((res) => {
+              if (res?.code === 200) {
+                if (res?.rows && res?.rows?.length > 0) {
+                  const punchData = res?.rows[0];
+                  self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
+                  self.chartData.series[0].data = (
+                    punchData?.totalWorkHours / self.targetWorkHours
+                  ).toFixed(3);
+                  self.chartOpts.title.name = `${(
+                    (self.punchWorkHours / self.targetWorkHours) *
+                    100
+                  ).toFixed(1)}%`;
+                  self.chartData.series[0].name = `${moment().month() + 1}月工时进度`;
+                  self.chartOpts.subtitle.name = `${moment().month() + 1}月工时进度`;
+                } else {
+                  // uni.showToast({
+                  //   title: "暂无工时统计数据！",
+                  //   icon: "none",
+                  //   duration: 1998,
+                  // });
+                }
+              } else {
+                uni.showToast({
+                  title: "工时统计查询失败！",
+                  icon: "none",
+                  duration: 1998,
+                });
+              }
+            })
+            .finally(() => {
+              self.isPunchLoading = false;
+              uni.hideLoading();
+            });
+        })
+        .catch((error) => {
+          console.log("queryPunchLogTotalTime 方法中的 getInfo 接口异常：", error);
+          self.isPunchLoading = false;
+          uni.hideLoading();
         });
-      });
     },
     // 查询某年某月的工作日数量
     queryWeekdaysCount() {
