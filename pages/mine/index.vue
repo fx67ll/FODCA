@@ -175,7 +175,6 @@ export default {
           self.isNeedWaiKuai = JSON.parse(
             decryptString(res.rows[0].secretValue, getCryptoSaltKey()) || 'false'
           );
-          console.log("wkConfig", self.isNeedWaiKuai);
         }
       });
     },
