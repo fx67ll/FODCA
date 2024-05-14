@@ -45,16 +45,14 @@
           </picker>
         </view>
       </view>
-      <view class="fx67ll-punch-item">
-        <view class="fx67ll-punch-item-title">打卡备注</view>
-        <view class="fx67ll-punch-item-remark">
-          <uni-easyinput
-            :value="punchRemark"
-            placeholder="请输入..."
-            maxlength="1023"
-            @input="punchRemarkChange"
-          />
-        </view>
+      <view class="fx67ll-punch-item-remark">
+        <uni-easyinput
+          :value="punchRemark"
+          type="textarea"
+          placeholder="有需要的话可以在这里记录备注~"
+          maxlength="1023"
+          @input="punchRemarkChange"
+        />
       </view>
       <view class="fx67ll-punch-btn">
         <button class="fx67ll-btn-submit" type="primary" @click="submitPunchLogForm">
@@ -101,7 +99,8 @@ export default {
       // 定时器对象
       timer: null,
       // Drawer组件相关参数
-      drawerHeight: "360px",
+      // drawerHeight: "360px",
+      drawerHeight: "420px",
       drawerTitle: moment().format("YYYY-MM-DD hh:mm:ss dddd"),
       // 选择器组件相关参数
       punchTypeArr: ["上班打卡", "下班打卡"],

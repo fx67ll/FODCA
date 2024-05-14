@@ -1,6 +1,7 @@
 @import url('@/static/style/mixin.less');
 .fx67ll-punch-drawer {
   padding: 60rpx;
+
   .fx67ll-punch-item {
     width: 80%;
     margin: 0 auto;
@@ -8,21 +9,26 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 40rpx;
+
     .fx67ll-punch-item-title {
       font-size: 36rpx;
     }
+
     .fx67ll-punch-item-picker {
       position: relative;
       top: 2px;
+
       .fx67ll-punch-item-text {
         font-size: 36rpx;
         color: #2ecc71;
       }
     }
-    .fx67ll-punch-item-remark {
-      width: 50%;
-    }
   }
+
+  .fx67ll-punch-item-remark {
+    padding: 0 56rpx;
+  }
+
   .fx67ll-punch-btn {
     width: 100%;
     margin: 0;
@@ -30,9 +36,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
+    left: 6rpx;
+
     .fx67ll-btn-submit {
       width: calc(100% - 200rpx);
     }
+
     .fx67ll-btn-cancel {
       width: 160rpx;
     }
