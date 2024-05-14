@@ -268,9 +268,9 @@
 		bottom: $fab-LeftBottom-bottom;
 		/* #ifdef H5 */
 		// left: calc(15px + var(--window-left));
-		left: calc($fab-LeftBottom-left + var(--window-left));
+		// left: calc($fab-LeftBottom-left + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
+		// bottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
 		/* #endif */
 		// padding: 10px;
 	}
@@ -295,9 +295,9 @@
 		bottom: $fab-RightBottom-bottom;
 		/* #ifdef H5 */
 		// right: calc(15px + var(--window-right));
-		right: calc($fab-RightBottom-right + var(--window-left));
+		// right: calc($fab-RightBottom-right + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
+		// bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
 		/* #endif */
 		// padding: 10px;
 	}
@@ -334,9 +334,9 @@
 		bottom: $fab-LeftBottom-bottom;
 		/* #ifdef H5 */
 		// left: calc(15px + var(--window-left));
-		left: calc($fab-LeftBottom-left + var(--window-left));
+		// left: calc($fab-LeftBottom-left + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
+		// ottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
 		/* #endif */
 	}
 
@@ -356,9 +356,9 @@
 		bottom: $fab-RightBottom-bottom;
 		/* #ifdef H5 */
 		// right: calc(15px + var(--window-right));
-		right: calc($fab-RightBottom-right + var(--window-left));
+		// right: calc($fab-RightBottom-right + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
+		// bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
 		/* #endif */
 	}
 
