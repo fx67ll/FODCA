@@ -12,7 +12,7 @@
         <v-tabs
           class="nav-tab-box nav-tab-box-four"
           v-model="tabCurrentIndex"
-          v-if="punchFilterType === 1"
+          v-if="logFilterType === 1"
           :tabs="tabDataList"
           :scroll="false"
           :lineScale="0.3"
@@ -127,7 +127,6 @@
     </uni-popup>
     <uni-fab
       ref="fab"
-      v-if="logList && logList.length > 0"
       :pattern="fabConfig.pattern"
       :content="fabConfig.content"
       :horizontal="fabConfig.horizontal"
@@ -144,7 +143,7 @@
       :radius="true"
     >
       <view class="fx67ll-search-drawer">
-        <view class="fx67ll-tab-box" v-if="punchFilterType === 2">
+        <view class="fx67ll-tab-box" v-if="logFilterType === 2">
           <view
             :class="{
               'fx67ll-tab-item': true,
@@ -346,8 +345,8 @@ export default {
         },
       ],
       // 0-关闭筛选 1-快速筛选  2-高级筛选
-      punchFilterType: 0,
-      // 打开筛选的二级菜单入口配置
+      logFilterType: 0,
+      // 二级功能入口配置
       fabConfig: {
         title: "uni-fab",
         directionStr: "垂直",
@@ -366,7 +365,7 @@ export default {
         content: [
           {
             iconPath:
-              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=24",
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=22",
             selectedIconPath:
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=24",
             text: "快速筛选",
@@ -374,7 +373,7 @@ export default {
           },
           {
             iconPath:
-              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=22",
             selectedIconPath:
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
             text: "高级筛选",
@@ -567,7 +566,7 @@ export default {
       const self = this;
       delLog(id).then((res) => {
         if (res?.code === 200) {
-          // self.queryLogList();
+          self.queryLogList();
           self.$refs.paging.reload();
           uni.showToast({
             title: "历史号码记录删除成功！",
@@ -994,8 +993,6 @@ export default {
           self.$refs.inputDialog.close();
           self.isNeedInitDialog = false;
           uni.hideLoading();
-          // self.queryLogList(self.queryParams);
-          self.queryLogList();
         });
     },
     // 查询号码详情并检查是否中奖
@@ -1083,8 +1080,8 @@ export default {
             icon: "none",
             duration: 1998,
           });
-          // self.queryLogList(self.queryParams);
           self.queryLogList();
+          self.$refs.paging.reload();
         } else {
           uni.showToast({
             title: "中奖信息保存失败！",
@@ -1094,18 +1091,18 @@ export default {
         }
       });
     },
-    // 底部筛选框点击
+    // 二级菜单按钮点击
     handleFabTrigger(e) {
       if (e?.index === 0) {
-        this.punchFilterType = 1;
+        this.logFilterType = 1;
         this.resetSearchFilter();
       }
       if (e?.index === 1) {
-        this.punchFilterType = 2;
+        this.logFilterType = 2;
         this.isShowDrawer = true;
       }
       if (e?.index === 2) {
-        this.punchFilterType = 0;
+        this.logFilterType = 0;
         this.resetSearchFilter();
       }
       this.$refs.fab.close();
