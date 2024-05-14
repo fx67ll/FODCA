@@ -2,7 +2,7 @@
   <view class="fx67ll-log-box">
     <z-paging-mini
       ref="paging"
-      back-to-top-bottom="30rpx"
+      back-to-top-bottom="166rpx"
       :auto-show-back-to-top="true"
       v-model="logList"
       @query="queryLogList"
@@ -127,6 +127,7 @@
     </uni-popup>
     <uni-fab
       ref="fab"
+      v-if="logList && logList.length > 0"
       :pattern="fabConfig.pattern"
       :content="fabConfig.content"
       :horizontal="fabConfig.horizontal"
@@ -223,10 +224,7 @@
           >
             查询
           </button>
-          <button
-            class="fx67ll-tab-btn-reset"
-            @click="setSearchFilterParams('reset', true)"
-          >
+          <button class="fx67ll-tab-btn-reset" @click="setSearchFilterParams('reset')">
             重置条件
           </button>
         </view>
@@ -353,9 +351,9 @@ export default {
       fabConfig: {
         title: "uni-fab",
         directionStr: "垂直",
-        horizontal: "left",
+        horizontal: "right",
         vertical: "bottom",
-        direction: "vertical",
+        direction: "horizontal",
         pattern: {
           icon: "search",
           color: "#7A7E83",
@@ -1182,9 +1180,6 @@ export default {
           endCreateTime: null,
         };
         this.searchFilterDateType = null;
-        if (value) {
-          this.handleDrawerClose();
-        }
       } else {
         this.queryParams = {
           ...self.queryParams,
