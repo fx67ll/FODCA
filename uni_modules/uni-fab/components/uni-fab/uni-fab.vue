@@ -259,16 +259,18 @@
 		opacity: 1;
 	}
 
-	$fab-leftBottom-left: 15px;
-	$fab-leftBottom-bottom: 10px;
+	$fab-LeftBottom-left: 15px;
+	$fab-LeftBottom-bottom: 10px;
 	.uni-fab--leftBottom {
-		left: $fab-leftBottom-left;
+		// left: 15px;
+		left: $fab-LeftBottom-left;
 		// bottom: 30px;
-		bottom: $fab-leftBottom-bottom;
+		bottom: $fab-LeftBottom-bottom;
 		/* #ifdef H5 */
-		left: calc($fab-leftBottom-left + var(--window-left));
+		// left: calc(15px + var(--window-left));
+		left: calc($fab-LeftBottom-left + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-leftBottom-bottom + var(--window-bottom));
+		bottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
 		/* #endif */
 		// padding: 10px;
 	}
@@ -283,12 +285,19 @@
 		// padding: 10px;
 	}
 
+	
+	$fab-RightBottom-right: 12px;
+	$fab-RightBottom-bottom: 12px;
 	.uni-fab--rightBottom {
-		right: 15px;
-		bottom: 30px;
+		// right: 15px;
+		right: $fab-RightBottom-right;
+		// bottom: 30px;
+		bottom: $fab-RightBottom-bottom;
 		/* #ifdef H5 */
-		right: calc(15px + var(--window-right));
-		bottom: calc(30px + var(--window-bottom));
+		// right: calc(15px + var(--window-right));
+		right: calc($fab-RightBottom-right + var(--window-left));
+		// bottom: calc(30px + var(--window-bottom));
+		bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
 		/* #endif */
 		// padding: 10px;
 	}
@@ -319,13 +328,15 @@
 	}
 
 	.uni-fab__circle--leftBottom {
-		left: $fab-leftBottom-left;
+		// left: 15px;
+		left: $fab-LeftBottom-left;
 		// bottom: 30px;
-		bottom: $fab-leftBottom-bottom;
+		bottom: $fab-LeftBottom-bottom;
 		/* #ifdef H5 */
-		left: calc($fab-leftBottom-left + var(--window-left));
+		// left: calc(15px + var(--window-left));
+		left: calc($fab-LeftBottom-left + var(--window-left));
 		// bottom: calc(30px + var(--window-bottom));
-		bottom: calc($fab-leftBottom-bottom + var(--window-bottom));
+		bottom: calc($fab-LeftBottom-bottom + var(--window-bottom));
 		/* #endif */
 	}
 
@@ -339,11 +350,15 @@
 	}
 
 	.uni-fab__circle--rightBottom {
-		right: 15px;
-		bottom: 30px;
+		// right: 15px;
+		right: $fab-RightBottom-right;
+		// bottom: 30px;
+		bottom: $fab-RightBottom-bottom;
 		/* #ifdef H5 */
-		right: calc(15px + var(--window-right));
-		bottom: calc(30px + var(--window-bottom));
+		// right: calc(15px + var(--window-right));
+		right: calc($fab-RightBottom-right + var(--window-left));
+		// bottom: calc(30px + var(--window-bottom));
+		bottom: calc($fab-RightBottom-bottom + var(--window-bottom));
 		/* #endif */
 	}
 
