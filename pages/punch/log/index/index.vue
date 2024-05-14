@@ -7,6 +7,20 @@
       v-model="punchList"
       @query="queryPunchList"
     >
+      <view slot="top">
+        <v-tabs
+          class="nav-tab-box nav-tab-box-four"
+          v-model="tabCurrentIndex"
+          v-if="isShowTabFilter"
+          :isNeedHiddenBtn="true"
+          :isShowTabNow="isShowTabFilter"
+          :tabs="tabDataList"
+          :scroll="false"
+          :lineScale="0.3"
+          @hideTab="handleTabHide"
+          @change="handleTabChange"
+        ></v-tabs>
+      </view>
       <uni-swipe-action>
         <view class="fx67ll-extra-item" v-for="item in punchList" :key="item.punchId">
           <uni-swipe-action-item
@@ -56,6 +70,15 @@
       @hideDrawer="setIsShowDrawer"
       @reloadPunchList="queryPunchList"
     />
+    <uni-fab
+      ref="fab"
+      :pattern="fabConfig.pattern"
+      :content="fabConfig.content"
+      :horizontal="fabConfig.horizontal"
+      :vertical="fabConfig.vertical"
+      :direction="fabConfig.direction"
+      @trigger="handleFabTrigger"
+    />
   </view>
 </template>
 
@@ -68,15 +91,22 @@ import { diffTimeStrFromNow } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
+import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
-// import moment from "@/node_modules/moment";
-// import "@/node_modules/moment/locale/zh-cn";
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
 
 export default {
-  components: { uniListChat, punchDrawer },
+  components: { uniListChat, punchDrawer, vTabs },
   data() {
     return {
       punchList: [],
+      queryParams: {
+        pageNum: 1,
+        pageSize: 10,
+        beginUpdateTime: null,
+        endUpdateTime: null,
+      },
       actionOptions: [
         {
           text: "取消",
@@ -100,62 +130,66 @@ export default {
       // Drawer组件相关参数
       isShowEditDrawer: false,
       editPunchInfo: {},
+      // 二级功能入口配置
+      fabConfig: {
+        title: "uni-fab",
+        directionStr: "垂直",
+        horizontal: "left",
+        vertical: "bottom",
+        direction: "vertical",
+        pattern: {
+          icon: "gear",
+          color: "#7A7E83",
+          backgroundColor: "#ffffff",
+          selectedColor: "#7A7E83",
+          buttonColor: "#2ecc71",
+          iconColor: "#ffffff",
+        },
+        is_color_type: false,
+        content: [
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=44",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=44",
+            text: "缺卡统计",
+            active: false,
+          },
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
+            text: "快速筛选",
+            active: false,
+          },
+        ],
+      },
+      // 是否显示快速筛选
+      isShowTabFilter: false,
+      // 快速筛选当前激活索引
+      tabCurrentIndex: 0,
+      // 快速筛选类型
+      tabDataList: ["全部", "本月", "有缺卡"],
+      // 是否显示缺卡记录弹窗
+      isShowCountDrawer: false,
     };
   },
   methods: {
-    // formatDataByDate() {
-    //   // 创建一个空对象来存储聚合后的数据
-    //   const aggregatedData = {};
-    //   // 遍历原始数据
-    //   originalData.forEach((item) => {
-    //     // 提取日期部分
-    //     const date = item.updateTime.substring(0, 10);
-    //     // 如果在聚合数据中不存在以该日期为键的对象，则创建一个空数组
-    //     if (!aggregatedData[date]) {
-    //       aggregatedData[date] = [];
-    //     }
-    //     // 将当前数据项添加到以该日期为键的数组中
-    //     aggregatedData[date].push(item);
-    //   });
-    //   // 转换聚合数据对象为数组
-    //   const result = Object.keys(aggregatedData).map((date) => ({
-    //     date,
-    //     data: aggregatedData[date],
-    //   }));
-    //   // 打印看下数据
-    //   console.log(result);
-    // },
     queryPunchList(pageNum, pageSize) {
       const self = this;
 
-      uni.showLoading({
-        title: "查询数据中...",
-      });
+      if (!pageNum || !pageSize) {
+        return;
+      }
 
-      // const beginDayIndex = pageNum * pageSize + 1;
-      // const endDayIndex = (pageNum - 1) * pageSize - 1;
-      // const beginUpdateTime = moment().subtract(beginDayIndex, "days").format("YYYY-MM-DD");
-      // const endUpdateTime = moment()
-      //   .subtract(endDayIndex, "days")
-      //   .format("YYYY-MM-DD");
+      // uni.showLoading({
+      //   title: "查询数据中...",
+      // });
 
-      const queryParams = {
-        pageNum,
-        pageSize,
-        // beginUpdateTime,
-        // endUpdateTime,
-      };
+      this.queryParams = { ...self.queryParams, pageNum, pageSize };
 
-      // console.log(
-      //   pageNum,
-      //   pageSize,
-      //   beginDayIndex,
-      //   endDayIndex,
-      //   beginUpdateTime,
-      //   endUpdateTime
-      // );
-
-      getPunchLogList(queryParams)
+      getPunchLogList(self.queryParams)
         .then((res) => {
           if (res?.code === 200) {
             if (res?.rows && res?.rows?.length > 0) {
@@ -174,10 +208,10 @@ export default {
         })
         .catch((res) => {
           self.$refs.paging.complete(false);
-        })
-        .finally(() => {
-          uni.hideLoading();
         });
+      // .finally(() => {
+      //   uni.hideLoading();
+      // });
     },
     // 关闭修改打卡记录抽屉
     editPunchLogInfo(punchInfo) {
@@ -188,6 +222,7 @@ export default {
     setIsShowDrawer(val) {
       this.isShowEditDrawer = val;
     },
+    // 删除打卡记录
     deletePunch(punchId) {
       const self = this;
       delPunchLog(punchId).then((res) => {
@@ -208,6 +243,7 @@ export default {
         }
       });
     },
+    // 侧滑菜单事件
     handleActionClick(e, record) {
       const self = this;
       if (e?.index === 1) {
@@ -231,6 +267,66 @@ export default {
           }
         });
       }
+    },
+    // 二级菜单按钮点击
+    handleFabTrigger(e) {
+      if (e?.index === 0) {
+        this.isShowCountDrawer = true;
+        uni.showToast({
+          title: "功能开发中！",
+          icon: "none",
+          duration: 1998,
+        });
+      }
+      if (e?.index === 1) {
+        this.isShowTabFilter = true;
+      }
+      this.$refs.fab.close();
+    },
+    // tab关闭
+    handleTabHide(isHide) {
+      this.isShowTabFilter = isHide;
+      this.$refs.fab.close();
+      this.resetSearchFilter();
+    },
+    // tab切换，快速筛选
+    handleTabChange(index) {
+      const self = this;
+      const formatStr = "yyyy-MM-DD";
+      if (index === 0) {
+        this.resetSearchFilter();
+      }
+      if (index === 1) {
+        const startOfMonth = moment().startOf("month").format(formatStr);
+        const endOfMonth = moment().endOf("month").format(formatStr);
+        this.queryParams = {
+          ...self.queryParams,
+          pageNum: 1,
+          pageSize: 10,
+          beginUpdateTime: startOfMonth,
+          endUpdateTime: endOfMonth,
+        };
+        this.queryPunchList();
+        this.$refs.paging.reload();
+      }
+      if (index === 2) {
+        uni.showToast({
+          title: "功能开发中！",
+          icon: "none",
+          duration: 1998,
+        });
+      }
+    },
+    resetSearchFilter() {
+      this.tabCurrentIndex = 0;
+      this.queryParams = {
+        pageNum: 1,
+        pageSize: 10,
+        beginUpdateTime: null,
+        endUpdateTime: null,
+      };
+      this.queryPunchList();
+      this.$refs.paging.reload();
     },
   },
 };
