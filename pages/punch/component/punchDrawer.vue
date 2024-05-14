@@ -6,7 +6,6 @@
     :visible.sync="isShowPunchDrawer"
     :radius="true"
     :height="drawerHeight"
-    :before-close="handleDrawerClose"
   >
     <view class="fx67ll-punch-drawer">
       <view class="fx67ll-punch-item">
