@@ -170,7 +170,7 @@ export default {
       // 快速筛选当前激活索引
       tabCurrentIndex: 0,
       // 快速筛选类型
-      tabDataList: ["全部", "本月", "有缺卡"],
+      tabDataList: ["全部", "本月", "本周", "上班卡", "下班卡"],
       // 是否显示缺卡记录弹窗
       isShowCountDrawer: false,
     };
@@ -291,7 +291,6 @@ export default {
     },
     // tab切换，快速筛选
     handleTabChange(index) {
-      const self = this;
       const formatStr = "yyyy-MM-DD";
       if (index === 0) {
         this.resetSearchFilter();
@@ -300,21 +299,39 @@ export default {
         const startOfMonth = moment().startOf("month").format(formatStr);
         const endOfMonth = moment().endOf("month").format(formatStr);
         this.queryParams = {
-          ...self.queryParams,
           pageNum: 1,
           pageSize: 10,
           beginUpdateTime: startOfMonth,
           endUpdateTime: endOfMonth,
         };
-        this.queryPunchList();
-        this.$refs.paging.reload();
       }
       if (index === 2) {
-        uni.showToast({
-          title: "功能开发中！",
-          icon: "none",
-          duration: 1998,
-        });
+        const startOfWeek = moment().startOf("week").format(formatStr);
+        const endOfWeek = moment().endOf("week").format(formatStr);
+        this.queryParams = {
+          pageNum: 1,
+          pageSize: 10,
+          beginUpdateTime: startOfWeek,
+          endUpdateTime: endOfWeek,
+        };
+      }
+      if (index === 3) {
+        this.queryParams = {
+          pageNum: 1,
+          pageSize: 10,
+          punchType: "1",
+        };
+      }
+      if (index === 4) {
+        this.queryParams = {
+          pageNum: 1,
+          pageSize: 10,
+          punchType: "2",
+        };
+      }
+      if (index !== 0) {
+        this.queryPunchList();
+        this.$refs.paging.reload();
       }
     },
     resetSearchFilter() {
