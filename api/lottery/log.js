@@ -42,3 +42,12 @@ export function editLog(data) {
     data: data,
   });
 }
+
+// 查询历史号码记录中奖数据统计
+export function listTotalReward(query) {
+  return request({
+    url: '/lottery/log/getLotteryTotalReward',
+    method: 'get',
+    params: query,
+  });
+}

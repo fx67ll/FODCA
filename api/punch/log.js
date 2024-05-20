@@ -26,6 +26,15 @@ export function getWorkTotalTime(query) {
   });
 }
 
+// 查询缺卡记录列表
+export function getPunchLostLog(query) {
+  return request({
+    url: "/punch/log/getPunchLostLog",
+    method: "get",
+    params: query,
+  });
+}
+
 // 新增打卡记录
 export function addPunchLog(data) {
   return request({
