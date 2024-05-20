@@ -111,6 +111,12 @@
       }
     },
     {
+      "path": "pages/lottery/statistics/statistics",
+      "style": {
+        "navigationBarTitleText": "中奖金额统计"
+      }
+    },
+    {
       "path": "pages/lottery/log/edit/edit",
       "style": {
         "navigationBarTitleText": "修改号码记录"
@@ -144,6 +150,12 @@
       "path": "pages/punch/log/index/index",
       "style": {
         "navigationBarTitleText": "历史打卡记录"
+      }
+    },
+    {
+      "path": "pages/punch/log/statistics/statistics",
+      "style": {
+        "navigationBarTitleText": "缺卡记录统计"
       }
     }
   ],
