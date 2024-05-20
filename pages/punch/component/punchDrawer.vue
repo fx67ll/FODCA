@@ -87,7 +87,9 @@ export default {
     punchInfo: {
       type: Object,
       required: false,
-      default: {},
+      default: () => {
+        return {};
+      },
     },
   },
   data() {
