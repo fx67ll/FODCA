@@ -25,8 +25,23 @@
           <span>{{ targetWorkHours }}</span>
         </view>
       </view>
-      <view class="no-data" v-if="!checkHasChartData && !isShowAddDrawer">
+      <view
+        class="no-data"
+        :class="{
+          'fade-show': !isPunchLoading,
+        }"
+        v-if="!checkHasChartData && !isShowAddDrawer"
+      >
         <img src="/static/images/no-data.png" />
+      </view>
+      <view
+        class="fx67ll-zero-target"
+        :class="{
+          'fade-show-second': !isPunchLoading,
+        }"
+        v-if="!isShowAddDrawer && !checkHasChartData"
+      >
+        本月累计工时为 <span>{{ punchWorkHours }}</span>
       </view>
       <view
         class="fx67ll-punch-btn"
@@ -63,7 +78,6 @@
 import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
 
 import { getWorkTotalTime } from "@/api/punch/log";
-import { getInfo } from "@/api/login";
 
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
@@ -74,6 +88,7 @@ export default {
   },
   data() {
     return {
+      userName: this.$store.state.user.name,
       isPunchLoading: true,
       punchWorkHours: 0,
       targetWorkHours: 300000,
@@ -114,7 +129,7 @@ export default {
       isShowAddDrawer: false,
     };
   },
-  onReady() {
+  onShow() {
     this.queryPunchLogTotalTime();
   },
   computed: {
@@ -147,60 +162,61 @@ export default {
       const weekDays = self.queryWeekdaysCount();
       this.targetWorkHours = weekDays * 8.5;
 
-      getInfo()
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 999999999,
+      };
+
+      if (this.userName === "fx67ll") {
+        queryParams.updateBy = this.userName;
+      }
+
+      getWorkTotalTime(queryParams)
         .then((res) => {
-          const user = res?.user;
-          const username =
-            user == null || user.userName == "" || user.userName == null
-              ? ""
-              : user.userName;
-
-          const queryParams = {
-            pageNum: 1,
-            pageSize: 999999999,
-          };
-
-          if (username === "fx67ll") {
-            queryParams.updateBy = username;
-          }
-
-          getWorkTotalTime(queryParams)
-            .then((res) => {
-              if (res?.code === 200) {
-                if (res?.rows && res?.rows?.length > 0) {
-                  const punchData = res?.rows[0];
-                  self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
-                  self.chartData.series[0].data = (
-                    punchData?.totalWorkHours / self.targetWorkHours
-                  ).toFixed(3);
-                  self.chartOpts.title.name = `${(
-                    (self.punchWorkHours / self.targetWorkHours) *
-                    100
-                  ).toFixed(1)}%`;
-                  self.chartData.series[0].name = `${moment().month() + 1}月工时进度`;
-                  self.chartOpts.subtitle.name = `${moment().month() + 1}月工时进度`;
-                } else {
-                  // uni.showToast({
-                  //   title: "暂无工时统计数据！",
-                  //   icon: "none",
-                  //   duration: 1998,
-                  // });
-                }
-              } else {
-                uni.showToast({
-                  title: "工时统计查询失败！",
-                  icon: "none",
-                  duration: 1998,
-                });
-              }
-            })
-            .finally(() => {
-              self.isPunchLoading = false;
-              uni.hideLoading();
+          if (res?.code === 200) {
+            const nowMonth = moment().format("YYYY-MM");
+            if (
+              res?.rows &&
+              res?.rows?.length > 0 &&
+              res?.rows[res.rows.length - 1]?.punchMonth === nowMonth
+            ) {
+              const latestDataIndex = res.rows.length - 1;
+              const punchData = res?.rows[latestDataIndex];
+              self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
+              self.chartData.series[0].data = (
+                punchData?.totalWorkHours / self.targetWorkHours
+              ).toFixed(3);
+              self.chartOpts.title.name = `${(
+                (self.punchWorkHours / self.targetWorkHours) *
+                100
+              ).toFixed(1)}%`;
+              self.chartData.series[0].name = `${moment().month() + 1}月工时进度`;
+              self.chartOpts.subtitle.name = `${moment().month() + 1}月工时进度`;
+            } else {
+              self.chartData = {
+                series: [
+                  {
+                    name: "本月工时进度",
+                    color: "#2ecc71",
+                    data: 0,
+                  },
+                ],
+              };
+              // uni.showToast({
+              //   title: "暂无工时统计数据！",
+              //   icon: "none",
+              //   duration: 2333,
+              // });
+            }
+          } else {
+            uni.showToast({
+              title: "工时统计查询失败！",
+              icon: "none",
+              duration: 1998,
             });
+          }
         })
-        .catch((error) => {
-          console.log("queryPunchLogTotalTime 方法中的 getInfo 接口异常：", error);
+        .finally(() => {
           self.isPunchLoading = false;
           uni.hideLoading();
         });
@@ -226,6 +242,7 @@ export default {
     },
     // 关闭新增打卡记录抽屉
     setIsShowDrawer(val) {
+      this.queryPunchLogTotalTime();
       this.isShowAddDrawer = val;
     },
     // 查看历史打卡记录列表
