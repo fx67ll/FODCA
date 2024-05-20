@@ -171,9 +171,10 @@ export default {
       tabCurrentIndex: 0,
       // 快速筛选类型
       tabDataList: ["全部", "本月", "本周", "上班卡", "下班卡"],
-      // 是否显示缺卡记录弹窗
-      isShowCountDrawer: false,
     };
+  },
+  onShow() {
+    this.queryPunchList();
   },
   methods: {
     queryPunchList(pageNum, pageSize) {
@@ -221,13 +222,15 @@ export default {
     // 关闭修改打卡记录抽屉
     setIsShowDrawer(val) {
       this.isShowEditDrawer = val;
+      this.queryPunchList();
+      this.$refs.paging.reload();
     },
     // 删除打卡记录
     deletePunch(punchId) {
       const self = this;
       delPunchLog(punchId).then((res) => {
         if (res?.code === 200) {
-          // self.queryPunchList();
+          self.queryPunchList();
           self.$refs.paging.reload();
           uni.showToast({
             title: "历史打卡记录删除成功！",
@@ -271,12 +274,7 @@ export default {
     // 二级菜单按钮点击
     handleFabTrigger(e) {
       if (e?.index === 0) {
-        this.isShowCountDrawer = true;
-        uni.showToast({
-          title: "功能开发中！",
-          icon: "none",
-          duration: 1998,
-        });
+        this.$tab.navigateTo("/pages/punch/log/statistics/statistics");
       }
       if (e?.index === 1) {
         this.isShowTabFilter = true;
