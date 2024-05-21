@@ -58,7 +58,7 @@
         </view>
         <view class="list-cell list-cell-arrow" @click="handleToLogStatistics">
           <view class="menu-item-box">
-            <view><uni-icons color="#2ecc71" type="flag" size="20"></uni-icons></view>
+            <view><uni-icons color="#2ecc71" type="flag" size="22"></uni-icons></view>
             <view>中奖金额统计</view>
           </view>
         </view>
