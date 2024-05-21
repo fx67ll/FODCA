@@ -10,6 +10,7 @@
             'fade-show': !isPunchLoading,
           }"
           :style="{ marginTop: `${getChartMarginTop}` }"
+          @click="queryPunchLogTotalTime"
         >
           <qiun-data-charts type="arcbar" :opts="chartOpts" :chartData="chartData" />
         </view>
@@ -41,7 +42,7 @@
         }"
         v-if="!isShowAddDrawer && !checkHasChartData"
       >
-        本月累计工时为 <span>{{ punchWorkHours }}</span>
+        本月累计工时为 <span>{{ punchWorkHours > 0 ? punchWorkHours : 0 }}</span>
       </view>
       <view
         class="fx67ll-punch-btn"
@@ -165,6 +166,7 @@ export default {
       const queryParams = {
         pageNum: 1,
         pageSize: 999999999,
+        punchMonth: moment().format("YYYY-MM"),
       };
 
       if (this.userName === "fx67ll") {
@@ -174,14 +176,8 @@ export default {
       getWorkTotalTime(queryParams)
         .then((res) => {
           if (res?.code === 200) {
-            const nowMonth = moment().format("YYYY-MM");
-            if (
-              res?.rows &&
-              res?.rows?.length > 0 &&
-              res?.rows[res.rows.length - 1]?.punchMonth === nowMonth
-            ) {
-              const latestDataIndex = res.rows.length - 1;
-              const punchData = res?.rows[latestDataIndex];
+            if (res?.rows && res?.rows?.length > 0) {
+              const punchData = res?.rows[0];
               self.punchWorkHours = punchData?.totalWorkHours.toFixed(1);
               self.chartData.series[0].data = (
                 punchData?.totalWorkHours / self.targetWorkHours
@@ -217,8 +213,8 @@ export default {
           }
         })
         .finally(() => {
-          self.isPunchLoading = false;
           uni.hideLoading();
+          self.isPunchLoading = false;
         });
     },
     // 查询某年某月的工作日数量
