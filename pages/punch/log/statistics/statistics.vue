@@ -1,10 +1,13 @@
 <template>
   <view class="fx67ll-statistics-box">
-    <view class="fx67ll-statistics-item" v-if="lostLogList && lostLogList.length > 0">
+    <view
+      class="fx67ll-statistics-item"
+      v-if="nowLostLogList && nowLostLogList.length > 0"
+    >
       <uni-section title="当月缺卡记录" type="line">
         <uni-list>
           <uni-list-item
-            v-for="item in lostLogList"
+            v-for="item in nowLostLogList"
             :key="item.key"
             :title="item.punchDay"
             :rightText="item.lostPunchType"
@@ -12,11 +15,14 @@
         </uni-list>
       </uni-section>
     </view>
-    <view class="fx67ll-statistics-item" v-if="lostLogList && lostLogList.length > 0">
+    <view
+      class="fx67ll-statistics-item"
+      v-if="prevLostLogList && prevLostLogList.length > 0"
+    >
       <uni-section title="上月缺卡记录" type="line">
         <uni-list>
           <uni-list-item
-            v-for="item in lostLogList"
+            v-for="item in prevLostLogList"
             :key="item.key"
             :title="item.punchDay"
             :rightText="item.lostPunchType"
@@ -24,7 +30,17 @@
         </uni-list>
       </uni-section>
     </view>
-    <view class="no-data" v-if="!lostLogList || lostLogList.length === 0">
+    <view
+      class="no-data"
+      :class="{
+        'fade-show': !lostLogLoading,
+      }"
+      v-if="
+        (!nowLostLogList || nowLostLogList.length === 0) &&
+        (!prevLostLogList || prevLostLogList.length === 0) &&
+        !lostLogLoading
+      "
+    >
       <img src="/static/images/no-data.png" />
     </view>
   </view>
@@ -40,17 +56,20 @@ import "@/node_modules/moment/locale/zh-cn";
 export default {
   data() {
     return {
-      lostLogList: [],
+      nowLostLogList: [],
+      prevLostLogList: [],
+      lostLogLoading: false,
     };
   },
   onShow() {
-    this.getPunchLostLog();
+    this.initPunchLostLog();
   },
   methods: {
-    // 查询缺卡记录列表
-    getPunchLostLog() {
+    // 初始化查询参数
+    initPunchLostLog() {
       const self = this;
 
+      this.lostLogLoading = true;
       uni.showLoading({
         title: "查询数据中...",
       });
@@ -63,38 +82,58 @@ export default {
               ? ""
               : user.userName;
 
-          const queryParams = {
+          const nowQueryParams = {
             pageNum: 1,
             pageSize: 999999999,
             punchMonth: moment().format("YYYY-MM"),
           };
 
+          const prevQueryParams = {
+            pageNum: 1,
+            pageSize: 999999999,
+            punchMonth: moment().subtract(1, "months").format("YYYY-MM"),
+          };
+
           if (username === "fx67ll") {
-            queryParams.updateBy = username;
+            nowQueryParams.updateBy = username;
+            prevQueryParams.updateBy = username;
           }
 
-          getPunchLostLog(queryParams)
-            .then((res) => {
-              if (res?.code === 200) {
-                if (res?.rows && res?.rows?.length > 0) {
-                  self.lostLogList = res.rows.map((item, index) => {
-                    const tmpObj = {
-                      ...item,
-                      key: index,
-                    };
-                    return tmpObj;
-                  });
-                }
-              }
-            })
-            .finally(() => {
-              uni.hideLoading();
-            });
+          self.qryPunchLostLog(nowQueryParams, 1);
+          self.qryPunchLostLog(prevQueryParams, 2);
         })
         .catch((error) => {
           console.log("queryPunchLogTotalTime 方法中的 getInfo 接口异常：", error);
-          self.isPunchLoading = false;
           uni.hideLoading();
+          self.lostLogLoading = false;
+        });
+    },
+    // 查询缺卡记录列表
+    qryPunchLostLog(queryParams, type) {
+      const self = this;
+      getPunchLostLog(queryParams)
+        .then((res) => {
+          if (res?.code === 200) {
+            if (res?.rows && res?.rows?.length > 0) {
+              const resList = res.rows.map((item, index) => {
+                const tmpObj = {
+                  ...item,
+                  key: index,
+                };
+                return tmpObj;
+              });
+              if (type === 1) {
+                self.nowLostLogList = [...resList];
+              }
+              if (type === 2) {
+                self.prevLostLogList = [...resList];
+              }
+            }
+          }
+        })
+        .finally(() => {
+          uni.hideLoading();
+          self.lostLogLoading = false;
         });
     },
   },
