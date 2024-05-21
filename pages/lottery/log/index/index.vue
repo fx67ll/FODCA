@@ -399,13 +399,13 @@ export default {
       searchFilterDateType: null,
     };
   },
+  onShow() {
+    this.resetSearchFilter();
+  },
   onLoad() {
     // 请勿直接调用queryLogList方法！不过貌似z-paging的reload的方法初始化也不需要调用
     // this.queryLogList();
     // this.$refs.paging.reload();
-  },
-  onShow() {
-    this.resetSearchFilter();
   },
   methods: {
     // 获取log数据
