@@ -214,7 +214,7 @@ export default {
       const formParams = {
         punchType: (parseInt(self.punchTypeIndex, 10) + 1).toString(),
         // updateTime: `${self.punchDate} ${self.punchTime}:${moment().format("ss")}`,
-        updateTime: `${self.punchDate} ${self.punchTime}:00}`,
+        updateTime: `${self.punchDate} ${self.punchTime}:00`,
         punchRemark: self.punchRemark,
       };
       const punchParams = self.isAdd
