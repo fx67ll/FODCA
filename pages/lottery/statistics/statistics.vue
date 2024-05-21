@@ -60,6 +60,7 @@ export default {
                 };
                 return tmpObj;
               });
+              self.logTotalList.splice(0, 0, self.logTotalList.splice(-1)[0]);
             } else {
               uni.showToast({
                 title: "暂无更多数据！",
