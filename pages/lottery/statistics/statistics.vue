@@ -13,7 +13,13 @@
         </uni-section>
       </view>
     </view>
-    <view class="no-data" v-if="!logTotalList || logTotalList.length === 0">
+    <view
+      class="no-data"
+      :class="{
+        'fade-show': !logTotalLoading,
+      }"
+      v-if="(!logTotalList || logTotalList.length === 0) && !logTotalLoading"
+    >
       <img src="/static/images/no-data.png" />
     </view>
   </view>
@@ -26,6 +32,7 @@ export default {
   data() {
     return {
       logTotalList: [],
+      logTotalLoading: false,
     };
   },
   onLoad() {
@@ -36,6 +43,7 @@ export default {
     getTotalReward() {
       const self = this;
 
+      this.logTotalLoading = true;
       uni.showLoading({
         title: "查询数据中...",
       });
@@ -69,6 +77,7 @@ export default {
         })
         .finally(() => {
           uni.hideLoading();
+          self.logTotalLoading = false;
         });
     },
   },
