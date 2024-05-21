@@ -1,35 +1,41 @@
 <template>
   <view class="fx67ll-statistics-box">
     <view
-      class="fx67ll-statistics-item"
-      v-if="nowLostLogList && nowLostLogList.length > 0"
+      v-if="
+        (nowLostLogList && nowLostLogList.length > 0) ||
+        (prevLostLogList && prevLostLogList.length > 0)
+      "
     >
-      <uni-section title="当月缺卡记录" type="line">
-        <uni-list>
-          <uni-list-item
-            v-for="item in nowLostLogList"
-            :key="item.key"
-            :title="item.punchDay"
-            :rightText="item.lostPunchType"
-          />
+      <view class="fx67ll-statistics-item">
+        <uni-section title="当月缺卡记录" type="line">
+          <uni-list v-if="nowLostLogList && nowLostLogList.length > 0">
+            <uni-list-item
+              v-for="item in nowLostLogList"
+              :key="item.key"
+              :title="item.punchDay"
+              :rightText="item.lostPunchType"
+            />
+          </uni-list>
+        </uni-section>
+        <uni-list v-if="!nowLostLogList || nowLostLogList.length === 0">
+          <uni-list-item title="恭喜你~ 本月暂无缺卡记录！(*^▽^*)" />
         </uni-list>
-      </uni-section>
-    </view>
-    <view
-      class="fx67ll-statistics-item"
-      v-if="prevLostLogList && prevLostLogList.length > 0"
-    >
-      <uni-section title="上月缺卡记录" type="line">
-        <uni-list>
-          <uni-list-item
-            v-for="item in prevLostLogList"
-            :key="item.key"
-            :title="item.punchDay"
-            :rightText="item.lostPunchType"
-          />
-        </uni-list>
-      </uni-section>
-    </view>
+      </view>
+      <view class="fx67ll-statistics-item">
+        <uni-section title="上月缺卡记录" type="line">
+          <uni-list v-if="prevLostLogList && prevLostLogList.length > 0">
+            <uni-list-item
+              v-for="item in prevLostLogList"
+              :key="item.key"
+              :title="item.punchDay"
+              :rightText="item.lostPunchType"
+            />
+          </uni-list>
+          <uni-list v-if="!prevLostLogList || prevLostLogList.length === 0">
+            <uni-list-item title="恭喜你~ 上月暂无缺卡记录！(*^▽^*)" />
+          </uni-list>
+        </uni-section> </view
+    ></view>
     <view
       class="no-data"
       :class="{
