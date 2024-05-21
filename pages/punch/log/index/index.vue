@@ -70,8 +70,14 @@
       @hideDrawer="setIsShowDrawer"
       @reloadPunchList="queryPunchList"
     />
+    <punchDrawer
+      :isShowPunchDrawer="isShowAddDrawer"
+      :isAdd="true"
+      @hideDrawer="setIsShowDrawer"
+    />
     <uni-fab
       ref="fab"
+      v-if="!isShowAddDrawer && !isShowEditDrawer"
       :pattern="fabConfig.pattern"
       :content="fabConfig.content"
       :horizontal="fabConfig.horizontal"
@@ -128,6 +134,7 @@ export default {
         },
       ],
       // Drawer组件相关参数
+      isShowAddDrawer: false,
       isShowEditDrawer: false,
       editPunchInfo: {},
       // 二级功能入口配置
@@ -161,6 +168,14 @@ export default {
             selectedIconPath:
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=23",
             text: "快速筛选",
+            active: false,
+          },
+          {
+            iconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=18",
+            selectedIconPath:
+              "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=18",
+            text: "新增打卡",
             active: false,
           },
         ],
@@ -221,6 +236,7 @@ export default {
     },
     // 关闭修改打卡记录抽屉
     setIsShowDrawer(val) {
+      this.isShowAddDrawer = val;
       this.isShowEditDrawer = val;
       this.queryPunchList();
       this.$refs.paging.reload();
@@ -278,6 +294,9 @@ export default {
       }
       if (e?.index === 1) {
         this.isShowTabFilter = true;
+      }
+      if (e?.index === 2) {
+        this.isShowAddDrawer = true;
       }
       this.$refs.fab.close();
     },
