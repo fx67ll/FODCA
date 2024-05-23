@@ -161,7 +161,7 @@ export default {
       });
 
       const weekDays = self.queryWeekdaysCount();
-      this.targetWorkHours = weekDays * 8.5;
+      this.targetWorkHours = weekDays * (8 + 2); // 楠宝需要的工时是8.5h的标准工时+每天1.5h的午休
 
       const queryParams = {
         pageNum: 1,
