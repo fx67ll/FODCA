@@ -3,6 +3,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.3.19.20240603  
+* 优化日常使用体验  
+
 ## 0.3.18.20240521  
 * 修复打卡统计相关问题  
 
