@@ -1,6 +1,9 @@
 <template>
   <view class="fx67ll-statistics-box">
     <view v-if="logTotalList && logTotalList.length > 0">
+      <qiun-data-charts type="pie" :opts="chartOpts" :chartData="chartData" />
+    </view>
+    <view v-if="logTotalList && logTotalList.length > 0">
       <view class="fx67ll-statistics-item" :key="item.key" v-for="item in logTotalList">
         <uni-section :title="item.lotteryType" type="line">
           <uni-list>
@@ -33,6 +36,44 @@ export default {
     return {
       logTotalList: [],
       logTotalLoading: false,
+      chartOpts: {
+        legend: {
+          fontSize: 16,
+          itemGap: 20,
+        },
+        color: ["#91CB74", "#EE6666"],
+        padding: [5, 5, 5, 5],
+        enableScroll: false,
+        extra: {
+          pie: {
+            activeOpacity: 0.5,
+            activeRadius: 10,
+            offsetAngle: 0,
+            labelWidth: 15,
+            border: true,
+            borderWidth: 3,
+            borderColor: "#FFFFFF",
+          },
+        },
+      },
+      chartData: {
+        series: [
+          {
+            data: [
+              {
+                name: `已中奖`,
+                value: 0,
+                // labelText: `已中奖:${parseFloat((0 / 100) * 100).toFixed(2)}%`,
+              },
+              {
+                name: "未中奖",
+                value: 0,
+                // labelText: `未中奖:${parseFloat((0 / 100) * 100).toFixed(2)}%`,
+              },
+            ],
+          },
+        ],
+      },
     };
   },
   onLoad() {
@@ -61,6 +102,22 @@ export default {
                 return tmpObj;
               });
               self.logTotalList.splice(0, 0, self.logTotalList.splice(-1)[0]);
+              if (res?.rows?.length === 3) {
+                self.chartData.series = [
+                  {
+                    data: [
+                      {
+                        name: `已中奖`,
+                        value: parseInt(res?.rows[2]?.totalWinningAmount || 0),
+                      },
+                      {
+                        name: "未中奖",
+                        value: parseInt((res?.rows[2]?.totalNumbers || 0) * 2),
+                      },
+                    ],
+                  },
+                ];
+              }
             } else {
               uni.showToast({
                 title: "暂无更多数据！",
