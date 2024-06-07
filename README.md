@@ -3,6 +3,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.3.20.20240607  
+* 新增中奖记录图表  
+
 ## 0.3.19.20240603  
 * 优化日常使用体验  
 
