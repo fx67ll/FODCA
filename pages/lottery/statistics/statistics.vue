@@ -112,7 +112,10 @@ export default {
                       },
                       {
                         name: "未中奖",
-                        value: parseInt((res?.rows[2]?.totalNumbers || 0) * 2),
+                        value: parseInt(
+                          (res?.rows[2]?.totalNumbers || 0) * 2 -
+                            (res?.rows[2]?.totalWinningAmount || 0)
+                        ),
                       },
                     ],
                   },
