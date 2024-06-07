@@ -101,7 +101,9 @@
       </view>
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
-      <view class="fx67ll-lucky-bumber">{{ settingInfo.todayLuckyNumber }}</view>
+      <view class="fx67ll-lucky-bumber">{{
+        todayWeek === "5" ? "0" : settingInfo.todayLuckyNumber
+      }}</view>
       <view class="fx67ll-lucky-title" @click="handleToLogHistory">今日随机幸运数字</view>
     </view>
 
