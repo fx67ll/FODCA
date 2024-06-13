@@ -90,11 +90,13 @@
           class="fx67ll-btn-default"
           type="warn"
           @click="getTodayLucky"
-          :disabled="isNetworkLoading || countLoading"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           {{
             !countLoading
-              ? "点击看看今天运势如何"
+              ? isDrawLoading
+                ? "正在摇奖中，无法计算运势~"
+                : "点击看看今天运势如何"
               : `正在为您计算今日运势：${luckyRandomProgrss}%`
           }}
         </button>
