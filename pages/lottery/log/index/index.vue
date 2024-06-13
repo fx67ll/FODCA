@@ -900,9 +900,16 @@ export default {
           //   time: "2024-03-23 21:26:16",
           // };
           if (res && res?.length > 1) {
+            const resCode = res[1]?.data?.code || null;
             const resMsg = res[1]?.data?.msg || "-";
             const resData = res[1]?.data?.data || {};
-            if (resData?.openCode) {
+            if (resCode === 10027) {
+              uni.showToast({
+                title: "暂未开奖，请晚些时候再查询！",
+                icon: "none",
+                duration: 1998,
+              });
+            } else if (resData?.openCode) {
               self.formatWinningNumber(resData.openCode);
             } else {
               // #ifdef MP-WEIXIN
@@ -1137,7 +1144,9 @@ export default {
     resetSearchFilter() {
       this.setSearchFilterParams("reset");
       this.queryLogList();
-      this.$refs.paging.reload();
+      if (this.$refs.paging) {
+        this.$refs.paging.reload();
+      }
     },
     // 通过号码类型查询的快速筛选
     searchByNumberType(numberType) {
