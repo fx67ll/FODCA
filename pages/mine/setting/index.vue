@@ -1,7 +1,11 @@
 <template>
   <view class="setting-container" :style="{ height: `${windowHeight}px` }">
     <view class="menu-list">
-      <view class="list-cell list-cell-arrow" @click="handleToPwd">
+      <view
+        class="list-cell list-cell-arrow"
+        v-if="userName && userName !== 'user'"
+        @click="handleToPwd"
+      >
         <view class="menu-item-box">
           <view class="iconfont icon-password menu-icon"></view>
           <view>修改密码</view>
@@ -34,6 +38,8 @@
 export default {
   data() {
     return {
+      // 当前登录用户信息
+      userName: this.$store.state.user.name,
       windowHeight: uni.getSystemInfoSync().windowHeight,
     };
   },
