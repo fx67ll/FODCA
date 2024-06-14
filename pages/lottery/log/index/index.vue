@@ -260,6 +260,8 @@ export default {
   components: { uniListChat, uniPopup, uniPopupDialog, vTabs },
   data() {
     return {
+      // 当前登录用户信息
+      userName: this.$store.state.user.name,
       logList: [],
       queryParams: {
         pageNum: 1,
@@ -753,6 +755,14 @@ export default {
       const self = this;
       self.formParams.lotteryId = record?.logId;
       self.formParams.numberType = record?.numberType;
+      if (this.userName && this.userName === "user") {
+        uni.showToast({
+          title: "付费功能，游客暂不支持试用，谢谢！",
+          icon: "none",
+          duration: 1998,
+        });
+        return;
+      }
       if (record?.numberType !== 1 && record?.numberType !== 2) {
         uni.showToast({
           title: "数据异常，请联系管理员！",
