@@ -70,7 +70,7 @@
           v-if="userName && userName === 'fx67ll' && isNeedWaiKuai"
         >
           <view class="menu-item-box">
-            <view><uni-icons color="#2ecc71" type="gift" size="20"></uni-icons></view>
+            <view><uni-icons color="#2ecc71" type="vip" size="20"></uni-icons></view>
             <view>外快盈亏管理</view>
           </view>
         </view>
