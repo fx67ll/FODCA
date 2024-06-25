@@ -119,7 +119,7 @@ export default {
       version: getApp().globalData.config.appInfo.version,
       globalConfig: getApp().globalData.config,
       // 是否需要外快的配置项
-      isNeedWaiKuai: false,
+      isNeedWaiKuai: uni.getStorageSync("isNeedWaiKuai") || false,
     };
   },
   computed: {
@@ -132,6 +132,13 @@ export default {
   },
   onLoad() {
     this.getWKConfig();
+  },
+  onShow() {
+    console.log(
+      'uni.getStorageSync("isNeedWaiKuai")',
+      uni.getStorageSync("isNeedWaiKuai")
+    );
+    this.isNeedWaiKuai = uni.getStorageSync("isNeedWaiKuai");
   },
   methods: {
     handleToInfo() {
@@ -181,9 +188,11 @@ export default {
       const self = this;
       getSecretConfig({ secretKey: "isNeedWaiKuai" }).then((res) => {
         if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-          self.isNeedWaiKuai = JSON.parse(
-            decryptString(res.rows[0].secretValue, getCryptoSaltKey()) || 'false'
+          const wkTmp = JSON.parse(
+            decryptString(res.rows[0].secretValue, getCryptoSaltKey()) || "false"
           );
+          uni.setStorageSync("isNeedWaiKuai", wkTmp);
+          self.isNeedWaiKuai = wkTmp;
         }
       });
     },
