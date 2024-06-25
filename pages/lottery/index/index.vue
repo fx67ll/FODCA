@@ -751,7 +751,7 @@ export default {
             const latestDate = res?.rows[0]?.createTime || "";
             const latestDateFormat = moment(latestDate)?.format("YYYY-MM-DD") || "";
             const nowDateFormat = moment()?.format("YYYY-MM-DD") || "";
-            console.log("queryLastLotteryID", latestDateFormat, nowDateFormat);
+            // console.log("queryLastLotteryID", latestDateFormat, nowDateFormat);
             if (
               latestDate &&
               latestDateFormat &&
@@ -759,11 +759,11 @@ export default {
               isTwoOrThreeDaysAfterWithSameYearCheck(latestDateFormat, nowDateFormat)
             ) {
               const latestOfficialDateCode = res?.rows[0]?.dateCode || "";
-              console.log("latestOfficialDateCode", res?.rows[0]?.dateCode);
+              // console.log("latestOfficialDateCode", res?.rows[0]?.dateCode);
               self.todayDateCode = latestOfficialDateCode
                 ? parseInt(latestOfficialDateCode) + 1
                 : null;
-              console.log("todayDateCode", self.todayDateCode);
+              // console.log("todayDateCode", self.todayDateCode);
             }
           }
         }
@@ -799,7 +799,7 @@ export default {
           if (this.settingInfo.isNeedAddPastRewardNumber) {
             pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
           }
-          console.log("chasingNumObjTmp, pastNumObjTmp", chasingNumObjTmp, pastNumObjTmp);
+          // console.log("chasingNumObjTmp, pastNumObjTmp", chasingNumObjTmp, pastNumObjTmp);
           this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
