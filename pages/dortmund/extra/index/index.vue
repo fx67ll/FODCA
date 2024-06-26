@@ -29,7 +29,11 @@
                   <template v-slot:default>
                     <view
                       :style="{ fontSize: '14px', color: '#999', paddingRight: '6rpx' }"
-                      >￥{{ item.seedMoney }}
+                      >￥{{
+                        item.saveMoney < item.seedMoney
+                          ? "-" + item.seedMoney
+                          : item.seedMoney
+                      }}
                     </view>
                     <!-- <view
                       :style="{ fontSize: '14px', color: '#999', paddingRight: '6rpx' }"
@@ -157,6 +161,11 @@ export default {
         ],
       },
     };
+  },
+  onShow() {
+    if (this.$refs.paging) {
+      this.$refs.paging.reload();
+    }
   },
   onBackPress() {
     if (this.$refs.fab.isShow) {
