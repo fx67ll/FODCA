@@ -1314,15 +1314,20 @@ export default {
       // let luckyFooter = '\n 老板号码别打错了哈，谢谢~';
       let luckyFooter = "";
       let luckyContent = null;
+
       // #ifdef H5
-      luckyContent = document
-        .getElementById("luckyNumberText")
-        .innerHTML.replace(/(<\/?span.*?>)/g, " ")
-        .replace(/<\/?view.*?>/gi, "\n");
+      // luckyContent = document
+      //   .getElementById("luckyNumberText")
+      //   .innerHTML.replace(/(<\/?span.*?>)/g, " ")
+      //   .replace(/<\/?view.*?>/gi, "\n");
       // #endif
       // #ifdef MP-WEIXIN
-      luckyContent = this.packageContextForWX();
+      // luckyContent = this.packageContextForWX();
       // #endif
+
+      // 上面H5的实现方式有点问题，统一使用小程序的处理方式即可
+      luckyContent = this.packageContextForWX();
+
       if (mapLotteryNumberType(this.todayWeek) === "1") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码大乐透\n";
         this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
