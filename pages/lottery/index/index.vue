@@ -8,7 +8,13 @@
           @click="getLuckyNumber"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
-          获取今日随机号码
+          {{
+            this.settingInfo.isOnlyFirstToday &&
+            this.settingInfo.localLuckyNumberList &&
+            (this.settingInfo.localLuckyNumberList.length || 0) > 0
+              ? "查看今日已生成号码"
+              : "获取今日随机号码"
+          }}
         </button>
         <uni-icons
           class="fx67ll-btn-icon"
@@ -511,21 +517,18 @@ export default {
     },
   },
   onLoad() {
-    // moment初始汉化
-    moment.locale("zh-cn");
-    // 初始化随机号码
-    this.initLuckyNumber();
-    // 初始化缓存设置
-    this.initCacheSetting();
-    // 显示当前时间
-    this.showNowTime();
-    // 初始化最近官方彩票编号
-    this.initLastLotteryDateCode();
+    // 执行初始化流程
+    this.initProcess();
   },
-  // onShow() {
-  //   // // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
-  //   // this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
-  // },
+  onShow() {
+    // // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
+    // this.ocrImgDomWidth = `${uni.getWindowInfo()?.windowWidth - 30}px`;
+
+    // 如果当前时间跨日了需要立刻重新初始化
+    if (this.checkNowIsCrossDay()) {
+      this.initProcess();
+    }
+  },
   onHide() {
     // 增加一下保存的频率
     this.saveLuckySettingDebounce(true);
@@ -537,6 +540,19 @@ export default {
     this.clearAllTimer();
   },
   methods: {
+    // 初始化流程
+    initProcess() {
+      // moment初始汉化
+      moment.locale("zh-cn");
+      // 初始化随机号码
+      this.initLuckyNumber();
+      // 初始化缓存设置
+      this.initCacheSetting();
+      // 显示当前时间
+      this.showNowTime();
+      // 初始化最近官方彩票编号
+      this.initLastLotteryDateCode();
+    },
     // 清理所有定时器
     clearAllTimer() {
       // 销毁时清除定时器
@@ -638,6 +654,49 @@ export default {
         data: JSON.stringify(this.settingInfo),
       });
       // #endif
+    },
+    // 检查当前时间和上一次摇奖时间是否跨日
+    checkNowIsCrossDay() {
+      const self = this;
+      let lastDateStr = null;
+
+      // #ifdef H5
+      if (localStorage.getItem("settingInfo")) {
+        const settingInfoH5 = JSON.parse(localStorage.getItem("settingInfo"));
+        lastDateStr = settingInfoH5?.firstRandomDate || null;
+      } else {
+        // 拿不到配置则不做后续处理了
+        return false;
+      }
+      // #endif
+
+      // 微信端不支持localStorage
+      // #ifdef MP-WEIXIN
+      wx.getStorage({
+        key: "settingInfo",
+        success: function (res) {
+          const settingInfoWX = JSON.parse(res.data);
+          lastDateStr = settingInfoWX?.firstRandomDate || null;
+        },
+        fail: function () {
+          // 拿不到配置则不做后续处理了
+          return false;
+        },
+      });
+      // #endif
+
+      const currentDateTime = moment();
+      const lastDateTime = moment(lastDateStr);
+      console.log(
+        "checkNowIsCrossDay",
+        currentDateTime.format("YYYY-MM-DD"),
+        lastDateTime.format("YYYY-MM-DD")
+      );
+      if (currentDateTime.format("YYYY-MM-DD") !== lastDateTime.format("YYYY-MM-DD")) {
+        return true;
+      } else {
+        return false;
+      }
     },
     // 从服务端初始化之前的摇奖设置
     initCacheSetting() {
