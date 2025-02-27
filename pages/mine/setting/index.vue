@@ -65,7 +65,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.page {
+page {
   background-color: #f8f8f8;
 }
 
