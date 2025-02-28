@@ -399,6 +399,14 @@ export default {
       isShowDrawer: false,
       // 高级筛选时间类型
       searchFilterDateType: null,
+      // 彩票类型枚举（后期改为后台枚举接口获取）
+      lotteryTypeMap: {
+        1: "大乐透",
+        2: "双色球",
+        3: "排列三",
+        4: "排列五",
+        5: "七星彩",
+      },
     };
   },
   onShow() {
@@ -456,12 +464,9 @@ export default {
         const tmpObj = {
           logId: item?.lotteryId,
           logKey: new Date().getTime() + self.getRandomIndex(),
-          logTitle:
-            item?.numberType === 1
-              ? `超级大乐透期号：${item?.dateCode || "-"}`
-              : item?.numberType === 2
-              ? `双色球期号：${item?.dateCode || "-"}`
-              : "-",
+          logTitle: item?.numberType
+            ? `${self.lotteryTypeMap[item?.numberType]}期号：${item?.dateCode || "-"}`
+            : "-",
           dateCode: item?.dateCode,
           winFlag,
           chaseList: [],
@@ -498,7 +503,7 @@ export default {
               compareStringsBasic(itb, wl[0]) > 2;
             tmpObj.recordList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
-              title: self.getTitleByWeekType(item?.weekType),
+              title: self.getTitleByNumberType(item?.numberType),
               updateTime: self.subStrUpdateTime(item?.updateTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
               isRed,
@@ -524,11 +529,10 @@ export default {
       return listResult;
     },
     // 根据当前星期几来获取标题
-    getTitleByWeekType(type) {
-      if (["1", "3", "6"].includes(type?.toString())) {
-        return "随机大乐透";
-      } else if (["2", "4", "7"].includes(type?.toString())) {
-        return "随机双色球";
+    getTitleByNumberType(type) {
+      const self = this;
+      if (["1", "2", "3", "4", "5"].includes(type?.toString())) {
+        return `随机${self.lotteryTypeMap[type]}`;
       } else {
         return "异常数据";
       }
@@ -889,6 +893,13 @@ export default {
     // 通过第三方站点查询开奖号码
     queryLotteryRewardInfo(appId, appSecret, dCode, nType) {
       const self = this;
+      const lotteryTypeMap = {
+        1: "cjdlt",
+        2: "ssq",
+        3: "pl3",
+        4: "pl5",
+        5: "qxc",
+      };
       uni
         .request({
           url: "https://www.mxnzp.com/api/lottery/common/aim_lottery",
@@ -896,7 +907,7 @@ export default {
             app_id: appId,
             app_secret: appSecret,
             expect: dCode,
-            code: nType === 1 ? "cjdlt" : "ssq",
+            code: lotteryTypeMap[nType],
           },
           method: "GET",
         })

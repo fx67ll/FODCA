@@ -1373,7 +1373,7 @@ export default {
       // let luckyFooter = '\n 老板号码别打错了哈，谢谢~';
       let luckyFooter = "";
       let luckyContent = null;
-	  const tempLuckyText = "\n 外加一注随机排列五"
+      const tempLuckyText = "\n 外加一注随机排列五";
 
       // #ifdef H5
       // luckyContent = document
@@ -1387,22 +1387,24 @@ export default {
 
       // 上面H5的实现方式有点问题，统一使用小程序的处理方式即可
       luckyContent = this.packageContextForWX();
-
       if (mapLotteryNumberType(this.todayWeek) === "1") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码大乐透\n";
-        this.copyTextContent = this.userName && this.userName === "fx67ll" ? luckyTitle + luckyContent + luckyFooter + tempLuckyText : luckyTitle + luckyContent + luckyFooter;  
+        this.copyTextContent =
+          this.userName && this.userName === "fx67ll"
+            ? luckyTitle + luckyContent + luckyFooter + tempLuckyText
+            : luckyTitle + luckyContent + luckyFooter;
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码双色球\n";
         this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       }
-	  if (this.userName && this.userName === "fx67ll") {
-	    this.copyTextContent = luckyTitle + luckyContent + luckyFooter + tempLuckyText;
-	  } else {
-		this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
-	  }
-      
-	  uni.setClipboardData({
+      if (this.userName && this.userName === "fx67ll") {
+        this.copyTextContent = luckyTitle + luckyContent + luckyFooter + tempLuckyText;
+      } else {
+        this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
+      }
+
+      uni.setClipboardData({
         data: self.copyTextContent,
         showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
         success: function (res) {
