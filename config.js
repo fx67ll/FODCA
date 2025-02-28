@@ -9,7 +9,7 @@ module.exports = {
     // 应用名称
     name: 'fx67ll-app',
     // 应用版本
-    version: '0.3.22',
+    version: '0.4.1',
     // 应用logo
     logo: 'https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg',
     // 个人主页
