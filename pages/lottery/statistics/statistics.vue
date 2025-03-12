@@ -102,19 +102,21 @@ export default {
                 return tmpObj;
               });
               self.logTotalList.splice(0, 0, self.logTotalList.splice(-1)[0]);
-              if (res?.rows?.length === 3) {
+              if (res?.rows?.length > 0) {
+                const lastIndex = res?.rows?.length - 1;
+                const lastDatObj = res?.rows[lastIndex];
                 self.chartData.series = [
                   {
                     data: [
                       {
                         name: `已中奖`,
-                        value: parseInt(res?.rows[2]?.totalWinningAmount || 0),
+                        value: parseInt(lastDatObj?.totalWinningAmount || 0),
                       },
                       {
                         name: "未中奖",
                         value: parseInt(
-                          (res?.rows[2]?.totalNumbers || 0) * 2 -
-                            (res?.rows[2]?.totalWinningAmount || 0)
+                          (lastDatObj?.totalNumbers || 0) * 2 -
+                            (lastDatObj?.totalWinningAmount || 0)
                         ),
                       },
                     ],
