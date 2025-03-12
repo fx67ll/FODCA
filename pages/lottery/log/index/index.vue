@@ -27,12 +27,17 @@
             @click="(e) => handleActionClick(e, item)"
           >
             <uni-section :title="item.logTitle" type="line">
+              <template v-slot:right>{{ item.createDate || "-" }}</template>
               <uni-list :border="true">
                 <view>
                   <uni-list-chat
                     v-for="ita in item.chaseList"
                     :key="ita.numKey"
-                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5"
+                    :avatar="
+                      'https://test.fx67ll.com/fx67ll-img-collection-for-lottery/' +
+                      item.numberType +
+                      '.jpg'
+                    "
                     :title="ita.title"
                     :note="ita.chaseNumber"
                   >
@@ -60,7 +65,7 @@
                     :key="itb.numKey"
                     :avatar="
                       'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-                      itb.imgRandom
+                      (8 - item.numberType)
                     "
                     :title="itb.title"
                     :note="itb.recordNumber"
@@ -87,7 +92,11 @@
                   <uni-list-chat
                     v-for="itb in item.winningList"
                     :key="itb.numKey"
-                    avatar="https://vip.fx67ll.com/vip-api/getRandomAvatar?isNeedMoreMosaic=N"
+                    :avatar="
+                      item.winFlag === 'Y'
+                        ? lotteryTypeMap[item.numberType].winImg
+                        : lotteryTypeMap[item.numberType].ggImg
+                    "
                     :title="itb.title"
                     :note="itb.winningNumber"
                   >
@@ -254,6 +263,7 @@ import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/
 
 // 日期时间处理
 import moment from "@/node_modules/moment";
+import "moment/locale/zh-cn";
 import "@/node_modules/moment/locale/zh-cn";
 
 export default {
@@ -401,12 +411,33 @@ export default {
       searchFilterDateType: null,
       // 彩票类型枚举（后期改为后台枚举接口获取）
       lotteryTypeMap: {
-        1: "大乐透",
-        2: "双色球",
-        3: "排列三",
-        4: "排列五",
-        5: "七星彩",
+        1: {
+          text: "大乐透",
+          winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
+          ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
+        },
+        2: {
+          text: "双色球",
+          winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
+          ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
+        },
+        3: {
+          text: "排列三",
+          winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
+          ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
+        },
+        4: {
+          text: "排列五",
+          winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
+          ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
+        },
+        5: {
+          text: "七星彩",
+          winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
+          ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
+        },
       },
+      lotteryTypeList: [1, 2, 3, 4, 5, "1", "2", "3", "4", "5"],
     };
   },
   onShow() {
@@ -416,6 +447,9 @@ export default {
     // 请勿直接调用queryLogList方法！不过貌似z-paging的reload的方法初始化也不需要调用
     // this.queryLogList();
     // this.$refs.paging.reload();
+
+    // 设置语言为中文
+    moment.locale("zh-cn");
   },
   methods: {
     // 获取log数据
@@ -465,7 +499,9 @@ export default {
           logId: item?.lotteryId,
           logKey: new Date().getTime() + self.getRandomIndex(),
           logTitle: item?.numberType
-            ? `${self.lotteryTypeMap[item?.numberType]}期号：${item?.dateCode || "-"}`
+            ? `${self.lotteryTypeMap[parseInt(item?.numberType)].text}期号：${
+                item?.dateCode || "-"
+              }`
             : "-",
           dateCode: item?.dateCode,
           winFlag,
@@ -475,6 +511,7 @@ export default {
           weekType: item?.weekType,
           numberType: item?.numberType,
           createTime: item?.createTime || "暂无数据",
+          createDate: moment(item?.createTime).format("dddd"),
         };
         const cl = item?.chaseNumber?.split("/") || [];
         const rl = item?.recordNumber?.split("/") || [];
@@ -507,7 +544,6 @@ export default {
               updateTime: self.subStrUpdateTime(item?.updateTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
               isRed,
-              imgRandom: self.getImgRandomByWeekType(item?.weekType),
               winText: self.getWinText(winFlag, item?.winningPrice, isRed),
             });
           });
@@ -519,7 +555,6 @@ export default {
               title: "本期开奖号码",
               winningText: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
-              imgRandom: self.getImgRandomByWeekType(item?.weekType),
               winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "本期未中奖",
             });
           });
@@ -531,8 +566,8 @@ export default {
     // 根据当前星期几来获取标题
     getTitleByNumberType(type) {
       const self = this;
-      if (["1", "2", "3", "4", "5"].includes(type?.toString())) {
-        return `随机${self.lotteryTypeMap[type]}`;
+      if (self.lotteryTypeList.includes(type)) {
+        return `随机${self.lotteryTypeMap[parseInt(type)].text}`;
       } else {
         return "异常数据";
       }
@@ -543,16 +578,6 @@ export default {
         return time.substring(2, 16);
       } else {
         return null;
-      }
-    },
-    // 根据当前星期几来获取随机马赛克图片
-    getImgRandomByWeekType(type) {
-      if (["1", "3", "6"].includes(type?.toString())) {
-        return 6;
-      } else if (["2", "4", "7"].includes(type?.toString())) {
-        return 7;
-      } else {
-        return 5;
       }
     },
     // 格式化是否中奖信息
@@ -609,36 +634,39 @@ export default {
       });
     },
     // 格式化需要拷贝到剪切板的文字数据
-    formatCopyContent(copyDataList, listKey) {
+    formatCopyContent(copyDataList, listKey, copyDataType) {
       const txtResList = [];
       copyDataList.forEach((itemA) => {
         let txtRes = "";
         if (itemA[listKey]) {
           const tmpListAlpha = itemA[listKey].split("-");
-          if (tmpListAlpha && tmpListAlpha.length > 0) {
-            tmpListAlpha.forEach((itemB, indexB) => {
-              const tmpListBeta = itemB.split(",");
-              if (indexB === 0) {
-                tmpListBeta.forEach((itemC, indexC) => {
-                  if (indexC !== tmpListBeta.length - 1) {
-                    txtRes = txtRes.concat(`${itemC}  `);
-                  } else {
+          tmpListAlpha.forEach((itemB, indexB) => {
+            const tmpListBeta = itemB.split(",");
+            if (indexB === 0) {
+              tmpListBeta.forEach((itemC, indexC) => {
+                if (indexC !== tmpListBeta.length - 1) {
+                  txtRes = txtRes.concat(`${itemC}  `);
+                } else {
+                  if ([1, 2, 5].includes(parseInt(copyDataType, 10))) {
                     txtRes = txtRes.concat(`${itemC} - `);
                   }
-                });
-              }
-              if (indexB === 1) {
-                tmpListBeta.forEach((itemD, indexD) => {
-                  if (indexD !== tmpListBeta.length - 1) {
-                    txtRes = txtRes.concat(`${itemD}  `);
-                  } else {
-                    txtRes = txtRes.concat(`${itemD}`);
+                  if ([3, 4].includes(parseInt(copyDataType, 10))) {
+                    txtRes = txtRes.concat(`${itemC}`);
                   }
-                });
-              }
-            });
-            txtResList.push(txtRes);
-          }
+                }
+              });
+            }
+            if (indexB === 1) {
+              tmpListBeta.forEach((itemD, indexD) => {
+                if (indexD !== tmpListBeta.length - 1) {
+                  txtRes = txtRes.concat(`${itemD}  `);
+                } else {
+                  txtRes = txtRes.concat(`${itemD}`);
+                }
+              });
+            }
+          });
+          txtResList.push(txtRes);
         } else {
           console.error("待处理的数组key不存在！");
         }
@@ -667,7 +695,7 @@ export default {
       const self = this;
 
       // 接受log参数
-      const tdWeek = logCopyItem?.weekType.toString();
+      const tdType = logCopyItem?.numberType;
       const chList = logCopyItem?.chaseList;
       const reList = logCopyItem?.recordList;
       const luckyCount = chList.length + reList.length;
@@ -676,38 +704,30 @@ export default {
       let copyContentList = [];
       if (chList && chList.length > 0) {
         copyContentList = copyContentList.concat(
-          this.formatCopyContent(chList, "chaseNumber")
+          this.formatCopyContent(chList, "chaseNumber", tdType)
         );
       }
       if (reList && reList.length > 0) {
         copyContentList = copyContentList.concat(
-          this.formatCopyContent(reList, "recordNumber")
+          this.formatCopyContent(reList, "recordNumber", tdType)
         );
       }
       const copyContentBody = this.concatTxtList(copyContentList);
 
       // 拼接标题和主体
       let copyContentTxt = "";
-      if (tdWeek === "1" || tdWeek === "3" || tdWeek === "6") {
-        // #ifdef H5
-        const copyContentTitleH5 = " 老板买" + luckyCount + "注自选号码大乐透 \n";
-        copyContentTxt = copyContentTitleH5 + copyContentBody;
-        // #endif
-        // #ifdef MP-WEIXIN
-        const copyContentTitleWX = " 老板买" + luckyCount + "注自选号码大乐透 \r\n \r\n";
-        copyContentTxt = copyContentTitleWX + copyContentBody;
-        // #endif
-      }
-      if (tdWeek === "2" || tdWeek === "4" || tdWeek === "7") {
-        // #ifdef H5
-        const copyContentTitleH5 = " 老板买" + luckyCount + "注自选号码双色球 \n";
-        copyContentTxt = copyContentTitleH5 + copyContentBody;
-        // #endif
-        // #ifdef MP-WEIXIN
-        const copyContentTitleWX = " 老板买" + luckyCount + "注自选号码双色球 \r\n \r\n";
-        copyContentTxt = copyContentTitleWX + copyContentBody;
-        // #endif
-      }
+      const copyNumberTypeText = self.lotteryTypeMap[parseInt(tdType)].text;
+
+      // #ifdef H5
+      const copyContentTitleH5 =
+        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + " \n";
+      copyContentTxt = copyContentTitleH5 + copyContentBody;
+      // #endif
+      // #ifdef MP-WEIXIN
+      const copyContentTitleWX =
+        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + " \r\n \r\n";
+      copyContentTxt = copyContentTitleWX + copyContentBody;
+      // #endif
 
       // 处理剪切板函数
       uni.setClipboardData({
@@ -767,7 +787,7 @@ export default {
         });
         return;
       }
-      if (record?.numberType !== 1 && record?.numberType !== 2) {
+      if (!self.lotteryTypeList.includes(record?.numberType)) {
         uni.showToast({
           title: "数据异常，请联系管理员！",
           icon: "none",
@@ -807,12 +827,13 @@ export default {
     },
     // 获取创建日期
     formatCreateDate(time, type) {
+      const self = this;
       const originalDate = new Date(time);
       const year = originalDate.getFullYear().toString().substring(2);
       const month = originalDate.getMonth() + 1; // 月份从0开始，需要加1
       const day = originalDate.getDate();
       const formattedDate = `${year}年${month}月${day}日`;
-      const lotteryTypeText = type === 1 ? "大乐透" : "双色球";
+      const lotteryTypeText = self.lotteryTypeMap[parseInt(type)].text;
       this.dateCodeQryPlaceHolder = `请输入${formattedDate + lotteryTypeText}的期号`;
     },
     // 修改彩票期号信息
@@ -893,7 +914,7 @@ export default {
     // 通过第三方站点查询开奖号码
     queryLotteryRewardInfo(appId, appSecret, dCode, nType) {
       const self = this;
-      const lotteryTypeMap = {
+      const lotteryCodeMap = {
         1: "cjdlt",
         2: "ssq",
         3: "pl3",
@@ -907,7 +928,7 @@ export default {
             app_id: appId,
             app_secret: appSecret,
             expect: dCode,
-            code: lotteryTypeMap[nType],
+            code: lotteryCodeMap[parseInt(nType)],
           },
           method: "GET",
         })
@@ -971,21 +992,30 @@ export default {
       const originalString = winNum.replace(/\+/, "-").replace(/\+/, ",");
       // 以 - 分割字符串为两部分
       const splitByDash = originalString.split("-");
-      // 以逗号分割第一个数组并从小到大排序
-      const firstArray = splitByDash[0]
-        .split(",")
-        .map(Number)
-        .sort((a, b) => a - b);
-      // 以逗号分割第二个数组并从小到大排序
-      const secondArray = splitByDash[1]
-        .split(",")
-        .map(Number)
-        .sort((a, b) => a - b);
-      // 将两个数组分别通过逗号组合成新的字符串
-      const firstString = firstArray.join(",");
-      const secondString = secondArray.join(",");
-      // 将两个字符串通过-连接
-      const resultString = firstString + "-" + secondString;
+      let resultString = "";
+      if (splitByDash?.length > 1) {
+        // 以逗号分割第一个数组并从小到大排序
+        const firstArray = splitByDash[0]
+          .split(",")
+          .map(Number)
+          .sort((a, b) => a - b);
+        // 以逗号分割第二个数组并从小到大排序
+        const secondArray = splitByDash[1]
+          .split(",")
+          .map(Number)
+          .sort((a, b) => a - b); // 将两个数组分别通过逗号组合成新的字符串
+        const firstString = firstArray.join(",");
+        const secondString = secondArray.join(",");
+        // 将两个字符串通过-连接
+        resultString = firstString + "-" + secondString;
+      } else {
+        resultString = splitByDash[0]
+          .split(",")
+          .map(Number)
+          .sort((a, b) => a - b)
+          .join(",");
+      }
+
       // 保存结果字符串
       this.saveWinningNumber(resultString);
     },
@@ -999,11 +1029,19 @@ export default {
       editLog(saveParams)
         .then((res) => {
           if (res?.code === 200) {
-            self.checkIsGetReward(
-              self.formParams.lotteryId,
-              self.formParams.numberType,
-              winNum
-            );
+            if ([1, 2].includes(self.formParams.numberType)) {
+              self.checkIsGetReward(
+                self.formParams.lotteryId,
+                self.formParams.numberType,
+                winNum
+              );
+            } else {
+              uni.showToast({
+                title: `中奖号码: ${winNum}`,
+                icon: "none",
+                duration: 1998,
+              });
+            }
           } else {
             uni.showToast({
               title: "开奖号码保存失败！",
