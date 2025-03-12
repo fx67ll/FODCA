@@ -107,6 +107,42 @@
           }}
         </button>
       </view>
+      <view class="fx67ll-btn-item" v-if="todayWeek !== '5'">
+        <button
+          class="fx67ll-btn-default"
+          type="default"
+          @click="getOtherLuckyNumber(4)"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
+        >
+          生成一注随机排列五
+        </button>
+      </view>
+      <view class="fx67ll-btn-item fx67ll-btn-item-three" v-if="todayWeek === '5'">
+        <button
+          class="fx67ll-btn-default"
+          type="primary"
+          @click="getOtherLuckyNumber(3)"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
+        >
+          排列三
+        </button>
+        <button
+          class="fx67ll-btn-default"
+          type="primary"
+          @click="getOtherLuckyNumber(4)"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
+        >
+          排列五
+        </button>
+        <button
+          class="fx67ll-btn-default"
+          type="primary"
+          @click="getOtherLuckyNumber(5)"
+          :disabled="isNetworkLoading || countLoading || isDrawLoading"
+        >
+          七星彩
+        </button>
+      </view>
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
@@ -487,6 +523,29 @@ export default {
       ocrTagCheckList: [],
       // 百度OCR识别的图片宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
       // ocrImgDomWidth: "",
+      // 彩票类型枚举（后期改为后台枚举接口获取）
+      lotteryTypeMap: {
+        1: {
+          text: "大乐透",
+          code: "cjdlt",
+        },
+        2: {
+          text: "双色球",
+          code: "ssq",
+        },
+        3: {
+          text: "排列三",
+          code: "pl3",
+        },
+        4: {
+          text: "排列五",
+          code: "pl5",
+        },
+        5: {
+          text: "七星彩",
+          code: "qxc",
+        },
+      },
     };
   },
   computed: {
@@ -795,7 +854,7 @@ export default {
       });
       // #endif
     },
-    // 从服务端初始化最近一条同类型记录的期号
+    // 从服务端初始化最近一条同类型记录的期号，仅限大乐透和双色球
     initLastLotteryDateCode() {
       const self = this;
       this.todayDateCode = null;
@@ -1373,7 +1432,7 @@ export default {
       // let luckyFooter = '\n 老板号码别打错了哈，谢谢~';
       let luckyFooter = "";
       let luckyContent = null;
-      const tempLuckyText = "\n 外加一注随机排列五";
+      // const tempLuckyText = "\n 外加一注随机排列五";
 
       // #ifdef H5
       // luckyContent = document
@@ -1389,20 +1448,16 @@ export default {
       luckyContent = this.packageContextForWX();
       if (mapLotteryNumberType(this.todayWeek) === "1") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码大乐透\n";
-        this.copyTextContent =
-          this.userName && this.userName === "fx67ll"
-            ? luckyTitle + luckyContent + luckyFooter + tempLuckyText
-            : luckyTitle + luckyContent + luckyFooter;
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码双色球\n";
-        this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       }
-      if (this.userName && this.userName === "fx67ll") {
-        this.copyTextContent = luckyTitle + luckyContent + luckyFooter + tempLuckyText;
-      } else {
-        this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
-      }
+      // if (this.userName && this.userName === "fx67ll") {
+      //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter + tempLuckyText;
+      // } else {
+      //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
+      // }
+      this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
 
       uni.setClipboardData({
         data: self.copyTextContent,
@@ -2271,6 +2326,89 @@ export default {
           this.drawLotteryText = "模拟摇奖";
         }
       }
+    },
+    // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
+    getOtherLuckyNumberDebounce: _.debounce(function () {
+      this.getOtherLuckyNumber();
+    }, 233),
+    // 获取随机号码，先检查是否生成过相关记录
+    getOtherLuckyNumber(type) {
+      const self = this;
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 1,
+        numberType: type,
+        beginCreateTime: moment().format("YYYY-MM-DD"),
+        endCreateTime: moment().add(1, "days").format("YYYY-MM-DD"),
+      };
+      getLogList(queryParams).then((res) => {
+        if (res?.code === 200) {
+          if (res?.rows && res?.rows?.length > 0) {
+            showConfirm(
+              `查询到当日已生成过随机${self.lotteryTypeMap[type].text}，是否需要再次生成一注新的随机号码？`
+            ).then((res) => {
+              if (res?.confirm) {
+                self.uploadOtherLuckyNumber(type);
+              }
+            });
+          } else {
+            self.uploadOtherLuckyNumber(type);
+          }
+        } else {
+          uni.showToast({
+            title: "查询历史号码记录失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
+    },
+    // 生成其他类型的随机数并直接上传
+    uploadOtherLuckyNumber(type) {
+      const self = this;
+      const addParams = {
+        recordNumber: null,
+        chaseNumber: null,
+        numberType: null,
+        weekType: this.todayWeek,
+        hasMorePurchases: "N",
+      };
+      if (type === 3) {
+        const randomPl3Numbers = Array.from({ length: 3 }, () =>
+          Math.floor(Math.random() * 10)
+        );
+        addParams.recordNumber = randomPl3Numbers.join(",");
+        addParams.numberType = "3";
+      }
+      if (type === 4) {
+        const randomPl5Numbers = Array.from({ length: 5 }, () =>
+          Math.floor(Math.random() * 10)
+        );
+        addParams.recordNumber = randomPl5Numbers.join(",");
+        addParams.numberType = "4";
+      }
+      if (type === 5) {
+        const frontSix = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
+        const lastOne = Math.floor(Math.random() * 15);
+        addParams.recordNumber = `${frontSix.join(",")}-${lastOne}`;
+        addParams.numberType = "5";
+      }
+      addLog(addParams).then((res) => {
+        self.isNetworkLoading = false;
+        if (res?.code === 200) {
+          uni.showToast({
+            title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
+            icon: "none",
+            duration: 1998,
+          });
+        } else {
+          uni.showToast({
+            title: "号码记录保存失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
     },
   },
 };
