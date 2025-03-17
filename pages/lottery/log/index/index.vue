@@ -22,8 +22,8 @@
       <uni-swipe-action>
         <view class="fx67ll-log-item" v-for="item in logList" :key="item.logKey">
           <uni-swipe-action-item
-            :left-options="leftActionOptions"
-            :right-options="rightActionOptions"
+            :left-options="!listMergeMode ? leftActionOptions : []"
+            :right-options="!listMergeMode ? rightActionOptions : []"
             @click="(e) => handleActionClick(e, item)"
           >
             <uni-section :title="item.logTitle" type="line">
@@ -154,24 +154,17 @@
       <view class="fx67ll-search-drawer">
         <view class="fx67ll-tab-box" v-if="logFilterType === 2">
           <view
+            v-for="lotteryItem in lotteryTypeMap"
+            :key="lotteryItem.type"
             :class="{
               'fx67ll-tab-item': true,
               'fx67ll-tab-item-type': true,
-              'fx67ll-tab-item-type-active': parseInt(queryParams.numberType) === 1,
+              'fx67ll-tab-item-type-active':
+                parseInt(queryParams.numberType) === lotteryItem.type,
             }"
-            @click="setSearchFilterParams('numberType', 1)"
+            @click="setSearchFilterParams('numberType', lotteryItem.type)"
           >
-            大乐透
-          </view>
-          <view
-            :class="{
-              'fx67ll-tab-item': true,
-              'fx67ll-tab-item-type': true,
-              'fx67ll-tab-item-type-active': parseInt(queryParams.numberType) === 2,
-            }"
-            @click="setSearchFilterParams('numberType', 2)"
-          >
-            双色球
+            {{ lotteryItem.text }}
           </view>
           <view
             :class="{
@@ -413,31 +406,38 @@ export default {
       lotteryTypeMap: {
         1: {
           text: "大乐透",
+          type: 1,
           winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
           ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
         },
         2: {
           text: "双色球",
+          type: 2,
           winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
           ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
         },
         3: {
           text: "排列三",
+          type: 3,
           winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
           ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
         },
         4: {
           text: "排列五",
+          type: 4,
           winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
           ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
         },
         5: {
           text: "七星彩",
+          type: 5,
           winImg: "https://test.fx67ll.com/fx67ll-img-collection/luffy.jpg",
           ggImg: "https://test.fx67ll.com/fx67ll-img-collection/kuzan.jpg",
         },
       },
       lotteryTypeList: [1, 2, 3, 4, 5, "1", "2", "3", "4", "5"],
+      // 多选合并模式
+      listMergeMode: false,
     };
   },
   onShow() {

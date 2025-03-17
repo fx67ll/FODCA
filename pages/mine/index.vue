@@ -64,7 +64,7 @@
         </view>
         <!-- 只允许超级管理员fx67ll使用外快盈亏管理的功能，后续视情况开放 -->
         <!-- 2023已禁用，2024再出发 -->
-        <view
+        <!-- <view
           class="list-cell list-cell-arrow"
           @click="handleToExtraManagement"
           v-if="userName && userName === 'fx67ll' && isNeedWaiKuai"
@@ -73,7 +73,7 @@
             <view><uni-icons color="#2ecc71" type="vip" size="20"></uni-icons></view>
             <view>外快盈亏管理</view>
           </view>
-        </view>
+        </view> -->
         <view class="list-cell list-cell-arrow" @click="handleToPunchLog">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>

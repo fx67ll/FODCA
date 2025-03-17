@@ -63,8 +63,13 @@ export function hasNumberAppearedTwiceOrMore(arr, num) {
 
 // 校验两个字符串格式是否一致
 function compareStringFormats(str1, str2) {
-  const backArr1 = str1.split('-')[1].split(',');
-  const backArr2 = str2.split('-')[1].split(',');
+  if (str1.includes('-') && str2.includes('-')) {
+    const backArr1 = str1.split('-')[1].split(',');
+    const backArr2 = str2.split('-')[1].split(',');
+    return backArr1.length === backArr2.length;
+  }
+  const backArr1 = str1.split(',');
+  const backArr2 = str2.split(',');
   return backArr1.length === backArr2.length;
 }
 
@@ -74,12 +79,21 @@ function validateStr(str1, str2) {
     console.error('校验字符串和目标字符串均不能为空！');
     return false;
   }
-  // 使用正则表达式匹配两种格式
-  const regex = /^(?:(?:[1-9]|[12][0-9]|3[0-5])(?:,(?:[1-9]|[12][0-9]|3[0-5])){3,5})-(?:[1-9]|1[0-6])(?:,(?:[1-9]|1[0-6]))?$/ ;
-  if (!regex.test(str1.trim()) || !regex.test(str2.trim())) {
+
+  // 使用正则表达式匹配大乐透和双色球两种格式
+  const patternRegexForDLTSSQ = /^(?:(?:[1-9]|[12][0-9]|3[0-5])(?:,(?:[1-9]|[12][0-9]|3[0-5])){3,5})-(?:[1-9]|1[0-6])(?:,(?:[1-9]|1[0-6]))?$/;
+  // 使用正则表达式匹配排列三和排列五两种格式
+  const patternRegexForPL35 = /^(?:\d(?:,\d){2}|\d(?:,\d){4})$/;
+  // 使用正则表达式匹配七星彩格式
+  // TO-DO
+  if (
+    !(patternRegexForDLTSSQ.test(str1.trim()) || patternRegexForPL35.test(str1.trim())) ||
+    !(patternRegexForDLTSSQ.test(str2.trim()) || patternRegexForPL35.test(str2.trim()))
+  ) {
     console.error('校验字符串格式错误，请使用 1,4,5,8,10,23-5 或者 4,7,8,10,23-4,9 格式的字符串！');
     return false;
   }
+
   // 校验两个字符串格式是否一致
   if (!compareStringFormats(str1, str2)) {
     console.error('校验字符串和目标字符串格式不一致！');

@@ -131,6 +131,12 @@
       }
     },
     {
+      "path": "pages/dortmund/ticket/ticket",
+      "style": {
+        "navigationBarTitleText": "多特蒙德大十字"
+      }
+    },
+    {
       "path": "pages/punch/log/record/record",
       "style": {
         "navigationBarTitleText": "打卡工时统计"
@@ -150,7 +156,7 @@
     }
   ],
   "tabBar": {
-    "color": "#000000",
+    "color": "#707070",
     "selectedColor": "#000000",
     "borderStyle": "white",
     "backgroundColor": "#ffffff",
@@ -163,10 +169,16 @@
       },
       {
         "pagePath": "pages/lottery/index/index",
-        "iconPath": "static/images/tabbar/dashboard.png",
+        "iconPath": "static/images/tabbar/daily.png",
         "selectedIconPath": "static/images/fx67ll-app.jpg",
         "text": "白日梦"
       },
+      // {
+      //   "pagePath": "pages/dortmund/ticket/ticket",
+      //   "iconPath": "static/images/tabbar/dort.png",
+      //   "selectedIconPath": "static/images/fx67ll-app.jpg",
+      //   "text": "大十字"
+      // },
       {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",

@@ -1,0 +1,50 @@
+@import url('@/static/style/mixin.less');
+
+@tag-topic-color: #2ecc71;
+@tag-red-color: #ff4d4f;
+@tag-orange-color: #ffa940;
+@tag-font-color: #ffffff;
+@ocr-basic-gap: 40rpx;
+@ocr-basic-margin: 20rpx;
+
+.fx67ll-tools-box {
+  padding: 40rpx;
+  .fx67ll-tools-scroll {
+    .fx67ll-ocr-lottery {
+      margin-bottom: @ocr-basic-gap;
+      .fx67ll-ocr-result {
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: @ocr-basic-gap;
+        .fx67ll-ocr-tag {
+          padding: 10rpx 20rpx;
+          text-align: center;
+          background-color: @tag-topic-color;
+          color: @tag-font-color;
+          border-radius: 4px;
+          margin-right: 30rpx;
+          margin-bottom: @ocr-basic-margin;
+        }
+        .fx67ll-ocr-tag-check {
+          background-color: @tag-font-color;
+          color: @tag-topic-color;
+          border: 1px solid @tag-topic-color;
+        }
+        .fx67ll-ocr-tag-choose {
+          background-color: @tag-topic-color;
+          color: @tag-font-color;
+          border: 1px solid @tag-topic-color;
+        }
+      }
+      .fx67ll-ocr-btn {
+        width: 100%;
+        padding-bottom: @ocr-basic-gap;
+      }
+      .fx67ll-ocr-result:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
