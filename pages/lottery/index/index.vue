@@ -107,21 +107,21 @@
           }}
         </button>
       </view>
-      <view class="fx67ll-btn-item" v-if="todayWeek !== '5'">
+      <!-- <view class="fx67ll-btn-item" v-if="userName === 'fx67ll'">
         <button
           class="fx67ll-btn-default"
           type="default"
-          @click="getOtherLuckyNumber(4)"
+          @click="getOtherLuckyNumberDebounce(4)"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           生成一注随机排列五
         </button>
-      </view>
+      </view> -->
       <view class="fx67ll-btn-item fx67ll-btn-item-three" v-if="todayWeek === '5'">
         <button
           class="fx67ll-btn-default"
           type="primary"
-          @click="getOtherLuckyNumber(3)"
+          @click="getOtherLuckyNumberDebounce(3)"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           排列三
@@ -129,7 +129,7 @@
         <button
           class="fx67ll-btn-default"
           type="primary"
-          @click="getOtherLuckyNumber(4)"
+          @click="getOtherLuckyNumberDebounce(4)"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           排列五
@@ -137,7 +137,7 @@
         <button
           class="fx67ll-btn-default"
           type="primary"
-          @click="getOtherLuckyNumber(5)"
+          @click="getOtherLuckyNumberDebounce(5)"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
           七星彩
@@ -171,7 +171,9 @@
             <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key">{{
               itemFirst.num
             }}</span>
-            -
+            {{
+              item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : null
+            }}
             <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">{{
               itemSecond.num
             }}</span>
@@ -348,6 +350,14 @@
             @change="pastCheckCountChange"
           ></uni-number-box>
         </view>
+        <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
+          <span>是否需要带一注随机排列五</span>
+          <switch
+            class="fx67ll-setting-switch"
+            :checked="settingInfo.isNeedDailyRandomPL5"
+            @change="isNeedDailyRandomPL5Change"
+          />
+        </view>
         <view class="fx67ll-setting-tip">
           Tip-1：修改其他设置会重置
           <text>"当日是否仅允许生成一次随机"</text> 设置，请手动重新配置即可
@@ -494,6 +504,8 @@ export default {
         // 是否需要追加一注过往中奖号码出现的高频数字，以及需要查询过往多少期
         isNeedAddPastRewardNumber: false,
         pastCheckCount: 1023,
+        // 是否需要每天带一注随机排列五，fx67ll个人用配置
+        isNeedDailyRandomPL5: false,
       },
       // 幸运进度条
       luckyRandomProgrss: 0,
@@ -869,7 +881,6 @@ export default {
             const latestDate = res?.rows[0]?.createTime || "";
             const latestDateFormat = moment(latestDate)?.format("YYYY-MM-DD") || "";
             const nowDateFormat = moment()?.format("YYYY-MM-DD") || "";
-            // console.log("queryLastLotteryID", latestDateFormat, nowDateFormat);
             if (
               latestDate &&
               latestDateFormat &&
@@ -877,11 +888,9 @@ export default {
               isTwoOrThreeDaysAfterWithSameYearCheck(latestDateFormat, nowDateFormat)
             ) {
               const latestOfficialDateCode = res?.rows[0]?.dateCode || "";
-              // console.log("latestOfficialDateCode", res?.rows[0]?.dateCode);
               self.todayDateCode = latestOfficialDateCode
                 ? parseInt(latestOfficialDateCode) + 1
                 : null;
-              // console.log("todayDateCode", self.todayDateCode);
             }
           }
         }
@@ -917,16 +926,33 @@ export default {
           if (this.settingInfo.isNeedAddPastRewardNumber) {
             pastNumObjTmp = await this.searchPastNumberFilterByFrequency();
           }
-          // console.log("chasingNumObjTmp, pastNumObjTmp", chasingNumObjTmp, pastNumObjTmp);
           this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
+
+          if (this.settingInfo.isNeedDailyRandomPL5) {
+            this.getOtherLuckyNumberDebounce(4);
+          }
+
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
         }
+        // 如果打开了带一注随机排列五则需要调用一下这个方法，在原来数据的基础上加上排列五的，这里不需要处理返回值
+        if (this.settingInfo.isNeedDailyRandomPL5) {
+          this.getLatestPL5Record(true);
+        }
         // #ifdef H5
-        this.drawerHeight = `${170 + this.settingInfo.luckyCount * 30 + 50}px`;
+        this.drawerHeight = `${
+          170 +
+          this.settingInfo.luckyCount * 30 +
+          50 +
+          (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
+        }px`;
         // #endif
         // #ifdef MP-WEIXIN
-        this.drawerHeight = `${200 + this.settingInfo.luckyCount * 30}px`;
+        this.drawerHeight = `${
+          200 +
+          this.settingInfo.luckyCount * 30 +
+          (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
+        }px`;
         // #endif
         this.drawerType = 0;
         this.isShowDrawer = true;
@@ -1067,7 +1093,6 @@ export default {
                   lotteryNumberFirst: numFirTmp,
                   lotteryNumberSecond: numSecTmp,
                 };
-                // console.log("resultChasingNumberTmpObj", resultChasingNumberTmpObj);
                 return resultChasingNumberTmpObj;
               }
               return null;
@@ -1165,7 +1190,7 @@ export default {
       }
     },
     // 组装今日随机号码
-    packageRandomList(chasingNumber, pastHighFreNumber) {
+    async packageRandomList(chasingNumber, pastHighFreNumber) {
       this.luckyNumberList = [];
       let randomInitLength = this.settingInfo.luckyCount;
 
@@ -1426,7 +1451,7 @@ export default {
       return textResult;
     },
     // 复制给发给彩票店老板的内容
-    copyLuckyNumber() {
+    async copyLuckyNumber() {
       const self = this;
       let luckyTitle = "";
       // let luckyFooter = '\n 老板号码别打错了哈，谢谢~';
@@ -1452,12 +1477,25 @@ export default {
       if (mapLotteryNumberType(this.todayWeek) === "2") {
         luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码双色球\n";
       }
+
       // if (this.userName && this.userName === "fx67ll") {
       //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter + tempLuckyText;
       // } else {
       //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       // }
-      this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
+
+      if (this.settingInfo.isNeedDailyRandomPL5) {
+        const dailyRandomPL5Title = "\n 老板买1注自选号码排列五\n";
+        const dailyRandomPL5Text = await this.getLatestPL5Record(false);
+        this.copyTextContent =
+          luckyTitle +
+          luckyContent +
+          dailyRandomPL5Title +
+          dailyRandomPL5Text +
+          luckyFooter;
+      } else {
+        this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
+      }
 
       uni.setClipboardData({
         data: self.copyTextContent,
@@ -1567,10 +1605,10 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
       // #ifdef H5
-      this.drawerHeight = "460px";
+      this.drawerHeight = "520px";
       // #endif
       // #ifdef MP-WEIXIN
-      this.drawerHeight = "490px";
+      this.drawerHeight = "550px";
       // #endif
       this.drawerType += 1;
       this.isShowDrawer = true;
@@ -1636,6 +1674,10 @@ export default {
     pastCheckCountChange(e) {
       this.settingInfo.pastCheckCount = e;
       // this.saveLuckySettingLocal();
+    },
+    // 监听是否需要日常排列五
+    isNeedDailyRandomPL5Change(e) {
+      this.settingInfo.isNeedDailyRandomPL5 = e;
     },
     // 图片上传结束后需要还原加载状态
     afterPicUploadFinished() {
@@ -2328,8 +2370,8 @@ export default {
       }
     },
     // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
-    getOtherLuckyNumberDebounce: _.debounce(function () {
-      this.getOtherLuckyNumber();
+    getOtherLuckyNumberDebounce: _.debounce(function (type) {
+      this.getOtherLuckyNumber(type);
     }, 233),
     // 获取随机号码，先检查是否生成过相关记录
     getOtherLuckyNumber(type) {
@@ -2364,9 +2406,11 @@ export default {
       });
     },
     // 生成其他类型的随机数并直接上传
-    uploadOtherLuckyNumber(type) {
+    async uploadOtherLuckyNumber(type) {
       const self = this;
+      const dateCode = await this.getLatestCodeNumber(type);
       const addParams = {
+        dateCode,
         recordNumber: null,
         chaseNumber: null,
         numberType: null,
@@ -2390,7 +2434,7 @@ export default {
       if (type === 5) {
         const frontSix = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
         const lastOne = Math.floor(Math.random() * 15);
-        addParams.recordNumber = `${frontSix.join(",")}-${lastOne}`;
+        addParams.recordNumber = `${frontSix.join(",")},${lastOne}`;
         addParams.numberType = "5";
       }
       addLog(addParams).then((res) => {
@@ -2409,6 +2453,68 @@ export default {
           });
         }
       });
+    },
+    // 计算并返回今日期号，仅支持排列五和排列三，前一天必须记录过期号
+    async getLatestCodeNumber(type) {
+      if (![3, 4].includes(type)) {
+        return null;
+      }
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 1,
+        numberType: type,
+        beginCreateTime: moment().format("YYYY-MM-DD"),
+        endCreateTime: moment().subtract(1, "days").format("YYYY-MM-DD"),
+      };
+      const nowDateCodeRecord = await getLogList(queryParams).then((res) => {
+        if (res?.code === 200) {
+          if (res?.rows && res?.rows?.length > 0) {
+            const latestDateCode = res?.rows[0]?.dateCode || "";
+            const nowDateCode = latestDateCode ? parseInt(latestDateCode) + 1 : null;
+            return nowDateCode;
+          }
+          return null;
+        }
+        return null;
+      });
+      return nowDateCodeRecord || null;
+    },
+    // 返回当前最新生成的排列五记录
+    async getLatestPL5Record(isNeedPush) {
+      const self = this;
+      const queryParams = {
+        pageNum: 1,
+        pageSize: 1,
+        numberType: 4,
+        beginCreateTime: moment().format("YYYY-MM-DD"),
+        endCreateTime: moment().add(1, "days").format("YYYY-MM-DD"),
+      };
+      const latestPL5Record = await getLogList(queryParams).then((res) => {
+        if (res?.code === 200) {
+          if (res?.rows && res?.rows?.length > 0 && res?.rows[0]?.recordNumber) {
+            const pl5List = res?.rows[0]?.recordNumber.split(",") || [];
+            const pl5ItemList = pl5List.map((it5, ind5) => {
+              return {
+                num: it5,
+                key: Math.random() * it5 + ind5,
+              };
+            });
+            const pl5Obj = {
+              timeStamp: new Date().getTime(),
+              lotteryNumberFirst: pl5ItemList,
+              lotteryNumberSecond: [],
+            };
+            if (isNeedPush) {
+              self.luckyNumberList.push(pl5Obj);
+            }
+            const spaceThree = Array(2).fill(" ").join("");
+            return `\n${pl5List.join(spaceThree)}\n`;
+          }
+          return null;
+        }
+        return null;
+      });
+      return latestPL5Record || null;
     },
   },
 };
