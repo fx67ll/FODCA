@@ -928,16 +928,13 @@ export default {
           }
           this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
 
+          // 如果打开了带一注随机排列五则需要自动生成随机排列五
           if (this.settingInfo.isNeedDailyRandomPL5) {
             this.getOtherLuckyNumberDebounce(4);
           }
 
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
-        }
-        // 如果打开了带一注随机排列五则需要调用一下这个方法，在原来数据的基础上加上排列五的，这里不需要处理返回值
-        if (this.settingInfo.isNeedDailyRandomPL5) {
-          this.getLatestPL5Record(true);
         }
         // #ifdef H5
         this.drawerHeight = `${
@@ -1484,6 +1481,7 @@ export default {
       //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       // }
 
+      // 如果打开了带一注随机排列五则需要调用一下这个方法，获取最新生成的随机排列五号码
       if (this.settingInfo.isNeedDailyRandomPL5) {
         const dailyRandomPL5Title = "\n 老板买1注自选号码排列五\n";
         const dailyRandomPL5Text = await this.getLatestPL5Record(false);
@@ -2456,15 +2454,15 @@ export default {
     },
     // 计算并返回今日期号，仅支持排列五和排列三，前一天必须记录过期号
     async getLatestCodeNumber(type) {
-      if (![3, 4].includes(type)) {
+      if (![3, 4].includes(parseInt(type))) {
         return null;
       }
       const queryParams = {
         pageNum: 1,
         pageSize: 1,
         numberType: type,
-        beginCreateTime: moment().format("YYYY-MM-DD"),
-        endCreateTime: moment().subtract(1, "days").format("YYYY-MM-DD"),
+        beginCreateTime: moment().subtract(1, "days").format("YYYY-MM-DD"),
+        endCreateTime: moment().format("YYYY-MM-DD"),
       };
       const nowDateCodeRecord = await getLogList(queryParams).then((res) => {
         if (res?.code === 200) {
