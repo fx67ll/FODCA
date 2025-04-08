@@ -107,17 +107,17 @@
           }}
         </button>
       </view>
-      <!-- <view class="fx67ll-btn-item" v-if="userName === 'fx67ll'">
+      <view class="fx67ll-btn-item" v-if="todayWeek === '5' && userName === 'fx67ll'">
         <button
           class="fx67ll-btn-default"
           type="default"
-          @click="getOtherLuckyNumberDebounce(4)"
+          @click="fridayOneClickThree"
           :disabled="isNetworkLoading || countLoading || isDrawLoading"
         >
-          生成一注随机排列五
+          周五一键三连
         </button>
-      </view> -->
-      <view class="fx67ll-btn-item fx67ll-btn-item-three" v-if="todayWeek === '5'">
+      </view>
+      <!-- <view class="fx67ll-btn-item fx67ll-btn-item-three" v-if="todayWeek === '5'">
         <button
           class="fx67ll-btn-default"
           type="primary"
@@ -142,7 +142,7 @@
         >
           七星彩
         </button>
-      </view>
+      </view> -->
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
@@ -181,7 +181,7 @@
         </view>
 
         <!-- #ifdef H5 -->
-        <view class="fx67ll-drawer-btn-box h5">
+        <view class="fx67ll-drawer-btn-box h5" v-if="!settingInfo.isOnlyFirstToday">
           <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
             拷贝至剪切板
           </button>
@@ -189,15 +189,20 @@
             class="fx67ll-btn-submit"
             :loading="isNetworkLoading"
             :disabled="isNetworkLoading"
-            @click="uploadLuckyNumberDebounce"
+            @click="uploadLuckyNumberDebounce(true)"
           >
             保存到云端
+          </button>
+        </view>
+        <view class="fx67ll-drawer-btn-box h5" v-if="settingInfo.isOnlyFirstToday">
+          <button class="fx67ll-btn-copy-one" type="primary" @click="copyLuckyNumber">
+            拷贝至剪切板
           </button>
         </view>
         <!-- #endif -->
 
         <!-- #ifdef MP-WEIXIN -->
-        <view class="fx67ll-drawer-btn-box">
+        <view class="fx67ll-drawer-btn-box" v-if="!settingInfo.isOnlyFirstToday">
           <button class="fx67ll-btn-copy" type="primary" @click="copyLuckyNumber">
             拷贝至剪切板
           </button>
@@ -205,9 +210,14 @@
             class="fx67ll-btn-submit"
             :loading="isNetworkLoading"
             :disabled="isNetworkLoading"
-            @click="uploadLuckyNumberDebounce"
+            @click="uploadLuckyNumberDebounce(true)"
           >
             保存到云端
+          </button>
+        </view>
+        <view class="fx67ll-drawer-btn-box" v-if="settingInfo.isOnlyFirstToday">
+          <button class="fx67ll-btn-copy-one" type="primary" @click="copyLuckyNumber">
+            拷贝至剪切板
           </button>
         </view>
         <!-- #endif -->
@@ -360,7 +370,8 @@
         </view>
         <view class="fx67ll-setting-tip">
           Tip-1：修改其他设置会重置
-          <text>"当日是否仅允许生成一次随机"</text> 设置，请手动重新配置即可
+          <text>"当日是否仅允许生成一次随机"</text>
+          设置，并且开启该配置会自动上传生成的号码记录
         </view>
         <view class="fx67ll-setting-tip">
           Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端
@@ -590,6 +601,8 @@ export default {
   onLoad() {
     // 执行初始化流程
     this.initProcess();
+    // 重新添加当日的排列三或排列五记录
+    this.getLatestPL5Record(true);
   },
   onShow() {
     // // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
@@ -1329,7 +1342,7 @@ export default {
       return objTemp;
     },
     // 统一处理提示是否需要操作完关闭弹窗
-    isNeedCloseDrawer(successTip) {
+    isNeedCloseDrawerConfirm(successTip) {
       const self = this;
       showConfirm(`${successTip}，是否需要为您关闭抽屉？`).then((res) => {
         if (res?.confirm) {
@@ -1339,7 +1352,7 @@ export default {
       });
     },
     // 处理上传号码记录
-    handleUplaodTodayNumber(todayNumber) {
+    handleUplaodTodayNumber(todayNumber, isNeedConfirm) {
       const self = this;
       const fixNumList = [];
       if (this.userName && this.userName === "fx67ll") {
@@ -1365,7 +1378,10 @@ export default {
       addLog(addParams).then((res) => {
         self.isNetworkLoading = false;
         if (res?.code === 200) {
-          self.isNeedCloseDrawer("号码记录已经成功保存到云端");
+          // isNeedConfirm如果为true，则表示为是需要弹出关闭确认框的，如果为false，则表示不需要
+          if (isNeedConfirm) {
+            self.isNeedCloseDrawerConfirm("号码记录已经成功保存到云端");
+          }
         } else {
           uni.showToast({
             title: "号码记录保存失败，请联系管理员！",
@@ -1376,7 +1392,7 @@ export default {
       });
     },
     // 上传当前生成的随机号码
-    uploadLuckyNumber() {
+    uploadLuckyNumber(isNeedConfirm) {
       const self = this;
       if (this.luckyNumberList && this.luckyNumberList.length > 0) {
         const buyingNumList = this.luckyNumberList.filter((item, index) => index > 0);
@@ -1393,15 +1409,18 @@ export default {
         getLogList(queryParams).then((res) => {
           if (res?.code === 200) {
             if (res?.rows && res?.rows?.length > 0) {
-              showConfirm("查询到相同随机号码记录，是否需要再次上传该号码记录？").then(
-                (res) => {
-                  if (res?.confirm) {
-                    self.handleUplaodTodayNumber(todayNumber);
+              // isNeedConfirm如果为true，则表示为是需要弹出关闭确认框的，如果为false，则表示不需要
+              if (isNeedConfirm) {
+                showConfirm("查询到相同随机号码记录，是否需要再次上传该号码记录？").then(
+                  (res) => {
+                    if (res?.confirm) {
+                      self.handleUplaodTodayNumber(todayNumber, isNeedConfirm);
+                    }
                   }
-                }
-              );
+                );
+              }
             } else {
-              self.handleUplaodTodayNumber(todayNumber);
+              self.handleUplaodTodayNumber(todayNumber, isNeedConfirm);
             }
           } else {
             uni.showToast({
@@ -1420,8 +1439,8 @@ export default {
       }
     },
     // 上传当前生成的随机号码 - 防抖处理
-    uploadLuckyNumberDebounce: _.debounce(function () {
-      this.uploadLuckyNumber();
+    uploadLuckyNumberDebounce: _.debounce(function (isNeedConfirm) {
+      this.uploadLuckyNumber(isNeedConfirm);
     }, 233),
     // 保存到云端的号码记录需要重新处理下
     formatNumberListForUpload(list) {
@@ -1495,13 +1514,18 @@ export default {
         this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       }
 
+      // 如果打开了每天只生成一次随机号码，则在点击拷贝的时候直接上传生成的随机号码
+      if (this.settingInfo.isOnlyFirstToday) {
+        this.uploadLuckyNumberDebounce(false);
+      }
+
       uni.setClipboardData({
         data: self.copyTextContent,
         showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
         success: function (res) {
           // #ifdef H5
           // 微信不支持关闭复制成功提示所以暂时只支持H5
-          self.isNeedCloseDrawer("已为您成功复制到剪切板");
+          self.isNeedCloseDrawerConfirm("已为您成功复制到剪切板");
           // #endif
           console.log("uni.setClipboardData - success: " + JSON.stringify(res));
         },
@@ -2368,11 +2392,11 @@ export default {
       }
     },
     // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
-    getOtherLuckyNumberDebounce: _.debounce(function (type) {
-      this.getOtherLuckyNumber(type);
+    getOtherLuckyNumberDebounce: _.debounce(function (type, isNoNeedTipJustShow) {
+      this.getOtherLuckyNumber(type, isNoNeedTipJustShow);
     }, 233),
     // 获取随机号码，先检查是否生成过相关记录
-    getOtherLuckyNumber(type) {
+    getOtherLuckyNumber(type, isNoNeedTipJustShow) {
       const self = this;
       const queryParams = {
         pageNum: 1,
@@ -2388,11 +2412,11 @@ export default {
               `查询到当日已生成过随机${self.lotteryTypeMap[type].text}，是否需要再次生成一注新的随机号码？`
             ).then((res) => {
               if (res?.confirm) {
-                self.uploadOtherLuckyNumber(type);
+                self.uploadOtherLuckyNumber(type, isNoNeedTipJustShow);
               }
             });
           } else {
-            self.uploadOtherLuckyNumber(type);
+            self.uploadOtherLuckyNumber(type, isNoNeedTipJustShow);
           }
         } else {
           uni.showToast({
@@ -2404,7 +2428,7 @@ export default {
       });
     },
     // 生成其他类型的随机数并直接上传
-    async uploadOtherLuckyNumber(type) {
+    async uploadOtherLuckyNumber(type, isNoNeedTipJustShow) {
       const self = this;
       const dateCode = await this.getLatestCodeNumber(type);
       const addParams = {
@@ -2438,11 +2462,15 @@ export default {
       addLog(addParams).then((res) => {
         self.isNetworkLoading = false;
         if (res?.code === 200) {
-          uni.showToast({
-            title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
-            icon: "none",
-            duration: 1998,
-          });
+          if (isNoNeedTipJustShow) {
+            self.formatPl35Record(addParams?.recordNumber);
+          } else {
+            uni.showToast({
+              title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
+              icon: "none",
+              duration: 1998,
+            });
+          }
         } else {
           uni.showToast({
             title: "号码记录保存失败，请联系管理员！",
@@ -2490,20 +2518,8 @@ export default {
       const latestPL5Record = await getLogList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0 && res?.rows[0]?.recordNumber) {
-            const pl5List = res?.rows[0]?.recordNumber.split(",") || [];
-            const pl5ItemList = pl5List.map((it5, ind5) => {
-              return {
-                num: it5,
-                key: Math.random() * it5 + ind5,
-              };
-            });
-            const pl5Obj = {
-              timeStamp: new Date().getTime(),
-              lotteryNumberFirst: pl5ItemList,
-              lotteryNumberSecond: [],
-            };
             if (isNeedPush) {
-              self.luckyNumberList.push(pl5Obj);
+              self.formatPl35Record(res?.rows[0]?.recordNumber);
             }
             const spaceThree = Array(2).fill(" ").join("");
             return `\n${pl5List.join(spaceThree)}\n`;
@@ -2513,6 +2529,39 @@ export default {
         return null;
       });
       return latestPL5Record || null;
+    },
+    // 组装排列三或排列五并添加入当前生成的号码组记录中，展示在底部弹窗中
+    formatPl35Record(numberRecord) {
+      const pl5List = numberRecord.split(",") || [];
+      const pl5ItemList = pl5List.map((it5, ind5) => {
+        return {
+          num: it5,
+          key: Math.random() * it5 + ind5,
+        };
+      });
+      const pl5Obj = {
+        timeStamp: new Date().getTime(),
+        lotteryNumberFirst: pl5ItemList,
+        lotteryNumberSecond: [],
+      };
+      this.luckyNumberList.push(pl5Obj);
+      // 如果打开了只允许一注随机则需要缓存当日的随机号码
+      if (this.settingInfo.isOnlyFirstToday) {
+        this.settingInfo.localLuckyNumberList = this.luckyNumberList;
+        this.saveLuckySettingLocal();
+      }
+    },
+    // 周五一键三连
+    fridayOneClickThree() {
+      setTimeout(() => {
+        getOtherLuckyNumberDebounce(3);
+      }, 100);
+      setTimeout(() => {
+        getOtherLuckyNumberDebounce(4);
+      }, 200);
+      setTimeout(() => {
+        getOtherLuckyNumberDebounce(5);
+      }, 300);
     },
   },
 };
