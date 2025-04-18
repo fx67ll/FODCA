@@ -952,7 +952,7 @@ export default {
                 duration: 1998,
               });
             } else if (resData?.openCode) {
-              self.formatWinningNumber(resData.openCode);
+              self.formatWinningNumber(resData.openCode, nType);
             } else {
               // #ifdef MP-WEIXIN
               uni.showToast({
@@ -987,7 +987,7 @@ export default {
         });
     },
     // 格式化中奖号码，原格式为逗号+加号拼接，转换成我的逗号+横杠来拼接
-    formatWinningNumber(winNum) {
+    formatWinningNumber(winNum, type) {
       // 将第一个匹配的加号替换为减号，第二个匹配的加号替换为逗号
       const originalString = winNum.replace(/\+/, "-").replace(/\+/, ",");
       // 以 - 分割字符串为两部分
@@ -995,11 +995,20 @@ export default {
       let resultString = "";
       if (splitByDash?.length > 1) {
         // 以逗号分割第一个数组并从小到大排序
-        const firstArray = splitByDash[0].split(",").map(Number);
-        // .sort((a, b) => a - b);
+        const firstArray = ["1", "2", 1, 2].includes(type)
+          ? splitByDash[0]
+              .split(",")
+              .map(Number)
+              .sort((a, b) => a - b)
+          : splitByDash[0].split(",").map(Number);
         // 以逗号分割第二个数组并从小到大排序
-        const secondArray = splitByDash[1].split(",").map(Number);
-        // .sort((a, b) => a - b); // 将两个数组分别通过逗号组合成新的字符串
+        const secondArray = ["1", "2", 1, 2].includes(type)
+          ? splitByDash[1]
+              .split(",")
+              .map(Number)
+              .sort((a, b) => a - b)
+          : splitByDash[1].split(",").map(Number);
+        // 将两个数组分别通过逗号组合成新的字符串
         const firstString = firstArray.join(",");
         const secondString = secondArray.join(",");
         // 将两个字符串通过-连接
@@ -1025,6 +1034,7 @@ export default {
       editLog(saveParams)
         .then((res) => {
           if (res?.code === 200) {
+            // 目前仅支持大乐透双色球对比开奖结果
             if ([1, 2].includes(self.formParams.numberType)) {
               self.checkIsGetReward(
                 self.formParams.lotteryId,
@@ -1033,7 +1043,7 @@ export default {
               );
             } else {
               uni.showToast({
-                title: `开奖号码: ${winNum}`,
+                title: `开奖号码: ${winNum} (该类型不支持比对中奖信息)`,
                 icon: "none",
                 duration: 4444,
               });

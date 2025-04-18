@@ -107,7 +107,14 @@
           }}
         </button>
       </view>
-      <view class="fx67ll-btn-item" v-if="todayWeek === '5' && userName === 'fx67ll'">
+      <view
+        class="fx67ll-btn-item"
+        v-if="
+          todayWeek === '5' &&
+          userName === 'fx67ll' &&
+          !settingInfo.isDoneOneClickThreeFriday
+        "
+      >
         <button
           class="fx67ll-btn-default"
           type="default"
@@ -172,11 +179,13 @@
               itemFirst.num
             }}</span>
             {{
-              item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : null
+              item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
             }}
-            <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">{{
-              itemSecond.num
-            }}</span>
+            <span v-if="item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0">
+              <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">
+                {{ itemSecond.num }}
+              </span>
+            </span>
           </view>
         </view>
 
@@ -374,7 +383,7 @@
           设置，并且开启该配置会自动上传生成的号码记录
         </view>
         <view class="fx67ll-setting-tip">
-          Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端
+          Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效
         </view>
         <!-- #ifdef H5 -->
         <button
@@ -517,6 +526,8 @@ export default {
         pastCheckCount: 1023,
         // 是否需要每天带一注随机排列五，fx67ll个人用配置
         isNeedDailyRandomPL5: false,
+        // 周五是否已经完成一键三连，fx67ll个人用配置
+        isDoneOneClickThreeFriday: false,
       },
       // 幸运进度条
       luckyRandomProgrss: 0,
@@ -601,8 +612,6 @@ export default {
   onLoad() {
     // 执行初始化流程
     this.initProcess();
-    // 重新添加当日的排列三或排列五记录
-    this.getLatestPL5Record(true);
   },
   onShow() {
     // // 设置图片显示宽度，使用uniapp的image组件的mode="fixWidth"属性即可，不再需要自动计算
@@ -927,6 +936,8 @@ export default {
         });
       } else {
         this.showType = "luckyNumber";
+        // 不是周五重置一件三连的按钮
+        this.settingInfo.isDoneOneClickThreeFriday = false;
         // 是否允许再次生成随机号码
         if (this.checkIsOnlyFirstTodayConfig()) {
           let chasingNumObjTmp = null;
@@ -1544,26 +1555,28 @@ export default {
       const self = this;
       let context = "";
       _.each(this.luckyNumberList, function (item, index) {
-        let singleContextFirst = "";
-        let singleContextSecond = "";
-        _.each(item.lotteryNumberFirst, function (ita, ina) {
-          singleContextFirst = singleContextFirst.concat(
-            ina === 0 ? ` ` : "",
-            `${JSON.stringify(ita.num)}  `
+        if (index < self.settingInfo.luckyCount) {
+          let singleContextFirst = "";
+          let singleContextSecond = "";
+          _.each(item.lotteryNumberFirst, function (ita, ina) {
+            singleContextFirst = singleContextFirst.concat(
+              ina === 0 ? ` ` : "",
+              `${JSON.stringify(ita.num)}  `
+            );
+          });
+          _.each(item.lotteryNumberSecond, function (itb, inb) {
+            singleContextSecond = singleContextSecond.concat(
+              inb === 0 ? ` ` : "",
+              `${JSON.stringify(itb.num)}  `
+            );
+          });
+          context = context.concat(
+            index === 0 ? "\n" : "",
+            `${singleContextFirst}- ${singleContextSecond}`,
+            "\n",
+            index + 1 !== self.luckyNumberList.length ? "\n" : ""
           );
-        });
-        _.each(item.lotteryNumberSecond, function (itb, inb) {
-          singleContextSecond = singleContextSecond.concat(
-            inb === 0 ? ` ` : "",
-            `${JSON.stringify(itb.num)}  `
-          );
-        });
-        context = context.concat(
-          index === 0 ? "\n" : "",
-          `${singleContextFirst}- ${singleContextSecond}`,
-          "\n",
-          index + 1 !== self.luckyNumberList.length ? "\n" : ""
-        );
+        }
       });
       return context;
     },
@@ -2392,11 +2405,11 @@ export default {
       }
     },
     // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
-    getOtherLuckyNumberDebounce: _.debounce(function (type, isNoNeedTipJustShow) {
-      this.getOtherLuckyNumber(type, isNoNeedTipJustShow);
+    getOtherLuckyNumberDebounce: _.debounce(function (type) {
+      this.getOtherLuckyNumber(type);
     }, 233),
     // 获取随机号码，先检查是否生成过相关记录
-    getOtherLuckyNumber(type, isNoNeedTipJustShow) {
+    getOtherLuckyNumber(type) {
       const self = this;
       const queryParams = {
         pageNum: 1,
@@ -2412,11 +2425,11 @@ export default {
               `查询到当日已生成过随机${self.lotteryTypeMap[type].text}，是否需要再次生成一注新的随机号码？`
             ).then((res) => {
               if (res?.confirm) {
-                self.uploadOtherLuckyNumber(type, isNoNeedTipJustShow);
+                self.uploadOtherLuckyNumber(type);
               }
             });
           } else {
-            self.uploadOtherLuckyNumber(type, isNoNeedTipJustShow);
+            self.uploadOtherLuckyNumber(type);
           }
         } else {
           uni.showToast({
@@ -2428,7 +2441,7 @@ export default {
       });
     },
     // 生成其他类型的随机数并直接上传
-    async uploadOtherLuckyNumber(type, isNoNeedTipJustShow) {
+    async uploadOtherLuckyNumber(type) {
       const self = this;
       const dateCode = await this.getLatestCodeNumber(type);
       const addParams = {
@@ -2462,8 +2475,9 @@ export default {
       addLog(addParams).then((res) => {
         self.isNetworkLoading = false;
         if (res?.code === 200) {
-          if (isNoNeedTipJustShow) {
-            self.formatPl35Record(addParams?.recordNumber);
+          // 如果是排列三或排列五记录，则自动追加到弹窗中显示
+          if ([1, 2].includes(type)) {
+            self.formatPl35Record(addParams.recordNumber);
           } else {
             uni.showToast({
               title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
@@ -2480,23 +2494,38 @@ export default {
         }
       });
     },
-    // 计算并返回今日期号，仅支持排列五和排列三，前一天必须记录过期号
+    // 计算并返回今日期号，只在同一年处理，本方法有非常定制化的功能，所以不添加到工具类中
+    // 仅支持排列五和排列三，前一天必须记录过期号
+    // 新增支持七星彩默认每周五买，直接每次在上一个期号加3
     async getLatestCodeNumber(type) {
-      if (![3, 4].includes(parseInt(type))) {
+      if (moment().subtract(1, "days").year() !== moment().year()) {
+        return false;
+      }
+      if (![3, 4, 5].includes(parseInt(type))) {
         return null;
+      }
+      const isQXC = parseInt(type) === 5;
+      let beginCreateTime = moment().subtract(1, "days").format("YYYY-MM-DD");
+      let endCreateTime = moment().format("YYYY-MM-DD");
+      if (isQXC) {
+        beginCreateTime = moment().subtract(7, "days").format("YYYY-MM-DD");
       }
       const queryParams = {
         pageNum: 1,
         pageSize: 1,
-        numberType: type,
-        beginCreateTime: moment().subtract(1, "days").format("YYYY-MM-DD"),
-        endCreateTime: moment().format("YYYY-MM-DD"),
+        numberType: type === 3 ? 4 : 4, // 目前每天排列三和排列五的期号应该是一样的
+        beginCreateTime,
+        endCreateTime,
       };
       const nowDateCodeRecord = await getLogList(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
             const latestDateCode = res?.rows[0]?.dateCode || "";
-            const nowDateCode = latestDateCode ? parseInt(latestDateCode) + 1 : null;
+            const nowDateCode = latestDateCode
+              ? isQXC
+                ? parseInt(latestDateCode) + 3
+                : parseInt(latestDateCode) + 1
+              : null;
             return nowDateCode;
           }
           return null;
@@ -2521,6 +2550,7 @@ export default {
             if (isNeedPush) {
               self.formatPl35Record(res?.rows[0]?.recordNumber);
             }
+            const pl5List = res?.rows[0]?.recordNumber?.split(",") || [];
             const spaceThree = Array(2).fill(" ").join("");
             return `\n${pl5List.join(spaceThree)}\n`;
           }
@@ -2544,7 +2574,10 @@ export default {
         lotteryNumberFirst: pl5ItemList,
         lotteryNumberSecond: [],
       };
-      this.luckyNumberList.push(pl5Obj);
+      // 只有当前生成的随机号码数组中的长度相同时，才往里面新增排列五的号码记录，否则则不再需要往里面新增
+      if (this.settingInfo.luckyCount === this.luckyNumberList.length) {
+        this.luckyNumberList.push(pl5Obj);
+      }
       // 如果打开了只允许一注随机则需要缓存当日的随机号码
       if (this.settingInfo.isOnlyFirstToday) {
         this.settingInfo.localLuckyNumberList = this.luckyNumberList;
@@ -2553,15 +2586,18 @@ export default {
     },
     // 周五一键三连
     fridayOneClickThree() {
+      const self = this;
       setTimeout(() => {
-        getOtherLuckyNumberDebounce(3);
-      }, 100);
+        self.getOtherLuckyNumberDebounce(3);
+      }, 1998 * 0 + 1);
       setTimeout(() => {
-        getOtherLuckyNumberDebounce(4);
-      }, 200);
+        self.getOtherLuckyNumberDebounce(4);
+      }, 1998 * 1);
       setTimeout(() => {
-        getOtherLuckyNumberDebounce(5);
-      }, 300);
+        self.getOtherLuckyNumberDebounce(5);
+      }, 1998 * 2);
+      this.settingInfo.isDoneOneClickThreeFriday = true;
+      this.saveLuckySettingLocal();
     },
   },
 };
