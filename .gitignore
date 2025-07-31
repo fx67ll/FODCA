@@ -21,3 +21,4 @@ yarn.lock
 .history
 
 neverUploadToGithub.js
+/node_modules
