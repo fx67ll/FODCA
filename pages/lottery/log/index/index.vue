@@ -155,8 +155,8 @@
       <view class="fx67ll-search-drawer">
         <view class="fx67ll-tab-box" v-if="logFilterType === 2">
           <view
-            v-for="lotteryItem in lotteryTypeMap"
-            :key="lotteryItem.type"
+            v-for="(lotteryItem, key) in lotteryTypeMap"
+            :key="key"
             :class="{
               'fx67ll-tab-item': true,
               'fx67ll-tab-item-type': true,

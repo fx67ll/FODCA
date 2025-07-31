@@ -124,32 +124,6 @@
           周五一键三连
         </button>
       </view>
-      <!-- <view class="fx67ll-btn-item fx67ll-btn-item-three" v-if="todayWeek === '5'">
-        <button
-          class="fx67ll-btn-default"
-          type="primary"
-          @click="getOtherLuckyNumberDebounce(3)"
-          :disabled="isNetworkLoading || countLoading || isDrawLoading"
-        >
-          排列三
-        </button>
-        <button
-          class="fx67ll-btn-default"
-          type="primary"
-          @click="getOtherLuckyNumberDebounce(4)"
-          :disabled="isNetworkLoading || countLoading || isDrawLoading"
-        >
-          排列五
-        </button>
-        <button
-          class="fx67ll-btn-default"
-          type="primary"
-          @click="getOtherLuckyNumberDebounce(5)"
-          :disabled="isNetworkLoading || countLoading || isDrawLoading"
-        >
-          七星彩
-        </button>
-      </view> -->
     </view>
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
@@ -1658,7 +1632,7 @@ export default {
     },
     // 监听是否允许重复
     isNeedRepeatChange(e) {
-      this.settingInfo.isNeedRepeat = e.detail.value;
+      this.settingInfo.isNeedRepeat = e?.detail?.value;
       // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
@@ -1666,10 +1640,10 @@ export default {
     },
     // 监听当日是否只允许出现一注随机号码
     isOnlyFirstTodayChange(e) {
-      this.settingInfo.isOnlyFirstToday = e.detail.value;
+      this.settingInfo.isOnlyFirstToday = e?.detail?.value;
       this.settingInfo.localLuckyNumberList = this.luckyNumberList;
       // this.saveLuckySettingLocal();
-      if (!e.detail.value) {
+      if (!e?.detail?.value) {
         this.settingInfo.firstRandomDate = null;
         this.settingInfo.localLuckyNumberList = [];
         // this.saveLuckySettingLocal();
@@ -1685,7 +1659,7 @@ export default {
     },
     // 监听当日幸运数字是否必须出现在当日随机号码中
     isNeedLuckyNumberChange(e) {
-      this.settingInfo.isNeedLuckyNumber = e.detail.value;
+      this.settingInfo.isNeedLuckyNumber = e?.detail?.value;
       // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
@@ -1693,8 +1667,8 @@ export default {
     },
     // 监听是否需要追加一注过往中奖号码出现的高频数字
     isNeedAddPastChange(e) {
-      this.settingInfo.isNeedAddPastRewardNumber = e.detail.value;
-      if (e.detail.value) {
+      this.settingInfo.isNeedAddPastRewardNumber = e?.detail?.value;
+      if (e?.detail?.value) {
         if (this.settingInfo.luckyCount < 5) {
           this.settingInfo.luckyCount = this.settingInfo.luckyCount + 1;
         }
@@ -1712,7 +1686,8 @@ export default {
     },
     // 监听是否需要日常排列五
     isNeedDailyRandomPL5Change(e) {
-      this.settingInfo.isNeedDailyRandomPL5 = e;
+      console.log("isNeedDailyRandomPL5Change", e, e?.detail?.value);
+      this.settingInfo.isNeedDailyRandomPL5 = e?.detail?.value;
     },
     // 图片上传结束后需要还原加载状态
     afterPicUploadFinished() {
@@ -2476,7 +2451,7 @@ export default {
         self.isNetworkLoading = false;
         if (res?.code === 200) {
           // 如果是排列三或排列五记录，则自动追加到弹窗中显示
-          if ([1, 2].includes(type)) {
+          if ([1, 2].includes(parseInt(type))) {
             self.formatPl35Record(addParams.recordNumber);
           } else {
             uni.showToast({
@@ -2562,6 +2537,7 @@ export default {
     },
     // 组装排列三或排列五并添加入当前生成的号码组记录中，展示在底部弹窗中
     formatPl35Record(numberRecord) {
+      const self = this;
       const pl5List = numberRecord.split(",") || [];
       const pl5ItemList = pl5List.map((it5, ind5) => {
         return {
@@ -2574,14 +2550,25 @@ export default {
         lotteryNumberFirst: pl5ItemList,
         lotteryNumberSecond: [],
       };
-      // 只有当前生成的随机号码数组中的长度相同时，才往里面新增排列五的号码记录，否则则不再需要往里面新增
-      if (this.settingInfo.luckyCount === this.luckyNumberList.length) {
-        this.luckyNumberList.push(pl5Obj);
+
+      // 添加到底部弹窗里显示
+      const lastNumberIndex = self.luckyNumberList.length - 1;
+      console.log("lastNumberIndex", self.luckyNumberList[lastNumberIndex]);
+      if (self.luckyNumberList[lastNumberIndex].lotteryNumberSecond.length !== 0) {
+        console.log("pl5Obj", pl5Obj);
+        self.luckyNumberList.push(pl5Obj);
       }
+
       // 如果打开了只允许一注随机则需要缓存当日的随机号码
-      if (this.settingInfo.isOnlyFirstToday) {
-        this.settingInfo.localLuckyNumberList = this.luckyNumberList;
-        this.saveLuckySettingLocal();
+      if (self.settingInfo.isOnlyFirstToday) {
+        console.log(
+          "luckyNumberList 1",
+          self.settingInfo.localLuckyNumberList,
+          self.luckyNumberList
+        );
+        self.settingInfo.localLuckyNumberList = self.luckyNumberList;
+        console.log("luckyNumberList 2", self.settingInfo.localLuckyNumberList);
+        self.saveLuckySettingLocal();
       }
     },
     // 周五一键三连
