@@ -384,3 +384,95 @@ export function isTwoOrThreeDaysAfterWithSameYearCheck(previousDate, currentDate
     return false;
   }
 }
+
+// 1、大乐透 2、双色球 3、七星彩
+export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, lastNumber) {
+  try {
+    // 验证类型参数
+    if (type !== 1 && type !== 2 && type !== 3) {
+      console.error(`错误：无效的类型参数 "${type}"。只允许 1、2 或 3。`);
+      return null;
+    }
+
+    // 解析日期字符串
+    const currentDate = moment(currentDateStr);
+    const lastDate = moment(lastDateStr);
+
+    // 检查日期是否有效
+    if (!currentDate.isValid()) {
+      console.error(`错误：无效的当前日期格式 "${currentDateStr}"`);
+      return null;
+    }
+
+    if (!lastDate.isValid()) {
+      console.error(`错误：无效的最后记录日期格式 "${lastDateStr}"`);
+      return null;
+    }
+
+    // 如果当前日期等于最后记录日期，直接返回最后记录的数字
+    if (currentDate.isSame(lastDate, 'day')) {
+      return lastNumber;
+    }
+
+    // 如果当前日期早于最后记录日期，返回 null
+    if (currentDate.isBefore(lastDate)) {
+      console.error(`错误：当前日期 (${currentDate.format('YYYY-MM-DD')}) 早于最后记录日期 (${lastDate.format('YYYY-MM-DD')})`);
+      return null;
+    }
+
+    // 定义记录日的星期值
+    let recordDays;
+    switch (type) {
+      case 1: // 周一、周三、周六
+        recordDays = [1, 3, 6];
+        break;
+      case 2: // 周二、周四、周日
+        recordDays = [2, 4, 0];
+        break;
+      case 3: // 周二、周五、周日
+        recordDays = [2, 5, 0];
+        break;
+      default:
+        // 这行理论上不会执行，因为前面已经验证过类型
+        console.error(`错误：未处理类型 "${type}"`);
+        return null;
+    }
+
+    // 计算起始日期（最后记录日期的下一天）
+    const start = lastDate.clone().add(1, 'days');
+    const end = currentDate.clone();
+
+    // 计算总天数（包含起始和结束日期）
+    const totalDays = end.diff(start, 'days') + 1;
+
+    // 计算完整周数和剩余天数
+    const fullWeeks = Math.floor(totalDays / 7);
+    const remainDays = totalDays % 7;
+
+    // 完整周中的记录日数量（每周3次）
+    const fullWeekRecords = fullWeeks * 3;
+
+    // 计算剩余天数中的记录日数量
+    let remainRecords = 0;
+    let tempDate = start.clone();
+
+    for (let i = 0; i < remainDays; i++) {
+      const dayOfWeek = tempDate.day(); // 0=周日, 1=周一, 2=周二, 3=周三, 4=周四, 5=周五, 6=周六
+      if (recordDays.includes(dayOfWeek)) {
+        remainRecords++;
+      }
+      tempDate.add(1, 'day');
+    }
+
+    // 总记录次数 = 完整周记录 + 剩余天记录
+    const totalRecords = fullWeekRecords + remainRecords;
+
+    // 当前数字 = 最后记录数字 + 总记录次数
+    return lastNumber + totalRecords;
+  } catch (error) {
+    // 发生任何错误时返回 null 并打印错误信息
+    console.error(`计算过程中发生意外错误: ${error.message}`);
+    console.error(error.stack);
+    return null;
+  }
+}
