@@ -602,7 +602,7 @@
         const currentDateTime = moment();
         const lastDateTime = moment(lastDateStr);
         console.log(
-          "检查当前日期是否跨天：",
+          "checkNowIsCrossDay",
           currentDateTime.format("YYYY-MM-DD"),
           lastDateTime.format("YYYY-MM-DD")
         );
@@ -738,12 +738,9 @@
               } else {
                 const lastDateCode = parseInt(res?.rows[0]?.dateCode) || null;
                 if (lastDateCode) {
-                  console.log(`====================开始计算${self.lotteryTypeMap[todeyNumberType].text}期号====================`);
-                  self.todayDateCode = calculateCurrentDateCode(todeyNumberType, nowDateFormat, latestDateFormat, lastDateCode);
+                  self.todayDateCode = calculateCurrentDateCode(parseInt(todeyNumberType), nowDateFormat, latestDateFormat, lastDateCode);
                 }
               }
-              console.log('最后一次记录的号码期号记录：', lastDateCode, latestDateFormat);
-              console.log('今日号码期号计算结果：', self.todayDateCode, nowDateFormat);
             }
           }
         });
@@ -2361,6 +2358,7 @@
       // 计算并返回今日排列五或排列三的期号，只在同一年处理，排列三五每天都有
       // AI优化过，能够循环向前查询，防止因为断买了的日期无法续上期号  
       async getLatestCodeNumberPl35(type, customeMaxSearchDays) {
+        // 1. 初始校验逻辑
         if (moment().subtract(1, "days").year() !== moment().year()) {
           return false;
         }
@@ -2369,20 +2367,23 @@
           return null;
         }
 
-        const today = moment();
-        const maxSearchDays = customeMaxSearchDays || 8; // 最多查询天数，避免无限递归，默认8天  
+        // 使用当天00:00作为基准日期
+        const today = moment().startOf('day');
+        const maxSearchDays = customeMaxSearchDays || 8;
 
         console.log('====================开始计算排列三排列五期号====================');
+        console.log(`计算基准日期: ${today.format('YYYY-MM-DD')}, 最大查询天数: ${maxSearchDays}`);
 
-        // 异步递归查询函数
+        // 2. 异步递归查询函数
         const searchRecursively = async (daysBack) => {
-          // 超过最大查询天数，返回null
+          // 终止条件：超过最大查询天数
           if (daysBack > maxSearchDays) {
             console.warn(`在过去${maxSearchDays}天内未找到type ${type}的彩票记录`);
             return null;
           }
 
-          const searchDate = moment().subtract(daysBack, "days");
+          // 计算查询日期（标准化为00:00）
+          const searchDate = moment().subtract(daysBack, "days").startOf('day');
           const beginCreateTime = searchDate.format("YYYY-MM-DD");
           const endCreateTime = searchDate.clone().add(1, "day").format("YYYY-MM-DD");
 
@@ -2397,33 +2398,53 @@
           try {
             console.log(`正在查询第${daysBack}天前的记录: ${beginCreateTime}`);
             const res = await getLogList(queryParams);
-            if (res?.code === 200 && res?.rows && res?.rows?.length > 0) {
+
+            // 3. 找到有效记录时的处理
+            if (res?.code === 200 && res?.rows?.length > 0) {
               const latestRecord = res.rows[0];
               const latestDateCode = latestRecord.dateCode || "";
-              const recordDate = moment(latestRecord.createTime || beginCreateTime);
+
+              // 获取记录的日期（优先使用创建时间，否则使用查询日期）
+              const recordDate = latestRecord.createTime
+                ? moment(latestRecord.createTime).startOf('day')
+                : searchDate.clone();
+
+              console.log('找到记录:', {
+                date: recordDate.format('YYYY-MM-DD'),
+                code: latestDateCode
+              });
+
               if (latestDateCode) {
-                // 计算从记录日期到今天的天数差
+                // 计算日历天数差（基于标准化日期）
                 const daysDiff = today.diff(recordDate, 'days');
-                // 根据天数差计算当前期号
+
+                // 调试日志：显示日期计算详情
+                console.log(`日期计算: 今天=${today.format('YYYY-MM-DD')}, ` +
+                  `记录日期=${recordDate.format('YYYY-MM-DD')}, ` +
+                  `天数差=${daysDiff}`);
+
                 const nowDateCode = parseInt(latestDateCode) + daysDiff;
-                console.log(`找到记录: 日期=${recordDate.format('YYYY-MM-DD')}, 期号=${latestDateCode}, 天数差=${daysDiff}, 计算期号=${nowDateCode}`);
-                return nowDateCode || null;
+                console.log(`计算完成: 基准期号=${latestDateCode}, ` +
+                  `天数差=${daysDiff}, ` +
+                  `当前期号=${nowDateCode}`);
+                return nowDateCode;
               }
               return null;
-            } else {
-              // 没有找到记录，等待1秒后继续查询更早的日期
+            }
+            // 4. 未找到记录时继续递归
+            else {
               console.log(`第${daysBack}天前无记录，继续查询更早日期...`);
               await new Promise(resolve => setTimeout(resolve, 233));
-              return await searchRecursively(daysBack + 1);
+              return searchRecursively(daysBack + 1);
             }
           } catch (error) {
             console.error(`查询第${daysBack}天前的记录时出错:`, error);
-            // 出错时也等待1秒后继续查询
             await new Promise(resolve => setTimeout(resolve, 233));
-            return await searchRecursively(daysBack + 1);
+            return searchRecursively(daysBack + 1);
           }
         };
-        // 从前一天开始递归查询
+
+        // 5. 开始递归查询
         return await searchRecursively(1);
       },
       // 返回当前最新生成的排列五记录
