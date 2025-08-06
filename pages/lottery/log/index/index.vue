@@ -13,16 +13,18 @@
           <uni-swipe-action-item :left-options="!listMergeMode ? leftActionOptions : []"
             :right-options="!listMergeMode ? rightActionOptions : []" @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.logTitle" type="line">
-              <template v-slot:right>{{ item.createDate || "-" }}</template>
+              <!-- <template v-slot:right>{{ item.createDate || "-" }}</template> -->
+              <template v-slot:right>{{ (item.chaseList[0].createTime || "-") + ' ' + (item.createDate ||
+                "-")}}</template>
               <uni-list :border="true">
                 <view>
-                  <uni-list-chat v-for="ita in item.chaseList" :key="ita.numKey" :avatar="'https://test.fx67ll.com/fx67ll-img-collection-for-lottery/' +
-                    item.numberType +
-                    '.jpg'
-                    " :title="ita.title" :note="ita.chaseNumber">
+                  <uni-list-chat v-for="ita in item.chaseList" :key="ita.numKey"
+                    :avatar="'https://test.fx67ll.com/fx67ll-img-collection-for-lottery/' + item.numberType + '.jpg'"
+                    :title="ita.title" :note="ita.chaseNumber">
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        {{ ita.createTime }}
+                        <!-- {{ ita.createTime }} -->
+                        {{ itb.updateTime }}
                       </view>
                       <view>
                         <uni-badge :text="ita.winText" :custom-style="ita.isRed && item.winFlag === 'Y'
