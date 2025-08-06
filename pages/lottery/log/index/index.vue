@@ -13,9 +13,7 @@
           <uni-swipe-action-item :left-options="!listMergeMode ? leftActionOptions : []"
             :right-options="!listMergeMode ? rightActionOptions : []" @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.logTitle" type="line">
-              <!-- <template v-slot:right>{{ item.createDate || "-" }}</template> -->
-              <template v-slot:right>{{ (item.chaseList[0].createTime || "-") + ' ' + (item.createDate ||
-                "-")}}</template>
+              <template v-slot:right>{{ item.createDate || "-" }}</template>
               <uni-list :border="true">
                 <view>
                   <uni-list-chat v-for="ita in item.chaseList" :key="ita.numKey"
@@ -23,8 +21,7 @@
                     :title="ita.title" :note="ita.chaseNumber">
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
-                        <!-- {{ ita.createTime }} -->
-                        {{ itb.updateTime }}
+                        {{ ita.updateTime }}
                       </view>
                       <view>
                         <uni-badge :text="ita.winText" :custom-style="ita.isRed && item.winFlag === 'Y'
@@ -350,7 +347,9 @@
     },
     onShow() {
       // 请勿直接调用queryLogList方法！
-      this.$refs.paging.reload();
+      if (this.$refs.paging) {
+        this.$refs.paging.reload();
+      }
     },
     onLoad() {
       // 设置语言为中文
@@ -403,6 +402,8 @@
         const listResult = [];
         list.forEach((item) => {
           const winFlag = item?.isWin || "N";
+          const createDateWeekInfo = moment(item?.createTime).format("dddd");
+          const createDateDayInfo = moment(item?.createTime).format("YYYY/MM/DD");
           const tmpObj = {
             logId: item?.lotteryId,
             logKey: new Date().getTime() + self.getRandomIndex(),
@@ -418,7 +419,7 @@
             weekType: item?.weekType,
             numberType: item?.numberType,
             createTime: item?.createTime || "暂无数据",
-            createDate: moment(item?.createTime).format("dddd"),
+            createDate: `${createDateDayInfo} ${createDateWeekInfo}`,
           };
           const cl = item?.chaseNumber?.split("/") || [];
           const rl = item?.recordNumber?.split("/") || [];
@@ -432,7 +433,7 @@
               tmpObj.chaseList.push({
                 numKey: new Date().getTime() + self.getRandomIndex(),
                 title: "固定追号",
-                createTime: self.subStrUpdateTime(item?.createTime) || "暂无数据",
+                updateTime: self.subStrUpdateTime(item?.updateTime) || self.subStrUpdateTime(item?.createTime) || "暂无数据",
                 chaseNumber: ita || "暂无数据",
                 isRed,
                 winText: self.getWinText(winFlag, item?.winningPrice, isRed),
@@ -448,7 +449,7 @@
               tmpObj.recordList.push({
                 numKey: new Date().getTime() + self.getRandomIndex(),
                 title: self.getTitleByNumberType(item?.numberType),
-                updateTime: self.subStrUpdateTime(item?.updateTime) || "暂无数据",
+                updateTime: self.subStrUpdateTime(item?.updateTime) || self.subStrUpdateTime(item?.createTime) || "暂无数据",
                 recordNumber: itb || "暂无数据",
                 isRed,
                 winText: self.getWinText(winFlag, item?.winningPrice, isRed),
