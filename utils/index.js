@@ -390,7 +390,7 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
   try {
     // 验证类型参数
     if (type !== 1 && type !== 2 && type !== 3) {
-      console.error(`错误：无效的类型参数 "${type}"。只允许 1、2 或 3。`);
+      console.error(`无效的类型参数 "${type}"。只允许 1、2 或 3。`);
       return null;
     }
 
@@ -400,12 +400,12 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
 
     // 检查日期是否有效
     if (!currentDate.isValid()) {
-      console.error(`错误：无效的当前日期格式 "${currentDateStr}"`);
+      console.error(`无效的当前日期格式 "${currentDateStr}"`);
       return null;
     }
 
     if (!lastDate.isValid()) {
-      console.error(`错误：无效的最后记录日期格式 "${lastDateStr}"`);
+      console.error(`无效的最后记录日期格式 "${lastDateStr}"`);
       return null;
     }
 
@@ -416,7 +416,7 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
 
     // 如果当前日期早于最后记录日期，返回 null
     if (currentDate.isBefore(lastDate)) {
-      console.error(`错误：当前日期 (${currentDate.format('YYYY-MM-DD')}) 早于最后记录日期 (${lastDate.format('YYYY-MM-DD')})`);
+      console.error(`当前日期 (${currentDate.format('YYYY-MM-DD')}) 早于最后记录日期 (${lastDate.format('YYYY-MM-DD')})`);
       return null;
     }
 
@@ -434,7 +434,7 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
         break;
       default:
         // 这行理论上不会执行，因为前面已经验证过类型
-        console.error(`错误：未处理类型 "${type}"`);
+        console.error(`未处理类型 "${type}"`);
         return null;
     }
 
@@ -465,10 +465,10 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
     }
 
     // 总记录次数 = 完整周记录 + 剩余天记录
-    const totalRecords = fullWeekRecords + remainRecords;
+    const totalRecords = parseInt(fullWeekRecords) + parseInt(remainRecords);
 
     // 当前数字 = 最后记录数字 + 总记录次数
-    return lastNumber + totalRecords;
+    return parseInt(lastNumber) + parseInt(totalRecords);
   } catch (error) {
     // 发生任何错误时返回 null 并打印错误信息
     console.error(`计算过程中发生意外错误: ${error.message}`);
