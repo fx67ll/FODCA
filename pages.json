@@ -151,7 +151,7 @@
     {
       "path": "pages/punch/log/statistics/statistics",
       "style": {
-        "navigationBarTitleText": "缺卡记录统计"
+        "navigationBarTitleText": "打卡数据统计"
       }
     }
   ],

@@ -1,57 +1,33 @@
 <template>
   <view class="fx67ll-extra-box">
-    <z-paging-mini
-      ref="paging"
-      back-to-top-bottom="30rpx"
-      :auto-show-back-to-top="true"
-      v-model="punchList"
-      @query="queryPunchList"
-    >
+    <z-paging-mini ref="paging" back-to-top-bottom="166rpx" :auto-show-back-to-top="true" v-model="punchList"
+      @query="queryPunchList">
       <view slot="top">
-        <v-tabs
-          class="nav-tab-box nav-tab-box-four"
-          v-model="tabCurrentIndex"
-          v-if="isShowTabFilter"
-          :isNeedHiddenBtn="true"
-          :isShowTabNow="isShowTabFilter"
-          :tabs="tabDataList"
-          :scroll="false"
-          :lineScale="0.3"
-          @hideTab="handleTabHide"
-          @change="handleTabChange"
-        ></v-tabs>
+        <v-tabs class="nav-tab-box nav-tab-box-four" v-model="tabCurrentIndex" v-if="isShowTabFilter"
+          :isNeedHiddenBtn="true" :isShowTabNow="isShowTabFilter" :tabs="tabDataList" :scroll="false" :lineScale="0.3"
+          @hideTab="handleTabHide" @change="handleTabChange"></v-tabs>
       </view>
       <uni-swipe-action>
         <view class="fx67ll-extra-item" v-for="item in punchList" :key="item.punchId">
-          <uni-swipe-action-item
-            :right-options="actionOptions"
-            @click="(e) => handleActionClick(e, item)"
-          >
+          <uni-swipe-action-item :right-options="actionOptions" @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.updateTime.substring(0, 10)" type="line">
               <uni-list :border="true">
-                <uni-list-chat
-                  :avatar="
-                    'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + 6
-                  "
-                  :title="item.updateTime"
-                  :note="item.punchRemark || '暂无打卡备注'"
-                >
+                <uni-list-chat :avatar="'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + 6
+                  " :title="item.updateTime" :note="item.punchRemark || '暂无打卡备注'">
                   <template v-slot:default>
                     <view>
-                      <text
-                        :class="{
-                          'fx67ll-extra-badge': true,
-                          'fx67ll-extra-badge-success': item.punchType === '1',
-                          'fx67ll-extra-badge-fail': item.punchType === '2',
-                          'fx67ll-extra-badge-normal':
-                            !item.punchType || item.punchType === '3',
-                        }"
-                        >{{
+                      <text :class="{
+                        'fx67ll-extra-badge': true,
+                        'fx67ll-extra-badge-success': item.punchType === '1',
+                        'fx67ll-extra-badge-fail': item.punchType === '2',
+                        'fx67ll-extra-badge-normal':
+                          !item.punchType || item.punchType === '3',
+                      }">{{
                           item.punchType === "1"
                             ? "上班打卡"
                             : item.punchType === "2"
-                            ? "下班打卡"
-                            : "异常记录，请联系管理员"
+                              ? "下班打卡"
+                              : "异常记录，请联系管理员"
                         }}
                       </text>
                     </view>
@@ -63,28 +39,12 @@
         </view>
       </uni-swipe-action>
     </z-paging-mini>
-    <punchDrawer
-      :isShowPunchDrawer="isShowEditDrawer"
-      :isAdd="false"
-      :punchInfo="editPunchInfo"
-      @hideDrawer="setIsShowDrawer"
-      @reloadPunchList="queryPunchList"
-    />
-    <punchDrawer
-      :isShowPunchDrawer="isShowAddDrawer"
-      :isAdd="true"
-      @hideDrawer="setIsShowDrawer"
-    />
-    <uni-fab
-      ref="fab"
-      v-if="!isShowAddDrawer && !isShowEditDrawer"
-      :pattern="fabConfig.pattern"
-      :content="fabConfig.content"
-      :horizontal="fabConfig.horizontal"
-      :vertical="fabConfig.vertical"
-      :direction="fabConfig.direction"
-      @trigger="handleFabTrigger"
-    />
+    <punchDrawer :isShowPunchDrawer="isShowEditDrawer" :isAdd="false" :punchInfo="editPunchInfo"
+      @hideDrawer="setIsShowDrawer" @reloadPunchList="queryPunchList" />
+    <punchDrawer :isShowPunchDrawer="isShowAddDrawer" :isAdd="true" @hideDrawer="setIsShowDrawer" />
+    <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer" :pattern="fabConfig.pattern"
+      :content="fabConfig.content" :horizontal="fabConfig.horizontal" :vertical="fabConfig.vertical"
+      :direction="fabConfig.direction" @trigger="handleFabTrigger" />
   </view>
 </template>
 
@@ -141,9 +101,9 @@ export default {
       fabConfig: {
         title: "uni-fab",
         directionStr: "垂直",
-        horizontal: "left",
+        horizontal: "right",
         vertical: "bottom",
-        direction: "vertical",
+        direction: "horizontal",
         pattern: {
           icon: "gear",
           color: "#7A7E83",
@@ -159,7 +119,7 @@ export default {
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=44",
             selectedIconPath:
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=44",
-            text: "缺卡统计",
+            text: "数据统计",
             active: false,
           },
           {

@@ -1,20 +1,25 @@
 <template>
   <view class="fx67ll-statistics-box">
-    <view
-      v-if="
-        (nowLostLogList && nowLostLogList.length > 0) ||
-        (prevLostLogList && prevLostLogList.length > 0)
-      "
-    >
+    <view v-if="
+      (nowAvgLogList && nowAvgLogList.length > 0) ||
+      (nowLostLogList && nowLostLogList.length > 0) ||
+      (prevLostLogList && prevLostLogList.length > 0)
+    ">
+      <view class="fx67ll-statistics-item">
+        <uni-section title="本月均工时" type="line">
+          <uni-list v-if="nowAvgLogList && nowAvgLogList.length > 0">
+            <uni-list-item v-for="item in nowAvgLogList" :key="item.key" :title="item.title" :rightText="item.text" />
+          </uni-list>
+        </uni-section>
+        <uni-list v-if="!nowAvgLogList || nowAvgLogList.length === 0">
+          <uni-list-item title="暂无当月均工时数据！ (*｀皿´*)ﾉ " />
+        </uni-list>
+      </view>
       <view class="fx67ll-statistics-item">
         <uni-section title="当月缺卡记录" type="line">
           <uni-list v-if="nowLostLogList && nowLostLogList.length > 0">
-            <uni-list-item
-              v-for="item in nowLostLogList"
-              :key="item.key"
-              :title="item.punchDay"
-              :rightText="item.lostPunchType"
-            />
+            <uni-list-item v-for="item in nowLostLogList" :key="item.key" :title="item.punchDay"
+              :rightText="item.lostPunchType" />
           </uni-list>
         </uni-section>
         <uni-list v-if="!nowLostLogList || nowLostLogList.length === 0">
@@ -24,36 +29,29 @@
       <view class="fx67ll-statistics-item">
         <uni-section title="上月缺卡记录" type="line">
           <uni-list v-if="prevLostLogList && prevLostLogList.length > 0">
-            <uni-list-item
-              v-for="item in prevLostLogList"
-              :key="item.key"
-              :title="item.punchDay"
-              :rightText="item.lostPunchType"
-            />
+            <uni-list-item v-for="item in prevLostLogList" :key="item.key" :title="item.punchDay"
+              :rightText="item.lostPunchType" />
           </uni-list>
           <uni-list v-if="!prevLostLogList || prevLostLogList.length === 0">
             <uni-list-item title="恭喜你~ 上月暂无缺卡记录！(*^▽^*)" />
           </uni-list>
-        </uni-section> </view
-    ></view>
-    <view
-      class="no-data"
-      :class="{
-        'fade-show': !lostLogLoading,
-      }"
-      v-if="
-        (!nowLostLogList || nowLostLogList.length === 0) &&
-        (!prevLostLogList || prevLostLogList.length === 0) &&
-        !lostLogLoading
-      "
-    >
+        </uni-section>
+      </view>
+    </view>
+    <view class="no-data" :class="{
+      'fade-show': !lostLogLoading,
+    }" v-if="
+      (!nowLostLogList || nowLostLogList.length === 0) &&
+      (!prevLostLogList || prevLostLogList.length === 0) &&
+      !lostLogLoading
+    ">
       <img src="/static/images/no-data.png" />
     </view>
   </view>
 </template>
 
 <script>
-import { getPunchLostLog } from "@/api/punch/log";
+import { getPunchLostLog, getWorkTotalTime } from "@/api/punch/log";
 import { getInfo } from "@/api/login";
 
 import moment from "@/node_modules/moment";
@@ -62,6 +60,7 @@ import "@/node_modules/moment/locale/zh-cn";
 export default {
   data() {
     return {
+      nowAvgLogList: [],
       nowLostLogList: [],
       prevLostLogList: [],
       lostLogLoading: false,
@@ -105,6 +104,7 @@ export default {
             prevQueryParams.updateBy = username;
           }
 
+          self.queryPunchLogTotalTime(nowQueryParams);
           self.qryPunchLostLog(nowQueryParams, 1);
           self.qryPunchLostLog(prevQueryParams, 2);
         })
@@ -140,6 +140,55 @@ export default {
         .finally(() => {
           uni.hideLoading();
           self.lostLogLoading = false;
+        });
+    },
+    // 查询打卡工时统计
+    queryPunchLogTotalTime(queryParams) {
+      const self = this;
+      getWorkTotalTime(queryParams)
+        .then((res) => {
+          if (res?.code === 200) {
+            if (res?.rows && res?.rows?.length > 0) {
+              const totalData = res?.rows[0];
+              self.nowAvgLogList = [
+                {
+                  key: 1,
+                  title: "当月总工时 (小时)",
+                  text: totalData?.totalWorkHours || 0,
+                },
+                {
+                  key: 2,
+                  title: "当月已打卡天数",
+                  text: totalData?.totalPunchDays || 0,
+                },
+                {
+                  key: 2,
+                  title: "当月缺卡天数",
+                  text: totalData?.totalPunchDays && totalData?.totalWorkDays ? totalData?.totalPunchDays - totalData?.totalWorkDays : 0,
+                },
+                {
+                  key: 2,
+                  title: "当月日均工时 (小时)",
+                  text: totalData?.workHoursPerDay ? totalData?.workHoursPerDay.toFixed(2) : 0,
+                },
+                {
+                  key: 2,
+                  title: "当月净日均工时 (小时)",
+                  text: totalData?.totalWorkHours && totalData?.totalPunchDays ? (totalData?.totalWorkHours / totalData?.totalPunchDays).toFixed(2) : 0,
+                },
+              ];
+            }
+          } else {
+            uni.showToast({
+              title: "当月均工时统计查询失败！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        })
+        .finally(() => {
+          uni.hideLoading();
+          self.isPunchLoading = false;
         });
     },
   },

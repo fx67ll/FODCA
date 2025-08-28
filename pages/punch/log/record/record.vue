@@ -2,60 +2,33 @@
   <view class="fx67ll-punch-box">
     <view v-if="!isPunchLoading">
       <view v-if="!isShowAddDrawer && checkHasChartData">
-        <view
-          v-if="!isShowAddDrawer"
-          id="fx67ll-wx-punch-chart"
-          class="fx67ll-chart-punch"
-          :class="{
-            'fade-show': !isPunchLoading,
-          }"
-          :style="{ marginTop: `${getChartMarginTop}` }"
-          @click="queryPunchLogTotalTime"
-        >
+        <view v-if="!isShowAddDrawer" id="fx67ll-wx-punch-chart" class="fx67ll-chart-punch" :class="{
+          'fade-show': !isPunchLoading,
+        }" :style="{ marginTop: `${getChartMarginTop}` }" @click="queryPunchLogTotalTime">
           <qiun-data-charts type="arcbar" :opts="chartOpts" :chartData="chartData" />
         </view>
-        <view
-          class="fx67ll-txt-target"
-          :class="{
-            'fade-show-second': !isPunchLoading,
-          }"
-          v-if="!isShowAddDrawer"
-        >
+        <view class="fx67ll-txt-target" :class="{
+          'fade-show-second': !isPunchLoading,
+        }" v-if="!isShowAddDrawer">
           <span>{{ punchWorkHours }}</span>
           <span>/</span>
           <span>{{ targetWorkHours }}</span>
         </view>
       </view>
-      <view
-        class="no-data"
-        :class="{
-          'fade-show': !isPunchLoading,
-        }"
-        v-if="!checkHasChartData && !isShowAddDrawer"
-      >
+      <view class="no-data" :class="{
+        'fade-show': !isPunchLoading,
+      }" v-if="!checkHasChartData && !isShowAddDrawer">
         <img src="/static/images/no-data.png" />
       </view>
-      <view
-        class="fx67ll-zero-target"
-        :class="{
-          'fade-show-second': !isPunchLoading,
-        }"
-        v-if="!isShowAddDrawer && !checkHasChartData"
-      >
+      <view class="fx67ll-zero-target" :class="{
+        'fade-show-second': !isPunchLoading,
+      }" v-if="!isShowAddDrawer && !checkHasChartData">
         本月累计工时为 <span>{{ punchWorkHours > 0 ? punchWorkHours : 0 }}</span>
       </view>
-      <view
-        class="fx67ll-punch-btn"
-        :class="{
-          'fade-show-third': !isPunchLoading,
-        }"
-        v-if="!isShowAddDrawer"
-      >
-        <button
-          class="fx67ll-btn-record"
-          type="primary"
-          @click="showPunchDrawerForAddLog"
-        >
+      <view class="fx67ll-punch-btn" :class="{
+        'fade-show-third': !isPunchLoading,
+      }" v-if="!isShowAddDrawer">
+        <button class="fx67ll-btn-record" type="primary" @click="showPunchDrawerForAddLog">
           新增打卡
         </button>
         <button class="fx67ll-btn-history" @click="goToHistoryLogList">历史记录</button>
@@ -67,11 +40,7 @@
         ></uni-icons> -->
       </view>
     </view>
-    <punchDrawer
-      :isShowPunchDrawer="isShowAddDrawer"
-      :isAdd="true"
-      @hideDrawer="setIsShowDrawer"
-    />
+    <punchDrawer :isShowPunchDrawer="isShowAddDrawer" :isAdd="true" @hideDrawer="setIsShowDrawer" />
   </view>
 </template>
 
