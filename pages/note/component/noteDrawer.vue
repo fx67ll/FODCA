@@ -64,6 +64,7 @@ export default {
   },
   data() {
     return {
+      // 全局用户名
       userName: this.$store.state.user.name,
       // 定时器对象
       timer: null,
@@ -84,7 +85,6 @@ export default {
         // 监听父节点是否需要关闭当前弹窗
         this.$emit("hideDrawer", newValue);
       } else {
-        this.noteContent = "";
         this.clearEditorContent();
         this.noteRemark = "";
       }
@@ -102,6 +102,16 @@ export default {
         this.noteRemark = noteRemark || "";
       }
     },
+    // noteContent(newValue, oldValue) {
+    //   const self = this;
+    //   if (newValue) {
+    //     setTimeout(() => {
+    //       self.editorContext.setContents({
+    //         html: newValue,
+    //       });
+    //     }, 1)
+    //   }
+    // },
   },
   mounted() {
     // moment初始汉化
@@ -133,16 +143,7 @@ export default {
     },
     // 编辑器内容变化时触发
     onEditorInput(e) {
-      console.log('onEditorInput', e);
       this.noteContent = e?.detail?.html || "";
-    },
-    // 编辑器插入固定文本
-    insertEditorContent(text) {
-      const self = this;
-      if (!this.editorContext) return;
-      self.editorContext.insertText({
-        text: text,
-      });
     },
     // 编辑器插入图片
     insertEditorImage() {
