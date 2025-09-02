@@ -83,7 +83,7 @@ export default {
       required: true,
       default: true,
     },
-    // 是否是新增
+    // 备忘信息详情
     punchInfo: {
       type: Object,
       required: false,
