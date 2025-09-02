@@ -9,7 +9,8 @@
       </view>
       <uni-swipe-action>
         <view class="fx67ll-note-item" v-for="item in noteList" :key="item.noteId">
-          <uni-swipe-action-item :right-options="actionOptions" @click="(e) => handleActionClick(e, item)">
+          <uni-swipe-action-item :left-options="leftActionOptions" :right-options="rightActionOptions"
+            @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.updateTime || item.createTime" type="line">
               <uni-list :border="true">
                 <uni-list-item ellipsis="3" :title="item.noteContent" />
@@ -19,10 +20,13 @@
         </view>
       </uni-swipe-action>
     </z-paging-mini>
-    <noteDrawer :isShowNoteDrawer="isShowEditDrawer" :isAdd="false" :noteInfo="editNoteInfo"
+    <noteDrawer :isShowNoteDrawer="isShowViewDrawer" :isAdd="false" :isView="true" :noteInfo="viewNoteInfo"
       @hideDrawer="setIsShowDrawer" @reloadNoteList="queryNoteList" />
-    <noteDrawer ref="addNoteDrawer" :isShowNoteDrawer="isShowAddDrawer" :isAdd="true" @hideDrawer="setIsShowDrawer" />
-    <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer" :pattern="fabConfig.pattern"
+    <noteDrawer :isShowNoteDrawer="isShowEditDrawer" :isAdd="false" :isView="false" :noteInfo="editNoteInfo"
+      @hideDrawer="setIsShowDrawer" @reloadNoteList="queryNoteList" />
+    <noteDrawer ref="addNoteDrawer" :isShowNoteDrawer="isShowAddDrawer" :isAdd="true" :isView="false"
+      @hideDrawer="setIsShowDrawer" />
+    <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer&& !isShowViewDrawer" :pattern="fabConfig.pattern"
       :content="fabConfig.content" :horizontal="fabConfig.horizontal" :vertical="fabConfig.vertical"
       :direction="fabConfig.direction" @trigger="handleFabTrigger" />
   </view>
@@ -55,7 +59,15 @@ export default {
         endUpdateTime: null,
         createBy: this.$store.state.user.name,
       },
-      actionOptions: [
+      leftActionOptions: [
+        {
+          text: "预览富文本信息",
+          style: {
+            backgroundColor: "#ffa940",
+          },
+        },
+      ],
+      rightActionOptions: [
         {
           text: "取消",
           style: {
@@ -78,7 +90,9 @@ export default {
       // Drawer组件相关参数
       isShowAddDrawer: false,
       isShowEditDrawer: false,
+      isShowViewDrawer: false,
       editNoteInfo: {},
+      viewNoteInfo: {},
       // 二级功能入口配置
       fabConfig: {
         title: "uni-fab",
@@ -174,10 +188,16 @@ export default {
       this.isShowEditDrawer = true;
     },
     // 关闭修改备忘记录抽屉
+    viewNoteLogInfo(noteInfo) {
+      this.viewNoteInfo = { ...noteInfo };
+      this.isShowViewDrawer = true;
+    },
+    // 关闭修改备忘记录抽屉
     setIsShowDrawer(val) {
       // 关闭弹窗
       this.isShowAddDrawer = val;
       this.isShowEditDrawer = val;
+      this.isShowViewDrawer = val;
       // 重置富文本编辑器内容
       this.$refs.addNoteDrawer.clearEditorContent();
       // 重新加载列表
@@ -208,10 +228,11 @@ export default {
     // 侧滑菜单事件
     handleActionClick(e, record) {
       const self = this;
-      if (e?.index === 1) {
+      if (e?.position === "right" && e?.index === 1) {
+        this.isView = false;
         this.editNoteLogInfo(record);
       }
-      if (e?.index === 2) {
+      if (e?.position === "right" && e?.index === 2) {
         showConfirm(
           `删除后数据无法恢复，请确认是否删除备忘记录时间为：${record?.updateTime || record?.createTime} 的历史备忘记录？`,
           "警告"
@@ -229,6 +250,10 @@ export default {
           }
         });
       }
+      if (e?.position === "left" && e?.index === 0) {
+        this.isView = true;
+        this.viewNoteLogInfo(record);
+      }
     },
     // 二级菜单按钮点击
     handleFabTrigger(e) {
@@ -236,6 +261,7 @@ export default {
         this.isShowTabFilter = true;
       }
       if (e?.index === 1) {
+        this.isView = false;
         this.isShowAddDrawer = true;
       }
       this.$refs.fab.close();

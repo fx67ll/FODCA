@@ -1,15 +1,15 @@
 <template>
-  <zb-drawer mode="bottom" :title="isAdd ? '新增备忘记录' : '修改备忘记录'" :wrapperClosable="false"
+  <zb-drawer mode="bottom" :title="isAdd ? '新增备忘记录' : isView ? '预览富文本' : '修改备忘记录'" :wrapperClosable="false"
     :visible.sync="isShowNoteDrawer" :radius="true" :height="drawerHeight">
-    <scroll-view :scroll-y="true" class="fx67ll-note-drawer">
+    <scroll-view :scroll-y="true" class="fx67ll-note-drawer" v-if="!isView">
       <scroll-view :scroll-y="true" class="fx67ll-note-editor">
         <editor id="fx67ll-note-editor-add" class="fx67ll-note-editor-class"
-          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onAddEditorReady" @input="onAddEditorInput"
+          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
           v-if="isAdd">
         </editor>
         <editor id="fx67ll-note-editor-edit" class="fx67ll-note-editor-class"
-          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onEditEditorReady"
-          @input="onEditEditorInput" v-if="!isAdd">
+          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
+          v-if="!isAdd">
         </editor>
       </scroll-view>
       <view class="fx67ll-note-remark" v-if="isNeedRemark">
@@ -18,28 +18,30 @@
       </view>
       <view class="fx67ll-note-btn">
         <button class="fx67ll-btn-insert" type="default" :loading="isNetworkLoading" @click="insertEditorImage"
-          v-if="userName === 'fx67ll'" style="color:#ffffff; backgroundColor:#E6A23C; borderColor:#E6A23C">
+          v-if="userName === 'fx67ll'" style="color:#ffffff; background-color:#E6A23C; border-color:#E6A23C">
           {{ isNetworkLoading ? "上传中" : "插入图片" }}
         </button>
         <button class="fx67ll-btn-remark" type="default" :disabled="isNetworkLoading" @click="handleShowRemark"
-          style="color:#ffffff; backgroundColor:#409EFF; borderColor:#409EFF">
+          style="color:#ffffff; background-color:#409EFF; border-color:#409EFF">
           {{ isNeedRemark ? "关闭备注设置" : "添加备注信息" }}
         </button>
       </view>
       <view class="fx67ll-note-btn">
         <button class="fx67ll-btn-submit" type="default" :disabled="isNetworkLoading" @click="submitNoteLogForm"
-          style="color:#ffffff; backgroundColor:#1AAD19; borderColor:#1AAD19">
+          style="color:#ffffff; background-color:#1AAD19; border-color:#1AAD19">
           {{ isAdd ? "提交新增记录" : "提交修改记录" }}
         </button>
         <button class="fx67ll-btn-cancel" type="warn" :disabled="isNetworkLoading" @click="closeDrawer">取消</button>
       </view>
+    </scroll-view>
+    <scroll-view :scroll-y="true" class="fx67ll-note-drawer-view" v-if="isView">
+      <rich-text :nodes="noteContent"></rich-text>
     </scroll-view>
   </zb-drawer>
 </template>
 
 <script>
 import { addNoteLog, updateNoteLog } from "@/api/note/log";
-
 import { getToken } from "@/utils/auth";
 
 export default {
@@ -56,7 +58,13 @@ export default {
       required: true,
       default: true,
     },
-    // 是否是新增
+    // 是否是预览
+    isView: {
+      type: Boolean,
+      required: true,
+      default: true,
+    },
+    // 备忘信息详情
     noteInfo: {
       type: Object,
       required: false,
@@ -70,7 +78,7 @@ export default {
       // 全局用户名
       userName: this.$store.state.user.name,
       // Drawer组件相关参数
-      drawerHeight: "calc(100% - 100px)",
+      drawerHeight: "calc(100% - 66px)",
       // 表单相关参数
       noteContent: "",
       noteRemark: "",
@@ -122,34 +130,60 @@ export default {
     },
   },
   methods: {
-    // 新增的时候，编辑器初始化完成后获取编辑器上下文
-    onAddEditorReady() {
+    // 编辑器初始化完成后获取编辑器上下文
+    onEditorReady() {
       const self = this;
       self.isEditorReady = false;
-      uni.createSelectorQuery().select('#fx67ll-note-editor-add')
-        .context((contextRes) => {
-          self.addEditorContext = contextRes.context;
-          self.isEditorReady = true;
-        })
-        .exec();
-    },
-    // 修改的时候，编辑器初始化完成后获取编辑器上下文
-    onEditEditorReady() {
-      const self = this;
-      self.isEditorReady = false;
-      uni.createSelectorQuery().select('#fx67ll-note-editor-edit')
-        .context((contextRes) => {
-          self.editEditorContext = contextRes.context;
-          self.isEditorReady = true;
-        })
-        .exec();
+      function tryGetContext(retryCount = 0) {
+        if (retryCount > 10) {
+          console.error('编辑器上下文获取失败，超过最大重试次数！');
+          uni.showToast({
+            title: "编辑器初始化失败，请联系管理员！",
+            icon: 'none',
+            duration: 1998,
+          });
+          return;
+        };
+        if (self.isAdd) {
+          uni.createSelectorQuery()
+            .in(self)
+            .select('#fx67ll-note-editor-add')
+            .context((contextRes) => {
+              if (contextRes && contextRes.context) {
+                self.addEditorContext = contextRes.context;
+                self.isEditorReady = true;
+                console.log('新增弹窗中，编辑器上下文获取成功，重试次数：', retryCount, '次。');
+              } else {
+                console.log('新增弹窗中，编辑器上下文获取失败，重试中... 第', retryCount + 1, '次。');
+                setTimeout(() => {
+                  tryGetContext(retryCount + 1);
+                }, 233);
+              }
+            })
+            .exec();
+        } else {
+          uni.createSelectorQuery()
+            .in(self)
+            .select('#fx67ll-note-editor-edit')
+            .context((contextRes) => {
+              if (contextRes && contextRes.context) {
+                self.editEditorContext = contextRes.context;
+                self.isEditorReady = true;
+                console.log('编辑弹窗中，编辑器上下文获取成功，重试次数：', retryCount, '次。');
+              } else {
+                console.log('编辑弹窗中，编辑器上下文获取失败，重试中... 第', retryCount + 1, '次。');
+                setTimeout(() => {
+                  tryGetContext(retryCount + 1);
+                }, 233);
+              }
+            })
+            .exec();
+        }
+      };
+      tryGetContext();
     },
     // 编辑器内容变化时触发
-    onAddEditorInput(e) {
-      this.noteContent = e?.detail?.html || "";
-    },
-    // 编辑器内容变化时触发
-    onEditEditorInput(e) {
+    onEditorInput(e) {
       this.noteContent = e?.detail?.html || "";
     },
     // 编辑器插入图片
@@ -157,7 +191,7 @@ export default {
       const self = this;
       if (!this.addEditorContext && !this.editEditorContext) {
         uni.showToast({
-          title: "编辑器初始化未完成，请重新操作！",
+          title: "编辑器初始化失败，请联系管理员！",
           icon: "none",
           duration: 1998,
         });
@@ -268,10 +302,11 @@ export default {
                   width: '100%',
                   success: (res) => {
                     self.isNetworkLoading = false;
+                    self.noteContent = self.addEditorContext.getContents();
                   },
                   fail: (err) => {
                     uni.showToast({
-                      title: "新增富文本编辑器插入图片失败，请联系管理员！",
+                      title: "富文本编辑器插入图片失败，请联系管理员！",
                       icon: "none",
                       duration: 1998,
                     });
@@ -286,6 +321,7 @@ export default {
                   width: '100%',
                   success: (res) => {
                     self.isNetworkLoading = false;
+                    self.noteContent = self.editEditorContext.getContents();
                   },
                   fail: (err) => {
                     uni.showToast({
@@ -321,7 +357,7 @@ export default {
     clearEditorContent() {
       if (!this.addEditorContext && !this.editEditorContext) {
         uni.showToast({
-          title: "编辑器初始化未完成，请重新操作！",
+          title: "编辑器初始化失败，请联系管理员！",
           icon: "none",
           duration: 1998,
         });
@@ -379,13 +415,13 @@ export default {
             self.clearEditorContent();
             self.closeDrawer();
             uni.showToast({
-              title: "备忘时间记录成功！",
+              title: "新增成功！",
               icon: "none",
               duration: 1998,
             });
           } else {
             uni.showToast({
-              title: "备忘时间记录失败，请联系管理员！",
+              title: "新增失败，请联系管理员！",
               icon: "none",
               duration: 1998,
             });
