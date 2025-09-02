@@ -227,7 +227,7 @@ export default {
         addPunchLog(punchParams).then((res) => {
           self.isNetworkLoading = false;
           if (res?.code === 200) {
-            self.isShowPunchDrawer = false;
+            self.closeDrawer();
             uni.showToast({
               title: "打卡时间记录成功！",
               icon: "none",
@@ -245,7 +245,7 @@ export default {
         updatePunchLog(punchParams).then((res) => {
           self.isNetworkLoading = false;
           if (res?.code === 200) {
-            self.isShowPunchDrawer = false;
+            self.closeDrawer();
             uni.showToast({
               title: "修改成功！",
               icon: "none",
