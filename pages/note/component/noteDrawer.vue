@@ -78,7 +78,7 @@ export default {
       // 全局用户名
       userName: this.$store.state.user.name,
       // Drawer组件相关参数
-      drawerHeight: "calc(100% - 66px)",
+      drawerHeight: "calc(100% - 100px)",
       // 表单相关参数
       noteContent: "",
       noteRemark: "",

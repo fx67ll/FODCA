@@ -21,12 +21,12 @@
       </uni-swipe-action>
     </z-paging-mini>
     <noteDrawer :isShowNoteDrawer="isShowViewDrawer" :isAdd="false" :isView="true" :noteInfo="viewNoteInfo"
-      @hideDrawer="setIsShowDrawer" @reloadNoteList="queryNoteList" />
+      @hideDrawer="val => setIsShowDrawer(val, 3)" @reloadNoteList="queryNoteList" />
     <noteDrawer :isShowNoteDrawer="isShowEditDrawer" :isAdd="false" :isView="false" :noteInfo="editNoteInfo"
-      @hideDrawer="setIsShowDrawer" @reloadNoteList="queryNoteList" />
+      @hideDrawer="val => setIsShowDrawer(val, 2)" @reloadNoteList="queryNoteList" />
     <noteDrawer ref="addNoteDrawer" :isShowNoteDrawer="isShowAddDrawer" :isAdd="true" :isView="false"
-      @hideDrawer="setIsShowDrawer" />
-    <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer&& !isShowViewDrawer" :pattern="fabConfig.pattern"
+      @hideDrawer="val => setIsShowDrawer(val, 1)" />
+    <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer && !isShowViewDrawer" :pattern="fabConfig.pattern"
       :content="fabConfig.content" :horizontal="fabConfig.horizontal" :vertical="fabConfig.vertical"
       :direction="fabConfig.direction" @trigger="handleFabTrigger" />
   </view>
@@ -193,7 +193,7 @@ export default {
       this.isShowViewDrawer = true;
     },
     // 关闭修改备忘记录抽屉
-    setIsShowDrawer(val) {
+    setIsShowDrawer(val, type) {
       // 关闭弹窗
       this.isShowAddDrawer = val;
       this.isShowEditDrawer = val;
@@ -201,8 +201,10 @@ export default {
       // 重置富文本编辑器内容
       this.$refs.addNoteDrawer.clearEditorContent();
       // 重新加载列表
-      this.queryNoteList();
-      this.$refs.paging.reload();
+      if (type === 1 || type === 2) {
+        this.queryNoteList();
+        this.$refs.paging.reload();
+      }
     },
     // 删除备忘记录
     deleteNote(noteId) {
