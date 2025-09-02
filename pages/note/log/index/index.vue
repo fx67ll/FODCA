@@ -12,7 +12,7 @@
           <uni-swipe-action-item :right-options="actionOptions" @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.updateTime || item.createTime" type="line">
               <uni-list :border="true">
-               <uni-list-item ellipsis="3" :title="item.noteContent" />
+                <uni-list-item ellipsis="3" :title="item.noteContent" />
               </uni-list>
             </uni-section>
           </uni-swipe-action-item>
@@ -21,7 +21,7 @@
     </z-paging-mini>
     <noteDrawer :isShowNoteDrawer="isShowEditDrawer" :isAdd="false" :noteInfo="editNoteInfo"
       @hideDrawer="setIsShowDrawer" @reloadNoteList="queryNoteList" />
-    <noteDrawer :isShowNoteDrawer="isShowAddDrawer" :isAdd="true" @hideDrawer="setIsShowDrawer" />
+    <noteDrawer ref="addNoteDrawer" :isShowNoteDrawer="isShowAddDrawer" :isAdd="true" @hideDrawer="setIsShowDrawer" />
     <uni-fab ref="fab" v-if="!isShowAddDrawer && !isShowEditDrawer" :pattern="fabConfig.pattern"
       :content="fabConfig.content" :horizontal="fabConfig.horizontal" :vertical="fabConfig.vertical"
       :direction="fabConfig.direction" @trigger="handleFabTrigger" />
@@ -175,8 +175,12 @@ export default {
     },
     // 关闭修改备忘记录抽屉
     setIsShowDrawer(val) {
+      // 关闭弹窗
       this.isShowAddDrawer = val;
       this.isShowEditDrawer = val;
+      // 重置富文本编辑器内容
+      this.$refs.addNoteDrawer.clearEditorContent();
+      // 重新加载列表
       this.queryNoteList();
       this.$refs.paging.reload();
     },

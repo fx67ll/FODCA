@@ -1,25 +1,19 @@
 @import url('@/static/style/mixin.less');
 .fx67ll-note-drawer {
-  padding: 60rpx;
+  height: 100%;
+  padding: 60rpx 40rpx 40rpx 40rpx;
 
-  .fx67ll-note-item {
-    width: 80%;
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40rpx;
-  }
-
-  .fx67ll-note-item-editor {
-    margin: 0 56rpx;
+  .fx67ll-note-editor {
+    width: initial;
+    height: calc(100% - 260rpx);
     border: 1px solid #dcdfe6;
     border-radius: 4px;
-    padding: 20rpx;
+    padding: 40rpx;
+    margin: 0 10rpx 40rpx 10rpx;
   }
 
-  .fx67ll-note-item-remark {
-    padding: 40rpx 56rpx;
+  .fx67ll-note-remark {
+    margin: 40rpx 10rpx 40rpx 10rpx;
   }
 
   .fx67ll-note-btn {
@@ -29,15 +23,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
-    left: 6rpx;
 
     .fx67ll-btn-insert {
-      width: calc(100% - 400rpx);
+      width: 240rpx;
     }
 
-    .fx67ll-btn-submit-for-insert{
-      width: 160rpx;
+    .fx67ll-btn-remark {
+      width: calc(100% - 280rpx);
     }
 
     .fx67ll-btn-submit {
@@ -50,6 +42,7 @@
   }
 }
 
-.fx67ll-note-editor {
-  min-height: 300rpx;
+.ql-container {
+  min-height: 600rpx;
+  height: initial;
 }
