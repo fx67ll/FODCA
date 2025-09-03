@@ -1,14 +1,14 @@
 <template>
-  <zb-drawer mode="bottom" :title="isAdd ? '新增备忘记录' : isView ? '预览富文本' : '修改备忘记录'" :wrapperClosable="false"
+  <zb-drawer mode="bottom" :title="isAdd ? '新增富文本记录' : isView ? '预览富文本' : '修改富文本记录'" :wrapperClosable="false"
     :visible.sync="isShowNoteDrawer" :radius="true" :height="drawerHeight">
     <scroll-view :scroll-y="true" class="fx67ll-note-drawer" v-if="!isView">
       <scroll-view :scroll-y="true" class="fx67ll-note-editor">
         <editor id="fx67ll-note-editor-add" class="fx67ll-note-editor-class"
-          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
+          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入富文本内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
           v-if="isAdd">
         </editor>
         <editor id="fx67ll-note-editor-edit" class="fx67ll-note-editor-class"
-          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入备忘内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
+          placeholder="这是一个简易的移动端富文本编辑器，您可以在这里输入富文本内容，这是必填项，支持多端互联展示" @ready="onEditorReady" @input="onEditorInput"
           v-if="!isAdd">
         </editor>
       </scroll-view>
@@ -16,9 +16,9 @@
         <uni-easyinput type="textarea" :value="noteRemark" placeholder="有需要的话可以在这里记录备注信息" maxlength="1023"
           :disabled="isNetworkLoading" @input="noteRemarkChange" />
       </view>
-      <view class="fx67ll-note-btn">
+      <view class="fx67ll-note-btn" v-if="userName === 'fx67ll'">
         <button class="fx67ll-btn-insert" type="default" :loading="isNetworkLoading" @click="insertEditorImage"
-          v-if="userName === 'fx67ll'" style="color:#ffffff; background-color:#E6A23C; border-color:#E6A23C">
+          style="color:#ffffff; background-color:#E6A23C; border-color:#E6A23C">
           {{ isNetworkLoading ? "上传中" : "插入图片" }}
         </button>
         <button class="fx67ll-btn-remark" type="default" :disabled="isNetworkLoading" @click="handleShowRemark"
@@ -64,7 +64,7 @@ export default {
       required: true,
       default: true,
     },
-    // 备忘信息详情
+    // 富文本信息详情
     noteInfo: {
       type: Object,
       required: false,
@@ -302,7 +302,7 @@ export default {
                   width: '100%',
                   success: (res) => {
                     self.isNetworkLoading = false;
-                    self.noteContent = self.addEditorContext.getContents();
+                    self.getEditorContent();
                   },
                   fail: (err) => {
                     uni.showToast({
@@ -321,7 +321,7 @@ export default {
                   width: '100%',
                   success: (res) => {
                     self.isNetworkLoading = false;
-                    self.noteContent = self.editEditorContext.getContents();
+                    self.getEditorContent();
                   },
                   fail: (err) => {
                     uni.showToast({
@@ -353,6 +353,35 @@ export default {
         },
       });
     },
+    // 获取富文本编辑器内容
+    getEditorContent() {
+      const self = this;
+      if (this.isAdd) {
+        this.addEditorContext.getContents({
+          success: (res) => {
+            // res.html为带标签的HTML内容
+            // res.text为纯文本内容
+            // res.delta为表示内容的delta对象
+            self.nodeContent = res?.html || res?.text || '';
+          },
+          fail: (err) => {
+            console.error('新增的时候，富文本编辑器获取内容失败：', err);
+          }
+        });
+      } else {
+        this.editEditorContext.getContents({
+          success: (res) => {
+            // res.html为带标签的HTML内容
+            // res.text为纯文本内容
+            // res.delta为表示内容的delta对象
+            self.nodeContent = res?.html || res?.text || '';
+          },
+          fail: (err) => {
+            console.error('新增的时候，富文本编辑器获取内容失败：', err);
+          }
+        });
+      }
+    },
     // 清空编辑器内容
     clearEditorContent() {
       if (!this.addEditorContext && !this.editEditorContext) {
@@ -371,7 +400,7 @@ export default {
       this.noteContent = "";
       this.noteRemark = "";
     },
-    // 输入备忘备注
+    // 输入富文本备注
     noteRemarkChange: function (e) {
       this.noteRemark = e;
     },
@@ -379,12 +408,12 @@ export default {
     handleShowRemark() {
       this.isNeedRemark = !this.isNeedRemark;
     },
-    // 新增或修改备忘记录
+    // 新增或修改富文本记录
     submitNoteLogForm() {
       const self = this;
       if (!this.noteContent) {
         uni.showToast({
-          title: "备忘内容不能为空！",
+          title: "富文本内容不能为空！",
           icon: "none",
           duration: 1998,
         });
@@ -392,7 +421,7 @@ export default {
       }
       if (this.noteContent?.length > 1023) {
         uni.showToast({
-          title: "备忘内容过长！",
+          title: "富文本内容过长！",
           icon: "none",
           duration: 1998,
         });

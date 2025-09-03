@@ -1,44 +1,37 @@
-import request from '@/utils/request'
+import request from '@/utils/request';
 
-// 查询备忘记录列表
+// 查询富文本记录列表
 export function listNoteLog(query) {
   return request({
-    url: '/note/log/list',
+    // url: '/note/log/getNoteLogListForApp',
+    url: '/note/log/getNoteLogListForApp',
     method: 'get',
-    params: query
-  })
+    params: query,
+  });
 }
 
-// 查询备忘记录详细
-export function getNoteLog(noteId) {
-  return request({
-    url: '/note/log/' + noteId,
-    method: 'get'
-  })
-}
-
-// 新增备忘记录
+// 新增富文本本记录
 export function addNoteLog(data) {
   return request({
-    url: '/note/log',
+    url: '/note/log/addNoteLogForApp',
     method: 'post',
-    data: data
-  })
+    data: data,
+  });
 }
 
-// 修改备忘记录
+// 修改富文本本记录
 export function updateNoteLog(data) {
   return request({
-    url: '/note/log',
+    url: '/note/log/editNoteLogForApp',
     method: 'put',
-    data: data
-  })
+    data: data,
+  });
 }
 
-// 删除备忘记录
+// 删除富文本本记录
 export function delNoteLog(noteId) {
   return request({
-    url: '/note/log/' + noteId,
-    method: 'delete'
-  })
+    url: '/note/log/deleteNoteLogByIdForApp/' + noteId,
+    method: 'delete',
+  });
 }

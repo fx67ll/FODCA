@@ -77,7 +77,7 @@
         <view class="list-cell list-cell-arrow" @click="handleToNoteLog">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="compose" size="20"></uni-icons></view>
-            <view>多端备忘互联</view>
+            <view>富文本备忘录</view>
           </view>
         </view>
         <view class="list-cell list-cell-arrow" @click="handleToCubeGame">

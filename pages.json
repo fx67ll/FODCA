@@ -157,7 +157,7 @@
     {
       "path": "pages/note/log/index/index",
       "style": {
-        "navigationBarTitleText": "多端备忘互联"
+        "navigationBarTitleText": "富文本备忘录"
       }
     }
   ],
