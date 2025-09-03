@@ -37,7 +37,7 @@ import noteDrawer from "@/pages/note/component/noteDrawer.vue";
 
 import { listNoteLog, delNoteLog } from "@/api/note/log";
 
-import { diffTimeStrFromNow } from "@/utils/index";
+import { diffTimeStrFromNow, previewImagesFromRichText } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
@@ -50,20 +50,24 @@ export default {
   components: { uniListChat, noteDrawer, vTabs },
   data() {
     return {
-      userName: this.$store.state.user.name,
       noteList: [],
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         beginUpdateTime: null,
         endUpdateTime: null,
-        createBy: this.$store.state.user.name,
       },
       leftActionOptions: [
         {
-          text: "预览富文本信息",
+          text: "预览",
           style: {
             backgroundColor: "#ffa940",
+          },
+        },
+        {
+          text: "提取包含的图片",
+          style: {
+            backgroundColor: "#ff4d4f",
           },
         },
       ],
@@ -123,7 +127,7 @@ export default {
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=18",
             selectedIconPath:
               "https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=5&avatarPadding=18",
-            text: "新增备忘",
+            text: "新增记录",
             active: false,
           },
         ],
@@ -140,6 +144,7 @@ export default {
     this.queryNoteList();
   },
   methods: {
+    // 查询富文本列表
     queryNoteList(pageNum, pageSize) {
       const self = this;
 
@@ -155,7 +160,6 @@ export default {
         ...self.queryParams,
         pageNum,
         pageSize,
-        createBy: self.userName,
       };
 
       listNoteLog(self.queryParams)
@@ -168,7 +172,7 @@ export default {
             }
           } else {
             uni.showToast({
-              title: "查询历史备忘记录失败！",
+              title: "查询历史富文本记录失败！",
               icon: "none",
               duration: 1998,
             });
@@ -182,17 +186,17 @@ export default {
       //   uni.hideLoading();
       // });
     },
-    // 关闭修改备忘记录抽屉
+    // 关闭修改富文本记录抽屉
     editNoteLogInfo(noteInfo) {
       this.editNoteInfo = { ...noteInfo };
       this.isShowEditDrawer = true;
     },
-    // 关闭修改备忘记录抽屉
+    // 关闭修改富文本记录抽屉
     viewNoteLogInfo(noteInfo) {
       this.viewNoteInfo = { ...noteInfo };
       this.isShowViewDrawer = true;
     },
-    // 关闭修改备忘记录抽屉
+    // 关闭修改富文本记录抽屉
     setIsShowDrawer(val, type) {
       // 关闭弹窗
       this.isShowAddDrawer = val;
@@ -206,7 +210,7 @@ export default {
         this.$refs.paging.reload();
       }
     },
-    // 删除备忘记录
+    // 删除富文本记录
     deleteNote(noteId) {
       const self = this;
       delNoteLog(noteId).then((res) => {
@@ -214,13 +218,13 @@ export default {
           self.queryNoteList();
           self.$refs.paging.reload();
           uni.showToast({
-            title: "历史备忘记录删除成功！",
+            title: "历史富文本记录删除成功！",
             icon: "none",
             duration: 1998,
           });
         } else {
           uni.showToast({
-            title: "历史备忘记录删除失败！",
+            title: "历史富文本记录删除失败！",
             icon: "none",
             duration: 1998,
           });
@@ -236,7 +240,7 @@ export default {
       }
       if (e?.position === "right" && e?.index === 2) {
         showConfirm(
-          `删除后数据无法恢复，请确认是否删除备忘记录时间为：${record?.updateTime || record?.createTime} 的历史备忘记录？`,
+          `删除后数据无法恢复，请确认是否删除富文本记录时间为：${record?.updateTime || record?.createTime} 的历史富文本记录？`,
           "警告"
         ).then((res) => {
           if (res?.confirm && record?.noteId) {
@@ -255,6 +259,9 @@ export default {
       if (e?.position === "left" && e?.index === 0) {
         this.isView = true;
         this.viewNoteLogInfo(record);
+      }
+      if (e?.position === "left" && e?.index === 1) {
+        previewImagesFromRichText(record?.noteContent);
       }
     },
     // 二级菜单按钮点击
@@ -288,7 +295,6 @@ export default {
           pageSize: 10,
           beginUpdateTime: startOfMonth,
           endUpdateTime: endOfMonth,
-          createBy: this.userName,
         };
       }
       if (index === 2) {
@@ -299,7 +305,6 @@ export default {
           pageSize: 10,
           beginUpdateTime: startOfWeek,
           endUpdateTime: endOfWeek,
-          createBy: this.userName,
         };
       }
       if (index !== 0) {
@@ -314,7 +319,6 @@ export default {
         pageSize: 10,
         beginUpdateTime: null,
         endUpdateTime: null,
-        createBy: this.userName,
       };
       this.queryNoteList();
       this.$refs.paging.reload();

@@ -476,3 +476,171 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
     return null;
   }
 }
+
+/**
+ * 从富文本中提取图片并预览
+ * @param {string} richText - 富文本字符串
+ * @param {number} [startIndex=0] - 初始显示的图片索引，默认0
+ */
+export function previewImagesFromRichText(richText, startIndex = 0) {
+  if (!richText || typeof richText !== 'string') {
+    console.error('请传入有效的富文本字符串');
+    return;
+  }
+
+  // 提取富文本中所有img标签的src属性
+  const imgReg = /<img[^>]+src=["']([^"']+)["']/gi;
+  const imageUrls = [];
+  let match;
+
+  // 循环匹配所有图片地址
+  while ((match = imgReg.exec(richText)) !== null) {
+    if (match[1]) {
+      imageUrls.push(match[1]);
+    }
+  }
+
+  if (imageUrls.length === 0) {
+    uni.showToast({
+      title: '富文本没有解析出图片标签！',
+      icon: 'none',
+      duration: 1998,
+    });
+    return;
+  }
+
+  // 处理初始索引，确保在有效范围内
+  const currentIndex = Math.max(0, Math.min(startIndex, imageUrls.length - 1));
+  const currentUrl = imageUrls[currentIndex];
+
+  // 预览图片
+  uni.previewImage({
+    urls: imageUrls,
+    current: currentUrl,
+    indicator: 'number',
+    loop: true,
+    longPressActions: {
+      itemList: ['保存图片'],
+      success: function (res) {
+        if (res.tapIndex === 0) {
+          // 检查相册权限
+          checkPhotoPermission(() => {
+            saveImageToAlbum(res.url);
+          });
+        }
+      },
+      fail: function (err) {
+        console.error('长按操作失败', err);
+      },
+    },
+    fail: function (err) {
+      console.error('预览图片失败', err);
+      uni.showToast({
+        title: '预览图片失败',
+        icon: 'none',
+      });
+    },
+  });
+}
+
+/**
+ * 检查并申请相册权限
+ * @param {Function} success - 权限获取成功后的回调
+ */
+function checkPhotoPermission(success) {
+  uni.getSetting({
+    success: res => {
+      // 检查是否有相册写入权限
+      if (!res.authSetting['scope.writePhotosAlbum']) {
+        // 申请权限
+        uni.authorize({
+          scope: 'scope.writePhotosAlbum',
+          success: () => {
+            success();
+          },
+          fail: () => {
+            // 用户拒绝授权，引导去设置页面开启
+            uni.showModal({
+              title: '权限提示',
+              content: '需要开启相册权限才能保存图片',
+              confirmText: '去设置',
+              cancelText: '取消',
+              success: modalRes => {
+                if (modalRes.confirm) {
+                  uni.openSetting({
+                    success: settingRes => {
+                      // 检查用户是否在设置中开启了权限
+                      if (settingRes.authSetting['scope.writePhotosAlbum']) {
+                        success();
+                      } else {
+                        uni.showToast({
+                          title: '未开启相册权限，无法保存',
+                          icon: 'none',
+                        });
+                      }
+                    },
+                  });
+                }
+              },
+            });
+          },
+        });
+      } else {
+        // 已有权限，直接执行操作
+        success();
+      }
+    },
+    fail: err => {
+      console.error('获取权限设置失败', err);
+      uni.showToast({
+        title: '获取权限失败',
+        icon: 'none',
+      });
+    },
+  });
+}
+
+/**
+ * 保存图片到相册
+ * @param {string} imageUrl - 图片地址
+ */
+function saveImageToAlbum(imageUrl) {
+  // 先下载图片到本地
+  uni.downloadFile({
+    url: imageUrl,
+    success: downloadRes => {
+      if (downloadRes.statusCode === 200) {
+        // 保存图片到相册
+        uni.saveImageToPhotosAlbum({
+          filePath: downloadRes.tempFilePath,
+          success: () => {
+            uni.showToast({
+              title: '图片保存成功',
+              icon: 'success',
+            });
+          },
+          fail: err => {
+            console.error('保存图片失败', err);
+            uni.showToast({
+              title: '保存图片失败',
+              icon: 'none',
+            });
+          },
+        });
+      } else {
+        console.error('下载图片失败', downloadRes);
+        uni.showToast({
+          title: '下载图片失败',
+          icon: 'none',
+        });
+      }
+    },
+    fail: err => {
+      console.error('下载图片请求失败', err);
+      uni.showToast({
+        title: '下载图片失败',
+        icon: 'none',
+      });
+    },
+  });
+}
