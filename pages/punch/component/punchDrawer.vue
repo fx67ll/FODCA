@@ -83,7 +83,7 @@ export default {
       required: true,
       default: true,
     },
-    // 备忘信息详情
+    // 打卡信息详情
     punchInfo: {
       type: Object,
       required: false,
