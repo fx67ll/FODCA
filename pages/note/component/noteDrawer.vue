@@ -16,7 +16,7 @@
         <uni-easyinput type="textarea" :value="noteRemark" placeholder="有需要的话可以在这里记录备注信息" maxlength="1023"
           :disabled="isNetworkLoading" @input="noteRemarkChange" />
       </view>
-      <view class="fx67ll-note-btn" v-if="userName === 'fx67ll'">
+      <view class="fx67ll-note-btn">
         <button class="fx67ll-btn-insert" type="default" :loading="isNetworkLoading" @click="insertEditorImage"
           style="color:#ffffff; background-color:#E6A23C; border-color:#E6A23C">
           {{ isNetworkLoading ? "上传中" : "插入图片" }}
