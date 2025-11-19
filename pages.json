@@ -159,6 +159,12 @@
       "style": {
         "navigationBarTitleText": "富文本备忘录"
       }
+    },
+    {
+      "path": "pages/server/tomcat/index",
+      "style": {
+        "navigationBarTitleText": "Tomcat服务"
+      }
     }
   ],
   "tabBar": {
