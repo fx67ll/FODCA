@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { addNoteLog, updateNoteLog } from "@/api/note/log";
+import { addNoteLog, updateNoteLog } from "@/api/fx67ll/note/log";
 import { getToken } from "@/utils/auth";
 
 export default {

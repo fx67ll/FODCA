@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import { getExtraList } from "@/api/dortmund/extra";
+import { getExtraList } from "@/api/fx67ll/dortmund/extra";
 export default {
   data() {
     return {

@@ -51,7 +51,7 @@
 <script>
 import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
 
-import { getPunchLogList, delPunchLog } from "@/api/punch/log";
+import { getPunchLogList, delPunchLog } from "@/api/fx67ll/punch/log";
 
 import { diffTimeStrFromNow } from "@/utils/index";
 import { showConfirm } from "@/utils/common";

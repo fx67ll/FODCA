@@ -35,7 +35,7 @@
 <script>
 import noteDrawer from "@/pages/note/component/noteDrawer.vue";
 
-import { listNoteLog, delNoteLog } from "@/api/note/log";
+import { listNoteLog, delNoteLog } from "@/api/fx67ll/note/log";
 
 import { diffTimeStrFromNow, previewImagesFromRichText } from "@/utils/index";
 import { showConfirm } from "@/utils/common";

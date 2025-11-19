@@ -22,7 +22,7 @@
 </template>
 
 <script>
-  import { getLogInfo, editLog } from "@/api/lottery/log";
+  import { getLogInfo, editLog } from "@/api/fx67ll/lottery/log";
 
   export default {
     data() {

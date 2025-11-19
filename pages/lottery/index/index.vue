@@ -261,11 +261,11 @@
     updateSetting,
     addSetting,
     getChaseNumberSetting,
-  } from "@/api/lottery/setting";
-  import { getLogList, addLog } from "@/api/lottery/log";
+  } from "@/api/fx67ll/lottery/setting";
+  import { getLogList, addLog } from "@/api/fx67ll/lottery/log";
 
   // 获取加密配置
-  import { getSecretConfig } from "@/api/secret/key.js";
+  import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
   import { getCryptoSaltKey } from "@/neverUploadToGithub";
 
   export default {

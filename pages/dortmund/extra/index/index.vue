@@ -104,7 +104,7 @@
 </template>
 
 <script>
-import { getExtraList, delExtra } from "@/api/dortmund/extra";
+import { getExtraList, delExtra } from "@/api/fx67ll/dortmund/extra";
 import { diffTimeStrFromNow } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";

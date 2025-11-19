@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import { listTotalReward } from "@/api/lottery/log";
+import { listTotalReward } from "@/api/fx67ll/lottery/log";
 
 export default {
   data() {

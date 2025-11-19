@@ -76,7 +76,7 @@
 </template>
 
 <script>
-import { addExtra, getExtraList } from "@/api/dortmund/extra";
+import { addExtra, getExtraList } from "@/api/fx67ll/dortmund/extra";
 import _ from "@/node_modules/underscore";
 
 export default {

@@ -104,7 +104,7 @@ import _ from "@/node_modules/underscore";
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
 // #ifdef MP-WEIXIN
-import { getSecretConfig } from "@/api/secret/key.js";
+import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
 import { decryptString } from "@/utils/index";
 import { getCryptoSaltKey } from "@/neverUploadToGithub";
 // #endif

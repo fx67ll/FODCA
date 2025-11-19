@@ -86,6 +86,12 @@
             <view>魔方小游戏</view>
           </view>
         </view>
+        <view class="list-cell list-cell-arrow" @click="handleTomcatServer" v-if="userName && userName === 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="paperplane" size="20"></uni-icons></view>
+            <view>Tomcat 服务</view>
+          </view>
+        </view>
         <!-- <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="staff" size="20"></uni-icons></view>
@@ -114,7 +120,7 @@
 
 <script>
 // 获取加密配置
-import { getSecretConfig } from "@/api/secret/key.js";
+import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
 import { decryptString } from "@/utils/index";
 import { getCryptoSaltKey } from "@/neverUploadToGithub";
 
@@ -189,6 +195,9 @@ export default {
           this.$tab.reLaunch("/pages/index");
         });
       });
+    },
+    handleTomcatServer() {
+      this.$tab.navigateTo("/pages/server/tomcat/index");
     },
     handleAbout() {
       this.$tab.navigateTo("/pages/mine/about/index");

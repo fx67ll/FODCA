@@ -140,7 +140,7 @@
 </template>
 
 <script>
-  import { getLogList, delLog, editLog, getLogInfo } from "@/api/lottery/log";
+  import { getLogList, delLog, editLog, getLogInfo } from "@/api/fx67ll/lottery/log";
   import {
     diffTimeStrFromNow,
     compareStringsBasic,
@@ -153,7 +153,7 @@
   import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
   // 获取加密配置
-  import { getSecretConfig } from "@/api/secret/key.js";
+  import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
   import { decryptString } from "@/utils/index";
   import { getCryptoSaltKey } from "@/neverUploadToGithub";
   import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";

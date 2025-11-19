@@ -51,7 +51,7 @@
 </template>
 
 <script>
-import { getPunchLostLog, getWorkTotalTime } from "@/api/punch/log";
+import { getPunchLostLog, getWorkTotalTime } from "@/api/fx67ll/punch/log";
 import { getInfo } from "@/api/login";
 
 import moment from "@/node_modules/moment";

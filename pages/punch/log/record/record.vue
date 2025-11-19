@@ -47,7 +47,7 @@
 <script>
 import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
 
-import { getWorkTotalTime } from "@/api/punch/log";
+import { getWorkTotalTime } from "@/api/fx67ll/punch/log";
 
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";

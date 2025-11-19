@@ -64,7 +64,7 @@
 </template>
 
 <script>
-import { addPunchLog, updatePunchLog } from "@/api/punch/log";
+import { addPunchLog, updatePunchLog } from "@/api/fx67ll/punch/log";
 
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
