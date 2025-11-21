@@ -1,6 +1,6 @@
 <template>
     <view class="app-container">
-        <!-- 卡片容器 -->
+        <!-- Tomcat 服务管理卡片 -->
         <view class="status-card">
             <!-- 头部区域 -->
             <view class="status-header">
@@ -45,23 +45,135 @@
                 </view>
             </view>
         </view>
+
+        <!-- 新增：GitHub 连通性检测卡片 -->
+        <view class="status-card">
+            <!-- 头部区域 -->
+            <view class="status-header">
+                <!-- 刷新区域 -->
+                <view class="refresh-container">
+                    <button class="refresh-btn" :loading="isRefreshingGithub" @click="handleRefreshGithub">
+                        <uni-icons type="map-pin-ellipse" size="16" color="#409eff"></uni-icons>
+                        <text class="btn-text">重置检测</text>
+                    </button>
+                    <text class="refresh-time" v-if="lastGithubTestTime">最后检测: {{ lastGithubTestTime }}</text>
+                </view>
+            </view>
+
+            <!-- GitHub 检测内容区 -->
+            <view class="github-content">
+                <!-- 检测方法区域 -->
+                <view class="detection-methods">
+                    <!-- TCP 网络层检测 -->
+                    <view class="method-card">
+                        <view class="method-header">
+                            <text class="method-title">TCP 网络层检测</text>
+                            <view class="method-status" :class="tcpStatusClass">
+                                {{ getStatusText(tcpStatus) }}
+                            </view>
+                        </view>
+                        <view class="method-desc">
+                            <text class="desc-text">检测与 GitHub 的网络连通性（TCP 443端口）</text>
+                            <text class="desc-detail">仅验证网络层是否可达，不涉及HTTP协议</text>
+                        </view>
+                        <view class="method-action">
+                            <button class="btn test-btn" :disabled="testingHttp" :loading="testingTcp"
+                                @click="testTcpConnectivity">
+                                <text class="btn-text">{{ testingTcp ? '检测中...' : '开始检测' }}</text>
+                            </button>
+                        </view>
+                    </view>
+
+                    <!-- HTTP 应用层检测 -->
+                    <view class="method-card">
+                        <view class="method-header">
+                            <text class="method-title">HTTP 应用层检测</text>
+                            <view class="method-status" :class="httpStatusClass">
+                                {{ getStatusText(httpStatus) }}
+                            </view>
+                        </view>
+                        <view class="method-desc">
+                            <text class="desc-text">完整检测 HTTPS 连接（包含SSL握手）</text>
+                            <text class="desc-detail">验证完整的HTTP协议栈和证书链</text>
+                        </view>
+                        <view class="method-action">
+                            <button class="btn test-btn" :disabled="testingTcp" :loading="testingHttp"
+                                @click="testHttpConnectivity">
+                                <text class="btn-text">{{ testingHttp ? '检测中...' : '开始检测' }}</text>
+                            </button>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 检测结果区域 -->
+                <view class="detection-result" v-if="githubLogInfo">
+                    <text class="log-title">检测结果</text>
+                    <view class="log-content">
+                        <text class="log-text">{{ githubLogInfo || '未知问题' }}</text>
+                    </view>
+                </view>
+            </view>
+        </view>
     </view>
 </template>
 
 <script>
-import { getTomcatStatus, startTomcat, stopTomcat } from "@/api/fx67ll/server/tomcat";
+import {
+    getTomcatStatus,
+    startTomcat,
+    stopTomcat,
+    testConnectToGithubByTcp,
+    testConnectToGithubByHttp
+} from "@/api/fx67ll/server/tomcat";
 
 export default {
     name: "TomcatManager",
     data() {
         return {
+            // Tomcat 状态相关
             status: "加载中...",
             lastRefreshTime: "",
             logInfo: "",
             isOperating: false,
             refreshInterval: null,
-            isRefreshing: false // 刷新按钮加载状态
+            isRefreshing: false,
+
+            // GitHub 检测相关
+            tcpStatus: "waiting", // waiting, testing, success, error
+            httpStatus: "waiting", // waiting, testing, success, error
+            testingTcp: false,
+            testingHttp: false,
+            githubLogInfo: "",
+            lastGithubTestTime: "",
+            isRefreshingGithub: false
         };
+    },
+    // 新增计算属性，替代原有的 getStatusClass 方法（解决微信小程序不支持模板内方法调用）
+    computed: {
+        /**
+         * TCP状态对应的样式类
+         */
+        tcpStatusClass() {
+            const statusMap = {
+                waiting: 'status-waiting',
+                testing: 'status-testing',
+                success: 'status-success',
+                error: 'status-error'
+            };
+            return statusMap[this.tcpStatus] || 'status-waiting';
+        },
+        /**
+         * HTTP状态对应的样式类
+         */
+        httpStatusClass() {
+            const statusMap = {
+                waiting: 'status-waiting',
+                testing: 'status-testing',
+                success: 'status-success',
+                error: 'status-error'
+            };
+            return statusMap[this.httpStatus] || 'status-waiting';
+        }
     },
     onLoad() {
         // 初始化查询状态
@@ -87,6 +199,20 @@ export default {
             this.queryStatus().finally(() => {
                 this.isRefreshing = false; // 无论成功失败，都关闭加载状态
             });
+        },
+
+        /**
+         * 手动刷新GitHub检测状态
+         */
+        handleRefreshGithub() {
+            this.isRefreshingGithub = true;
+            // 重置状态
+            this.tcpStatus = "waiting";
+            this.httpStatus = "waiting";
+            this.githubLogInfo = "";
+            setTimeout(() => {
+                this.isRefreshingGithub = false;
+            }, 500);
         },
 
         /**
@@ -210,6 +336,81 @@ export default {
                     }
                 }
             });
+        },
+
+        /**
+         * 测试TCP连通性
+         */
+        testTcpConnectivity() {
+            this.testingTcp = true;
+            this.tcpStatus = "testing";
+            this.githubLogInfo = "正在检测 GitHub TCP 连通性...";
+
+            testConnectToGithubByTcp().then(response => {
+                this.tcpStatus = "success";
+                this.githubLogInfo = `TCP检测成功：${response.msg}\n详细信息：${response.data}`;
+                this.lastGithubTestTime = this.formatDateTime(new Date());
+                uni.showToast({
+                    title: 'GitHub TCP连通性检测成功',
+                    icon: "success",
+                    duration: 2000
+                });
+            }).catch(error => {
+                this.tcpStatus = "error";
+                this.githubLogInfo = `TCP检测失败：${error.msg || error.message}`;
+                this.lastGithubTestTime = this.formatDateTime(new Date());
+                uni.showToast({
+                    title: 'GitHub TCP连通性检测失败',
+                    icon: "none",
+                    duration: 2000
+                });
+            }).finally(() => {
+                this.testingTcp = false;
+            });
+        },
+
+        /**
+         * 测试HTTP连通性
+         */
+        testHttpConnectivity() {
+            this.testingHttp = true;
+            this.httpStatus = "testing";
+            this.githubLogInfo = "正在检测 GitHub HTTP 连通性...";
+
+            testConnectToGithubByHttp().then(response => {
+                this.httpStatus = "success";
+                this.githubLogInfo = `HTTP检测成功：${response.msg}\n详细信息：${response.data}`;
+                this.lastGithubTestTime = this.formatDateTime(new Date());
+                uni.showToast({
+                    title: 'GitHub HTTP连通性检测成功',
+                    icon: "success",
+                    duration: 2000
+                });
+            }).catch(error => {
+                this.httpStatus = "error";
+                this.githubLogInfo = `HTTP检测失败：${error.msg || error.message}`;
+                this.lastGithubTestTime = this.formatDateTime(new Date());
+                uni.showToast({
+                    title: 'GitHub HTTP连通性检测失败',
+                    icon: "none",
+                    duration: 2000
+                });
+            }).finally(() => {
+                this.testingHttp = false;
+            });
+        },
+
+        /**
+         * 获取状态文本
+         */
+        getStatusText(status) {
+            const textMap = {
+                waiting: '等待检测',
+                testing: '检测中...',
+                success: '连接正常',
+                error: '连接失败'
+            };
+            return textMap[status] || '未知状态';
         },
 
         /**
@@ -419,5 +620,124 @@ export default {
     color: #e0e0e0;
     line-height: 1.6;
     white-space: pre-wrap;
+}
+
+/* 新增：GitHub 检测相关样式 */
+.github-content {
+    margin-top: 10px;
+}
+
+.detection-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.method-card {
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.method-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: #d1d1d1;
+}
+
+.method-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.method-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2d3d;
+}
+
+.method-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-waiting {
+    background-color: #f5f5f5;
+    color: #8c8c8c;
+}
+
+.status-testing {
+    background-color: #e6f7ff;
+    color: #1890ff;
+}
+
+.status-success {
+    background-color: #f6ffed;
+    color: #52c41a;
+}
+
+.status-error {
+    background-color: #fff2f0;
+    color: #ff4d4f;
+}
+
+.method-desc {
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.desc-text {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.desc-detail {
+    font-size: 11px;
+    color: #999;
+    line-height: 1.4;
+}
+
+.method-action {
+    text-align: center;
+}
+
+.test-btn {
+    background-color: #409eff;
+    color: #fff;
+    height: 36px;
+    font-size: 13px;
+}
+
+.test-btn:disabled {
+    background-color: #a0cfff;
+    color: #fff;
+    opacity: 0.7;
+}
+
+.detection-result {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f5f7fa;
+    border-radius: 8px;
+}
+
+/* 响应式调整 */
+@media (min-width: 768px) {
+    .detection-methods {
+        flex-direction: row;
+    }
+
+    .method-card {
+        flex: 1;
+    }
 }
 </style>
