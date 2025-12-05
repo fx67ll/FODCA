@@ -544,6 +544,7 @@
       // 格式化需要拷贝到剪切板的文字数据
       formatCopyContent(copyDataList, listKey, copyDataType) {
         const txtResList = [];
+        console.log(copyDataList, listKey, copyDataType);
         copyDataList.forEach((itemA) => {
           let txtRes = "";
           if (itemA[listKey]) {
@@ -555,7 +556,10 @@
                   if (indexC !== tmpListBeta.length - 1) {
                     txtRes = txtRes.concat(`${itemC}  `);
                   } else {
-                    if ([1, 2, 5].includes(parseInt(copyDataType, 10))) {
+                    if ([5].includes(parseInt(copyDataType, 10))) {
+                      txtRes = txtRes.concat(`${itemC}`);
+                    }
+                    if ([1, 2].includes(parseInt(copyDataType, 10))) {
                       txtRes = txtRes.concat(`${itemC} - `);
                     }
                     if ([3, 4].includes(parseInt(copyDataType, 10))) {
