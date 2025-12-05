@@ -5,6 +5,8 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.6.3.20251205
+* 新增是否记录过中奖号码的查询参数  
 
 ## 0.6.2.20251121
 * 补充启动jenkins服务的前置条件检测功能：*Github服务连通性测试*~    
