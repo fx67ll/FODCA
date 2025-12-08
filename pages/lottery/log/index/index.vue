@@ -82,7 +82,7 @@
     </uni-popup>
     <uni-fab ref="fab" :pattern="fabConfig.pattern" :content="fabConfig.content" :horizontal="fabConfig.horizontal"
       :vertical="fabConfig.vertical" :direction="fabConfig.direction" @trigger="handleFabTrigger" />
-    <zb-drawer mode="bottom" title="高级筛选" height="320px" :wrapperClosable="false" :visible.sync="isShowDrawer"
+    <zb-drawer mode="bottom" title="高级筛选" height="70%" :wrapperClosable="false" :visible.sync="isShowDrawer"
       :radius="true">
       <view class="fx67ll-search-drawer">
         <view class="fx67ll-tab-box" v-if="logFilterType === 2">
@@ -96,8 +96,30 @@
           </view>
           <view :class="{
             'fx67ll-tab-item': true,
-            'fx67ll-tab-item-iswin': queryParams.isWin !== 'Y',
-            'fx67ll-tab-item-iswin-active': queryParams.isWin === 'Y',
+            'fx67ll-tab-item-yes-or-not': queryParams.hasDateCode !== 'Y',
+            'fx67ll-tab-item-yes-or-not-active': queryParams.hasDateCode === 'Y',
+          }" @click="setSearchFilterParams('hasDateCode', queryParams.hasDateCode === 'Y' ? 'N' : 'Y')">
+            {{
+              !queryParams.hasDateCode
+                ? "是否有彩票期号"
+                : `${queryParams.hasDateCode === "Y" ? "有" : "无"}彩票期号`
+            }}
+          </view>
+          <view :class="{
+            'fx67ll-tab-item': true,
+            'fx67ll-tab-item-yes-or-not': queryParams.hasWinningNumber !== 'Y',
+            'fx67ll-tab-item-yes-or-not-active': queryParams.hasWinningNumber === 'Y',
+          }" @click="setSearchFilterParams('hasWinningNumber', queryParams.hasWinningNumber === 'Y' ? 'N' : 'Y')">
+            {{
+              !queryParams.hasWinningNumber
+                ? "是否记录中奖号码"
+                : `${queryParams.hasWinningNumber === "Y" ? "已" : "没有"}记录过中奖号码`
+            }}
+          </view>
+          <view :class="{
+            'fx67ll-tab-item': true,
+            'fx67ll-tab-item-yes-or-not': queryParams.isWin !== 'Y',
+            'fx67ll-tab-item-yes-or-not-active': queryParams.isWin === 'Y',
           }" @click="setSearchFilterParams('isWin', queryParams.isWin === 'Y' ? 'N' : 'Y')">
             {{
               !queryParams.isWin
