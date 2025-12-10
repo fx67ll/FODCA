@@ -411,7 +411,7 @@ export default {
     // 新增或修改富文本记录
     submitNoteLogForm() {
       const self = this;
-      if (!this.noteContent) {
+      if (!this.noteContent || this.noteContent?.trim() === "") {
         uni.showToast({
           title: "富文本内容不能为空！",
           icon: "none",
