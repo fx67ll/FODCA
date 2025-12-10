@@ -968,21 +968,11 @@
         editLog(saveParams)
           .then((res) => {
             if (res?.code === 200) {
-              // 目前仅支持大乐透双色球对比开奖结果
-              if ([1, 2].includes(self.formParams.numberType)) {
-                self.checkIsGetReward(
-                  self.formParams.lotteryId,
-                  self.formParams.numberType,
-                  winNum
-                );
-              } else {
-                uni.showToast({
-                  title: `开奖号码: ${winNum} (该类型不支持比对中奖信息)`,
-                  icon: "none",
-                  duration: 4444,
-                });
-                self.$refs.paging.refresh();
-              }
+              self.checkIsGetReward(
+                self.formParams.lotteryId,
+                self.formParams.numberType,
+                winNum
+              );
             } else {
               uni.showToast({
                 title: "开奖号码保存失败！",
@@ -1027,7 +1017,7 @@
                 }
               });
               if (totalRewardCount > 0) {
-                const numTypeText = numTp === 1 ? "大乐透" : numTp === 2 ? "双色球" : "";
+                const numTypeText = self.lotteryTypeMap[numTp].text || "";
                 showConfirm(
                   `恭喜您中奖了！本期所购${numTypeText}中共计${totalRewardCount}注号码中奖，初步预计奖金￥${totalRewardPrize}！是否需要为您记录中奖信息？`
                 ).then((res) => {
