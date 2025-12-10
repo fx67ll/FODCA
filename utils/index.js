@@ -387,29 +387,21 @@ export function checkLotteryResultForPL35(lotteryType, recordNumStr, winNumStr) 
   const winningNumbers = winNumStr.split(',').filter(num => num.trim() !== '');
 
   // 2. 全匹配判定（核心逻辑：按位完全一致）
-  const isFullMatch = recordNumbers.every((num, index) => num === winningNumbers[index]);
+  const isFullMatch = recordNumbers.every((num, index) => num === winningNumbers[index]) && recordNumbers.length === winningNumbers.length;
 
   // 3. 按彩种类型判定奖项（仅全匹配中奖）
-  if (lotteryType === 3) {
+  if (lotteryType === 3 && isFullMatch) {
     // 排列三：3位全匹配=一等奖，奖金1040元
-    if (isFullMatch) {
-      result.prizeLevel = 1;
-      result.prizeText = '一等奖';
-      result.prizeAmount = 1040;
-    } else {
-      result.prizeText = '未中奖';
-    }
-  } else if (lotteryType === 5) {
-    // 排列五：5位全匹配=一等奖，奖金100000元
-    if (isFullMatch) {
-      result.prizeLevel = 1;
-      result.prizeText = '一等奖';
-      result.prizeAmount = 100000;
-    } else {
-      result.prizeText = '未中奖';
-    }
+    result.prizeLevel = 1;
+    result.prizeText = '一等奖';
+    result.prizeAmount = 1040;
   }
-
+  if (lotteryType === 4 && isFullMatch) {
+    // 排列五：5位全匹配=一等奖，奖金100000元
+    result.prizeLevel = 1;
+    result.prizeText = '一等奖';
+    result.prizeAmount = 100000;
+  }
   return result;
 }
 
