@@ -173,9 +173,7 @@ export default {
       this.$tab.navigateTo("/pages/note/log/index/index");
     },
     handleToCubeGame() {
-      this.$tab.navigateTo(
-        `/pages/common/webview/index?title=魔方小游戏&url=https://three.fx67ll.com/cube`
-      );
+      this.openBrowserNewTab("https://three.fx67ll.com/cube", "魔方小游戏");
     },
     // handleToEditInfo() {
     //   this.$tab.navigateTo("/pages/mine/info/edit");
@@ -204,9 +202,7 @@ export default {
     },
     goFx67ll(index) {
       let site = this.globalConfig.appInfo.author_info[index];
-      this.$tab.navigateTo(
-        `/pages/common/webview/index?title=${site.title}&url=${site.url}`
-      );
+      this.openBrowserNewTab(site.url, site.title);
     },
     getWKConfig() {
       const self = this;
@@ -220,6 +216,48 @@ export default {
         }
       });
     },
+    /**
+     * 打开浏览器新页签/新窗口跳转链接
+     * @param {String} url 要跳转的链接（需完整http/https协议）
+     */
+    openBrowserNewTab(url, title) {
+      // 1. 校验链接合法性
+      if (!/^https?:\/\/.+/.test(url)) {
+        uni.showToast({ title: '链接格式错误', icon: 'none' });
+        return;
+      }
+
+      // 2. 区分平台处理
+      // #ifdef H5
+      // H5端：打开新标签页（需用户交互触发，否则会被浏览器拦截）
+      try {
+        const newTab = window.open(url, '_blank');
+        if (!newTab) {
+          // 拦截时降级：当前页打开
+          window.location.href = url;
+        }
+      } catch (e) {
+        uni.showToast({ title: '浏览器禁止打开新标签', icon: 'none' });
+      }
+      // #endif
+
+      // #ifdef APP-PLUS
+      // App端：唤起系统浏览器（自动开新窗口/新标签）
+      // 等待plus环境就绪（必加，否则可能报错）
+      document.addEventListener('plusready', () => {
+        plus.runtime.openURL(url, (res) => {
+          uni.showToast({ title: '无法打开浏览器', icon: 'none' });
+        });
+      }, false);
+      // #endif
+
+      // #ifdef MP-WEIXIN || MP-ALIPAY || MP-BAIDU
+      // 小程序端：无新页签，仅能唤起系统浏览器
+      this.$tab.navigateTo(
+        `/pages/common/webview/index?title${title}&url=${url}`
+      );
+      // #endif
+    }
   },
 };
 </script>
