@@ -1,0 +1,487 @@
+@import url('@/static/style/mixin.less');
+
+// 定义主题色
+@theme-color: #2ecc71;
+@theme-color-light: #d5f4e6;
+@theme-color-dark: #27ae60;
+
+.fx67ll-log-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f9fdfb 0%, #ffffff 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  // 工具栏样式
+  .fx67ll-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20rpx 32rpx;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(213, 244, 230, 0.8);
+    box-shadow: 0 2rpx 12rpx rgba(46, 204, 113, 0.05);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    .fx67ll-toolbar-left {
+      display: flex;
+      align-items: center;
+
+      .fx67ll-select-all {
+        display: flex;
+        align-items: center;
+        padding: 12rpx 20rpx;
+        border-radius: 50rpx;
+        background: #f0f9f4;
+        transition: all 0.2s ease;
+
+        &:active {
+          background: #e0f3e9;
+          transform: scale(0.98);
+        }
+
+        .fx67ll-select-checkbox {
+          width: 36rpx;
+          height: 36rpx;
+          border-radius: 8rpx;
+          border: 2rpx solid #a8e6c3;
+          background: white;
+          margin-right: 12rpx;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+
+          text {
+            font-size: 24rpx;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+          }
+
+          &.fx67ll-select-checkbox-checked {
+            background: @theme-color;
+            border-color: @theme-color;
+            box-shadow: 0 2rpx 8rpx rgba(46, 204, 113, 0.3);
+
+            text {
+              opacity: 1;
+            }
+          }
+        }
+
+        text {
+          font-size: 26rpx;
+          color: #2c3e50;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .fx67ll-toolbar-right {
+      .fx67ll-selected-badge {
+        padding: 8rpx 20rpx;
+        background: linear-gradient(135deg, @theme-color, @theme-color-dark);
+        border-radius: 30rpx;
+        box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.25);
+
+        text {
+          font-size: 24rpx;
+          color: white;
+          font-weight: 600;
+          letter-spacing: 0.5rpx;
+        }
+      }
+    }
+  }
+
+  // 滚动区域样式
+  .fx67ll-log-scroll {
+    flex: 1;
+    padding: 0;
+    background: #f9fdfb;
+  }
+
+  // 日志列表样式
+  .fx67ll-log-list {
+    padding: 20rpx 32rpx;
+
+    .fx67ll-log-cell {
+      display: flex;
+      align-items: center;
+      padding: 28rpx 24rpx;
+      margin-bottom: 16rpx;
+      background: white;
+      border-radius: 16rpx;
+      border: 1px solid rgba(213, 244, 230, 0.8);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+
+      &:active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.06);
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      // 左侧装饰线
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4rpx;
+        background: linear-gradient(180deg, @theme-color, #a8e6c3);
+        opacity: 0;
+        transition: opacity 0.3s;
+        border-radius: 0 3rpx 3rpx 0;
+      }
+
+      // 选中状态样式
+      &.fx67ll-log-cell-selected {
+        border-color: @theme-color;
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(39, 174, 96, 0.05));
+        box-shadow: 0 4rpx 16rpx rgba(46, 204, 113, 0.12);
+
+        &::before {
+          opacity: 1;
+        }
+      }
+
+      // 左侧选中指示器
+      .fx67ll-log-cell-left {
+        margin-right: 24rpx;
+
+        .fx67ll-selection-indicator {
+          width: 36rpx;
+          height: 36rpx;
+          border-radius: 8rpx;
+          border: 2rpx solid #a8e6c3;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+
+          text {
+            font-size: 20rpx;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+          }
+
+          &.fx67ll-selection-indicator-checked {
+            background: @theme-color;
+            border-color: @theme-color;
+            box-shadow: 0 2rpx 8rpx rgba(46, 204, 113, 0.3);
+            animation: checkIn 0.2s ease-out;
+
+            text {
+              opacity: 1;
+            }
+          }
+        }
+      }
+
+      // 内容区域
+      .fx67ll-log-cell-content {
+        flex: 1;
+
+        .fx67ll-log-title {
+          font-size: 30rpx;
+          color: #2c3e50;
+          line-height: 1.4;
+          margin-bottom: 10rpx;
+          font-weight: 500;
+          letter-spacing: -0.3rpx;
+        }
+
+        .fx67ll-log-meta {
+          display: flex;
+          align-items: center;
+          font-size: 24rpx;
+          color: #7f8c8d;
+
+          .fx67ll-time-icon {
+            margin-right: 8rpx;
+            font-size: 20rpx;
+            opacity: 0.7;
+          }
+        }
+      }
+
+      // 右侧选中标记
+      .fx67ll-log-cell-right {
+        margin-left: 20rpx;
+
+        .fx67ll-selected-badge-mini {
+          padding: 4rpx 12rpx;
+          background: linear-gradient(135deg, #1dd1a1, #10ac84);
+          border-radius: 20rpx;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          animation: fadeInScale 0.3s ease-out;
+          box-shadow: 0 2rpx 6rpx rgba(29, 209, 161, 0.2);
+
+          text {
+            color: white;
+            font-size: 20rpx;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  // 空状态样式
+  .fx67ll-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 60rpx 32rpx;
+
+    .fx67ll-empty-icon {
+      width: 120rpx;
+      height: 120rpx;
+      background: linear-gradient(135deg, #f0f9f4, #e0f3e9);
+      border-radius: 30rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32rpx;
+      animation: float 3s ease-in-out infinite;
+
+      text {
+        font-size: 56rpx;
+        opacity: 0.7;
+      }
+    }
+
+    .fx67ll-empty-text {
+      font-size: 30rpx;
+      color: #2c3e50;
+      font-weight: 500;
+      margin-bottom: 12rpx;
+    }
+
+    .fx67ll-empty-subtext {
+      font-size: 24rpx;
+      color: #95a5a6;
+    }
+  }
+
+  // 按钮区域样式
+  .fx67ll-log-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32rpx;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(213, 244, 230, 0.8);
+    flex-shrink: 0;
+    box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.04);
+
+    .fx67ll-btn-submit {
+      flex: 1;
+      margin-right: 20rpx;
+      height: 88rpx;
+      line-height: 88rpx;
+      font-size: 30rpx;
+      border-radius: 16rpx;
+      background: linear-gradient(135deg, @theme-color, @theme-color-dark);
+      border: none;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.25);
+
+      // 按钮点击效果
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      &:active::before {
+        left: 100%;
+      }
+
+      &:not(.fx67ll-btn-disabled):active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(46, 204, 113, 0.35);
+      }
+
+      &.fx67ll-btn-disabled {
+        background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+        opacity: 0.6;
+      }
+
+      .fx67ll-btn-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .fx67ll-btn-icon {
+          margin-right: 12rpx;
+          font-size: 28rpx;
+        }
+      }
+    }
+
+    .fx67ll-btn-cancel {
+      width: 180rpx;
+      height: 88rpx;
+      line-height: 88rpx;
+      font-size: 30rpx;
+      border-radius: 16rpx;
+      background: white;
+      color: #7f8c8d;
+      border: 1px solid #a8e6c3;
+      transition: all 0.2s ease;
+      box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+
+      &:active {
+        background: #f0f9f4;
+        border-color: @theme-color;
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.08);
+      }
+
+      .fx67ll-btn-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .fx67ll-btn-icon {
+          margin-right: 10rpx;
+          font-size: 26rpx;
+        }
+      }
+    }
+  }
+}
+
+// 动画定义
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkIn {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20rpx);
+  }
+}
+
+// 响应式调整
+@media (max-width: 480px) {
+  .fx67ll-log-drawer {
+    .fx67ll-toolbar {
+      padding: 20rpx 24rpx;
+
+      .fx67ll-select-all {
+        padding: 10rpx 16rpx;
+      }
+    }
+
+    .fx67ll-log-list {
+      padding: 20rpx 24rpx;
+
+      .fx67ll-log-cell {
+        padding: 24rpx 20rpx;
+
+        .fx67ll-log-title {
+          font-size: 28rpx;
+        }
+
+        .fx67ll-log-meta {
+          font-size: 22rpx;
+        }
+      }
+    }
+
+    .fx67ll-empty {
+      padding: 40rpx 24rpx;
+
+      .fx67ll-empty-icon {
+        width: 100rpx;
+        height: 100rpx;
+        margin-bottom: 24rpx;
+
+        text {
+          font-size: 48rpx;
+        }
+      }
+
+      .fx67ll-empty-text {
+        font-size: 28rpx;
+      }
+
+      .fx67ll-empty-subtext {
+        font-size: 22rpx;
+      }
+    }
+
+    .fx67ll-log-btn {
+      padding: 24rpx;
+
+      .fx67ll-btn-submit,
+      .fx67ll-btn-cancel {
+        height: 80rpx;
+        line-height: 80rpx;
+        font-size: 28rpx;
+      }
+
+      .fx67ll-btn-cancel {
+        width: 160rpx;
+      }
+    }
+  }
+}
