@@ -612,6 +612,164 @@ export function calculateCurrentDateCode(type, currentDateStr, lastDateStr, last
 }
 
 /**
+ * 校验彩票字符串是否符合对应格式
+ * @param {number} lotteryType - 彩票类型：1(大乐透)、2(双色球)、3(排列三)、4(排列五)、5(七星彩)
+ * @param {string} lotteryStr - 待校验的彩票字符串
+ * @returns {boolean} 校验结果：true=符合，false=不符合
+ */
+export function validateLotteryString(lotteryType, lotteryStr) {
+  // 1. 基础参数校验
+  if (![1, 2, 3, 4, 5].includes(Number(lotteryType))) {
+    return false;
+  }
+
+  // 2. 去除首尾空格
+  lotteryStr = lotteryStr.trim();
+  if (lotteryStr.length === 0) return false;
+
+  // 3. 定义各类型的校验规则
+  const lotteryRules = {
+    1: {
+      // 大乐透
+      splitChar: '-', // 分隔符
+      partCount: 2, // 分隔后部分数量
+      numCounts: [5, 2], // 每部分的数字数量
+      numRanges: [
+        [1, 35],
+        [1, 12],
+      ], // 每部分数字的范围
+      noRepeat: [true, true], // 每部分是否禁止数字重复
+      ascending: [true, true], // 每部分是否必须升序排列
+      description: '大乐透: 5个前区数字(1-35) + 2个后区数字(1-12)，格式: 1,2,3,4,5-6,7',
+    },
+    2: {
+      // 双色球
+      splitChar: '-',
+      partCount: 2,
+      numCounts: [6, 1],
+      numRanges: [
+        [1, 33],
+        [1, 16],
+      ],
+      noRepeat: [true, false], // 蓝球只有1个，无需校验重复
+      ascending: [true, false], // 红球需升序，蓝球只有一个无需校验
+      description: '双色球: 6个红球(1-33) + 1个蓝球(1-16)，格式: 1,2,3,4,5,6-7',
+    },
+    3: {
+      // 排列三
+      splitChar: null, // 无分隔符
+      partCount: 1,
+      numCounts: [3],
+      numRanges: [[0, 9]],
+      noRepeat: [false],
+      ascending: [false],
+      description: '排列三: 3个数字(0-9)，格式: 1,2,3',
+    },
+    4: {
+      // 排列五
+      splitChar: null,
+      partCount: 1,
+      numCounts: [5],
+      numRanges: [[0, 9]],
+      noRepeat: [false],
+      ascending: [false],
+      description: '排列五: 5个数字(0-9)，格式: 1,2,3,4,5',
+    },
+    5: {
+      // 七星彩
+      splitChar: null,
+      partCount: 1,
+      numCounts: [7],
+      numRanges: [[0, 9]],
+      noRepeat: [false],
+      ascending: [false],
+      description: '七星彩: 7个数字(0-9)，格式: 1,2,3,4,5,6,7',
+    },
+  };
+
+  const rule = lotteryRules[lotteryType];
+  if (!rule) return false;
+
+  try {
+    // 4. 拆分字符串并校验拆分后的部分数量
+    let parts = rule.splitChar ? lotteryStr.split(rule.splitChar) : [lotteryStr];
+
+    // 检查分隔符是否正确（防止多余的分隔符）
+    if (rule.splitChar && lotteryStr.includes(rule.splitChar)) {
+      // 确保分隔符两侧没有多余的分隔符
+      const splitCount = (lotteryStr.match(new RegExp(`\\${rule.splitChar}`, 'g')) || []).length;
+      if (splitCount !== rule.partCount - 1) {
+        return false;
+      }
+    }
+
+    if (parts.length !== rule.partCount) {
+      return false;
+    }
+
+    // 5. 遍历每个部分，校验数字合法性
+    for (let i = 0; i < parts.length; i++) {
+      // 清理空格并分割
+      const partStr = parts[i].trim();
+      if (partStr === '') return false;
+
+      const numStrList = partStr
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s !== '');
+
+      // 校验数字数量是否匹配
+      if (numStrList.length !== rule.numCounts[i]) {
+        return false;
+      }
+
+      // 转换为数字并校验是否为有效整数
+      const numList = numStrList.map(numStr => {
+        // 检查是否包含非数字字符
+        if (!/^-?\d+$/.test(numStr)) {
+          throw new Error('包含非数字字符');
+        }
+        const num = parseInt(numStr, 10);
+        if (isNaN(num) || !Number.isInteger(num) || numStr !== num.toString()) {
+          throw new Error('不是有效的整数');
+        }
+        return num;
+      });
+
+      // 校验数字范围
+      const [min, max] = rule.numRanges[i];
+      const isInRange = numList.every(num => num >= min && num <= max);
+      if (!isInRange) {
+        return false;
+      }
+
+      // 校验数字是否重复（如果规则要求）
+      if (rule.noRepeat[i]) {
+        const uniqueNums = new Set(numList);
+        if (uniqueNums.size !== numList.length) {
+          return false;
+        }
+      }
+
+      // 校验是否升序排列（如果规则要求）
+      if (rule.ascending[i]) {
+        for (let j = 1; j < numList.length; j++) {
+          if (numList[j] <= numList[j - 1]) {
+            return false;
+          }
+        }
+      }
+    }
+
+    // 所有校验通过
+    return true;
+  } catch (error) {
+    // 捕获异常，返回false
+    return false;
+  }
+}
+
+/**
  * 从富文本中提取图片并预览
  * @param {string} richText - 富文本字符串
  * @param {number} [startIndex=0] - 初始显示的图片索引，默认0
