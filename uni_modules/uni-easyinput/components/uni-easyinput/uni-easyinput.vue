@@ -269,7 +269,6 @@ export default {
 		},
 
 		msg() {
-			// console.log('computed', this.form, this.formItem);
 			// if (this.form) {
 			// 	return this.errorMessage || this.formItem.errMsg;
 			// }

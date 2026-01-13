@@ -6989,7 +6989,7 @@ uChartsEvent.prototype.trigger = function() {
       try {
         listener.apply(null, params);
       } catch (e) {
-          //console.log('[uCharts] '+e);
+          console.error('[uCharts] '+e);
       }
     });
   }

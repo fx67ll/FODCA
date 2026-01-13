@@ -368,7 +368,7 @@
 						this.setSuccessAndError(result.tempFiles)
 					})
 					.catch(err => {
-						console.log('选择失败', err)
+						console.error('选择失败', err)
 					})
 			},
 
@@ -434,7 +434,7 @@
 						return result;
 					})
 					.catch(err => {
-						console.log(err)
+						console.error(err)
 					})
 			},
 

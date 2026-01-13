@@ -209,7 +209,6 @@ export default {
               fileList: [avatar],
             })
             .then((res) => {
-              // console.log(res);
               // 兼容uniCloud私有化部署
               let fileList = res.fileList || res.result.fileList;
               this.avatarUrl = fileList[0].tempFileURL;

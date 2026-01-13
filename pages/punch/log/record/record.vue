@@ -198,7 +198,7 @@ export default {
           count++;
         }
       }
-      // console.log(`在${year}年${month}月共有${count}个工作日。`);
+      console.log(`在${year}年${month}月共有${count}个工作日。`);
       return count;
     },
     // 打开新增打卡记录抽屉

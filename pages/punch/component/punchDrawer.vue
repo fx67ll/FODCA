@@ -167,7 +167,6 @@ export default {
     },
     // 切换打卡类型
     punchTypeChange: function (e) {
-      console.log("picker发送选择改变，携带值为", e.detail.value);
       this.punchTypeIndex = e.detail.value;
     },
     // 获取默认打卡类型

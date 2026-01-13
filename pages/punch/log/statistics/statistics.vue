@@ -109,7 +109,7 @@ export default {
           self.qryPunchLostLog(prevQueryParams, 2);
         })
         .catch((error) => {
-          console.log("queryPunchLogTotalTime 方法中的 getInfo 接口异常：", error);
+          console.error("queryPunchLogTotalTime 方法中的 getInfo 接口异常：", error);
           uni.hideLoading();
           self.lostLogLoading = false;
         });
