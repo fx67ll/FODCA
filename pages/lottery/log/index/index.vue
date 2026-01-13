@@ -441,13 +441,13 @@ export default {
     formatLogList(list) {
       const self = this;
       const listResult = [];
-      list.forEach((item) => {
+      list.forEach((item, index) => {
         const winFlag = item?.isWin || "N";
         const createDateWeekInfo = moment(item?.createTime).format("dddd");
         const createDateDayInfo = moment(item?.createTime).format("YYYY/MM/DD");
         const tmpObj = {
           logId: item?.lotteryId,
-          logKey: new Date().getTime() + self.getRandomIndex(),
+          logKey: new Date().getTime() + self.getRandomIndex() + item?.dateCode,
           logTitle: item?.numberType
             ? `${self.lotteryTypeMap[parseInt(item?.numberType)].text}期号：${item?.dateCode || "-"
             }`
@@ -587,7 +587,6 @@ export default {
     // 格式化需要拷贝到剪切板的文字数据
     formatCopyContent(copyDataList, listKey, copyDataType) {
       const txtResList = [];
-      console.log(copyDataList, listKey, copyDataType);
       copyDataList.forEach((itemA) => {
         let txtRes = "";
         if (itemA[listKey]) {
@@ -645,46 +644,8 @@ export default {
       });
       return concatResTxt;
     },
-    // 拷贝至剪切板
-    copyLuckyNumber(logCopyItem) {
-      const self = this;
-
-      // 接受log参数
-      const tdType = logCopyItem?.numberType;
-      const chList = logCopyItem?.chaseList;
-      const reList = logCopyItem?.recordList;
-      const luckyCount = chList.length + reList.length;
-
-      // 处理追号和买的号
-      let copyContentList = [];
-      if (chList && chList.length > 0) {
-        copyContentList = copyContentList.concat(
-          this.formatCopyContent(chList, "chaseNumber", tdType)
-        );
-      }
-      if (reList && reList.length > 0) {
-        copyContentList = copyContentList.concat(
-          this.formatCopyContent(reList, "recordNumber", tdType)
-        );
-      }
-      const copyContentBody = this.concatTxtList(copyContentList);
-
-      // 拼接标题和主体
-      let copyContentTxt = "";
-      const copyNumberTypeText = self.lotteryTypeMap[parseInt(tdType)].text;
-
-      // #ifdef H5
-      const copyContentTitleH5 =
-        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + "\n";
-      copyContentTxt = copyContentTitleH5 + copyContentBody;
-      // #endif
-      // #ifdef MP-WEIXIN
-      const copyContentTitleWX =
-        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + " \r\n";
-      copyContentTxt = copyContentTitleWX + copyContentBody;
-      // #endif
-
-      // 处理剪切板函数
+    // 处理剪切板函数
+    setClipboardData(copyContentTxt) {
       uni.setClipboardData({
         data: copyContentTxt,
         showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
@@ -709,12 +670,12 @@ export default {
         },
       });
     },
-    // 拷贝至剪切板 - 支持批量处理多条logCopyItem数据
-    copyLuckyNumberBatch(logCopyItemList) {
+    // 拷贝至剪切板 - 支持批量处理多条copyLogItem数据
+    copyLuckyNumber(copyLogItemList) {
       const self = this;
 
-      // 确保logCopyItemList是数组，兼容原单个对象调用
-      const itemList = Array.isArray(logCopyItemList) ? logCopyItemList : [logCopyItemList];
+      // 确保copyLogItemList是数组，兼容原单个对象调用
+      const itemList = Array.isArray(copyLogItemList) ? copyLogItemList : [copyLogItemList];
 
       if (itemList.length === 0) {
         uni.showToast({
@@ -728,12 +689,12 @@ export default {
       // 存储所有item处理后的文本
       let allCopyContentTxtList = [];
 
-      // 遍历处理每个logCopyItem
-      itemList.forEach((logCopyItem, index) => {
+      // 遍历处理每个copyLogItem
+      itemList.forEach((copyLogItem, index) => {
         // 接受log参数
-        const tdType = logCopyItem?.numberType;
-        const chList = logCopyItem?.chaseList;
-        const reList = logCopyItem?.recordList;
+        const tdType = copyLogItem?.numberType;
+        const chList = copyLogItem?.chaseList;
+        const reList = copyLogItem?.recordList;
         const luckyCount = (chList?.length || 0) + (reList?.length || 0);
 
         // 处理追号和买的号
@@ -774,7 +735,6 @@ export default {
           copyContentTxt += "\r\n";
           // #endif
         }
-
         allCopyContentTxtList.push(copyContentTxt);
       });
 
@@ -787,37 +747,84 @@ export default {
       // #endif
 
       // 处理剪切板函数
-      uni.setClipboardData({
-        data: finalCopyContentTxt,
-        showToast: false, // 仅支持 App (3.2.13+)、H5 (3.2.13+)
-        success: function (res) {
-          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
-          // #ifdef H5
-          // 微信不支持关闭复制成功提示所以暂时只支持H5
-          uni.showToast({
-            title: `已成功复制${itemList.length}条数据到剪切板!`,
-            icon: "none",
-            duration: 1998,
-          });
-          // #endif
-          // #ifdef MP-WEIXIN
-          // 微信小程序可以显示简单的提示
-          uni.showToast({
-            title: `复制成功`,
-            icon: "success",
-            duration: 1500,
-          });
-          // #endif
-        },
-        fail: function (err) {
-          uni.showToast({
-            title: "卧槽复制失败了！请联系管理员处理! ",
-            icon: "none",
-            duration: 1998,
-          });
-          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
-        },
-      });
+      self.setClipboardData(finalCopyContentTxt);
+    },
+    // 处理合并的记录数据
+    checkMergeLog(dataList) {
+      // 检查输入数据
+      if (!dataList || dataList.length === 0) {
+        uni.showToast({
+          title: '异常数据，请联系管理员！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
+      }
+
+      // 如果只有一个对象，直接返回
+      if (dataList.length === 1) {
+        return dataList[0];
+      }
+
+      // 获取第一个对象的dateCode和numberType作为基准
+      const firstData = dataList[0];
+      const baseDateCode = firstData.dateCode;
+      const baseNumberType = firstData.numberType;
+
+      // 检查所有对象的dateCode和numberType是否一致
+      const isAllSame = dataList.every(item =>
+        item.dateCode === baseDateCode && item.numberType === baseNumberType
+      );
+
+      if (!isAllSame) {
+        uni.showToast({
+          title: '非同期号同类型数据不允许操作！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
+      }
+
+      // 合并所有recordList
+      const mergedRecordList = dataList.reduce((acc, curr) => {
+        if (curr.recordList && Array.isArray(curr.recordList)) {
+          return acc.concat(curr.recordList);
+        }
+        return acc;
+      }, []);
+
+      // 创建结果对象（深拷贝第一个对象）
+      const result = JSON.parse(JSON.stringify(firstData));
+
+      // 替换recordList为合并后的数组
+      result.recordList = mergedRecordList;
+
+      // 添加合并标记和原始数据数量信息（可选）
+      result._merged = true;
+      result._originalDataCount = dataList.length;
+
+      if ((result?.recordList?.length + result?.chaseList?.length) > 5) {
+        uni.showToast({
+          title: '合并后，单个记录数据不允许超过5组号码！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
+      }
+
+      return result;
+    },
+    // 合并同期号同类型的购彩数据
+    mergeLuckyNumber(mergeLogItemList) {
+      const mergeLogRes = this.checkMergeLog(mergeLogItemList);
+      if (mergeLogRes) {
+        uni.showToast({
+          title: '合并数据操作成功！调用接口开发中，敬请期待~',
+          icon: 'none',
+          duration: 2000
+        });
+        this.isShowLogDrawer = false;
+      }
     },
     // 修改号码历史记录详情
     editLogInfo(logId) {
@@ -831,7 +838,7 @@ export default {
       }
       if (e?.position === "right" && e?.index === 2) {
         this.operaLogType = 2;
-        this.operaBtnName = "合并同期同类型数据";
+        this.operaBtnName = "合并同期号同类型数据";
         this.defaultSelectedList = [record];
         setTimeout(() => {
           self.isShowLogDrawer = true;
@@ -841,7 +848,6 @@ export default {
         this.checkDelLog(record);
       }
       if (e?.position === "left" && e?.index === 0) {
-        // this.copyLuckyNumber(record);
         this.operaLogType = 1;
         this.operaBtnName = "拷贝信息至剪切板";
         this.defaultSelectedList = [record];
@@ -1391,11 +1397,11 @@ export default {
     // 提交多选数据记录抽屉
     handleSelectedData(selectDataList) {
       if (this.operaLogType === 1) {
-        this.copyLuckyNumberBatch(selectDataList)
+        this.copyLuckyNumber(selectDataList);
         this.isShowLogDrawer = false;
       }
       if (this.operaLogType === 2) {
-        this.isShowLogDrawer = false;
+        this.mergeLuckyNumber(selectDataList);
       }
     },
   },
