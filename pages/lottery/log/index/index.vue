@@ -637,7 +637,7 @@ export default {
           concatResTxt = concatResTxt.concat(` ${item} `, "\n\n");
           // #endif
           // #ifdef MP-WEIXIN
-          concatResTxt = concatResTxt.concat(` ${item} `, "\r\n\n", "\r\n\n");
+          concatResTxt = concatResTxt.concat(` ${item} `, "\r\n", "\r\n");
           // #endif
         } else {
           concatResTxt = concatResTxt.concat(` ${item} `);
@@ -680,7 +680,7 @@ export default {
       // #endif
       // #ifdef MP-WEIXIN
       const copyContentTitleWX =
-        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + " \r \r\n";
+        " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + " \r\n";
       copyContentTxt = copyContentTitleWX + copyContentBody;
       // #endif
 
@@ -761,17 +761,17 @@ export default {
         // #endif
         // #ifdef MP-WEIXIN
         const copyContentTitleWX =
-          " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + "\r\n \r\n";
+          " 老板买" + luckyCount + "注自选号码" + copyNumberTypeText + "\r\n";
         copyContentTxt = copyContentTitleWX + "\r\n" + copyContentBody;
         // #endif
 
         // 如果不是最后一个item，添加换行符分隔
         if (index < itemList.length - 1) {
           // #ifdef H5
-          copyContentTxt += "\n\n\n";
+          copyContentTxt += "\n";
           // #endif
           // #ifdef MP-WEIXIN
-          copyContentTxt += "\r\n\r\n\r\n";
+          copyContentTxt += "\r\n";
           // #endif
         }
 
@@ -779,7 +779,12 @@ export default {
       });
 
       // 将所有item的文本拼接起来
-      const finalCopyContentTxt = allCopyContentTxtList.join('\n');
+      // #ifdef H5
+      const finalCopyContentTxt = allCopyContentTxtList.join('\n------------------------\n');
+      // #endif
+      // #ifdef MP-WEIXIN
+      const finalCopyContentTxt = allCopyContentTxtList.join('\r\n------------------------\r\n');
+      // #endif
 
       // 处理剪切板函数
       uni.setClipboardData({
