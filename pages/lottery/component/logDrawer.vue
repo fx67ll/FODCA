@@ -127,7 +127,7 @@ export default {
       // 定时器对象
       timer: null,
       // Drawer组件相关参数
-      drawerHeight: "550px",
+      drawerHeight: "85%",
       drawerTitle: moment().format("YYYY-MM-DD HH:mm:ss dddd"),
       // 本地选中的值数组，用于跟踪选中状态
       localCheckedValues: [],
@@ -146,7 +146,7 @@ export default {
     scrollViewHeight() {
       // 根据是否有数据和是否有工具栏计算高度
       const hasToolbar = this.multipleLogDataList.length > 0;
-      return hasToolbar ? '380px' : '440px';
+      return hasToolbar ? 'calc(100% - 120px)' : 'calc(100% - 60px)';
     },
 
     // 全选状态
