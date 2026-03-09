@@ -4,13 +4,15 @@
         <view class="status-card">
             <!-- 头部区域 -->
             <view class="status-header">
+                <text class="title">Tomcat 服务管理</text>
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
-                    <button class="refresh-btn" :loading="isRefreshing" @click="handleRefresh">
-                        <uni-icons type="refresh" size="16" color="#409eff"></uni-icons>
-                        <text class="btn-text">手动刷新</text>
-                    </button>
-                    <text class="refresh-time">最后刷新: {{ lastRefreshTime }}</text>
+                    <!-- <button class="refresh-btn" :loading="isRefreshing" @click="handleRefresh"> -->
+                    <uni-icons type="refresh" size="16" color="#409eff" @click="handleRefresh"></uni-icons>
+                    <!-- <text class="btn-text">手动刷新</text> -->
+                    <!-- </button> -->
+                    <!-- <text class="refresh-time">最后刷新: {{ lastRefreshTime }}</text> -->
+                    <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
                 </view>
             </view>
 
@@ -46,17 +48,92 @@
             </view>
         </view>
 
+        <!-- 新增：系统内存信息卡片 -->
+        <view class="status-card">
+            <!-- 头部区域 -->
+            <view class="status-header">
+                <text class="title">系统内存信息</text>
+                <!-- 刷新区域 -->
+                <view class="refresh-container">
+                    <!-- <button class="refresh-btn" :loading="isRefreshing" @click="queryStatus"> -->
+                    <uni-icons type="refresh" size="16" color="#409eff" @click="queryStatus"></uni-icons>
+                    <!-- <text class="btn-text">手动刷新</text> -->
+                    <!-- </button> -->
+                    <!-- <text class="refresh-time">最后更新: {{ lastRefreshTime }}</text> -->
+                    <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
+                </view>
+            </view>
+
+            <!-- 内存信息网格 -->
+            <view class="memory-grid">
+                <view class="memory-item total-memory">
+                    <view class="memory-label">总内存</view>
+                    <view class="memory-value">{{ formatMemory(memoryInfo.totalMemoryMb) }} MB</view>
+                    <view class="memory-progress">
+                        <view class="progress-bar">
+                            <view class="progress-fill" :style="{ width: '100%' }"></view>
+                        </view>
+                    </view>
+                </view>
+                <view class="memory-item used-memory">
+                    <view class="memory-label">已用内存</view>
+                    <view class="memory-value">{{ formatMemory(memoryInfo.usedMemoryMb) }} MB</view>
+                    <view class="memory-progress">
+                        <view class="progress-bar">
+                            <view class="progress-fill"
+                                :style="{ width: getProgressPercentage(memoryInfo.usedMemoryMb, memoryInfo.totalMemoryMb) + '%' }">
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <view class="memory-item available-memory">
+                    <view class="memory-label">可用内存</view>
+                    <view class="memory-value">{{ formatMemory(memoryInfo.availableMemoryMb) }} MB</view>
+                    <view class="memory-progress">
+                        <view class="progress-bar">
+                            <view class="progress-fill"
+                                :style="{ width: getProgressPercentage(memoryInfo.availableMemoryMb, memoryInfo.totalMemoryMb) + '%' }">
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <view class="memory-item tomcat-memory">
+                    <view class="memory-label">Tomcat占用</view>
+                    <view class="memory-value">{{ formatMemory(memoryInfo.tomcatResidentMemoryMb) }} MB</view>
+                    <view class="memory-progress">
+                        <view class="progress-bar">
+                            <view class="progress-fill"
+                                :style="{ width: getProgressPercentage(memoryInfo.tomcatResidentMemoryMb, memoryInfo.totalMemoryMb) + '%' }">
+                            </view>
+                        </view>
+                    </view>
+                </view>
+            </view>
+
+            <!-- 清理缓存区域 -->
+            <view class="cache-clear-section">
+                <button class="btn clear-cache-btn" :loading="clearingCache" @click="handleClearCache">
+                    <uni-icons type="trash" size="14" color="#fff"></uni-icons>
+                    <text class="btn-text">清理系统缓存</text>
+                </button>
+                <text class="cache-tip">执行 sync; echo 3 > /proc/sys/vm/drop_caches 释放内存缓存</text>
+            </view>
+        </view>
+
         <!-- 新增：GitHub 连通性检测卡片 -->
         <view class="status-card">
             <!-- 头部区域 -->
             <view class="status-header">
+                <text class="title">GitHub 连通性检测</text>
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
-                    <button class="refresh-btn" :loading="isRefreshingGithub" @click="handleRefreshGithub">
-                        <uni-icons type="map-pin-ellipse" size="16" color="#409eff"></uni-icons>
-                        <text class="btn-text">重置检测</text>
-                    </button>
-                    <text class="refresh-time" v-if="lastGithubTestTime">最后检测: {{ lastGithubTestTime }}</text>
+                    <!-- <button class="refresh-btn" :loading="isRefreshingGithub" @click="handleRefreshGithub"> -->
+                    <uni-icons type="map-pin-ellipse" size="16" color="#409eff"
+                        @click="handleRefreshGithub"></uni-icons>
+                    <!-- <text class="btn-text">重置检测</text> -->
+                    <!-- </button> -->
+                    <!-- <text class="refresh-time" v-if="lastGithubTestTime">最后检测: {{ lastGithubTestTime }}</text> -->
+                    <text class="refresh-time" v-if="lastGithubTestTime">{{ lastGithubTestTime }}</text>
                 </view>
             </view>
 
@@ -123,7 +200,8 @@ import {
     startTomcat,
     stopTomcat,
     testConnectToGithubByTcp,
-    testConnectToGithubByHttp
+    testConnectToGithubByHttp,
+    clearSystemCache  // 新增导入
 } from "@/api/fx67ll/server/tomcat";
 
 export default {
@@ -132,6 +210,12 @@ export default {
         return {
             // Tomcat 状态相关
             status: "加载中...",
+            memoryInfo: {          // 新增内存信息对象
+                totalMemoryMb: 0,
+                availableMemoryMb: 0,
+                usedMemoryMb: 0,
+                tomcatResidentMemoryMb: 0
+            },
             lastRefreshTime: "",
             logInfo: "",
             isOperating: false,
@@ -145,7 +229,10 @@ export default {
             testingHttp: false,
             githubLogInfo: "",
             lastGithubTestTime: "",
-            isRefreshingGithub: false
+            isRefreshingGithub: false,
+
+            // 清理缓存状态
+            clearingCache: false
         };
     },
     // 新增计算属性，替代原有的 getStatusClass 方法（解决微信小程序不支持模板内方法调用）
@@ -197,7 +284,7 @@ export default {
         handleRefresh() {
             this.isRefreshing = true;
             this.queryStatus().finally(() => {
-                this.isRefreshing = false; // 无论成功失败，都关闭加载状态
+                this.isRefreshing = false;
             });
         },
 
@@ -216,24 +303,26 @@ export default {
         },
 
         /**
-         * 查询Tomcat状态
+         * 查询Tomcat状态（适配新接口）
          */
         queryStatus() {
-            // 注：此处替换为你的uniapp接口调用逻辑
-            return new Promise((resolve, reject) => {
-                getTomcatStatus().then(response => {
-                    this.status = response.data;
-                    this.lastRefreshTime = this.formatDateTime(new Date());
-                    resolve();
-                }).catch(error => {
-                    uni.showToast({
-                        title: "查询状态失败: " + (error.msg || error.message),
-                        icon: "none",
-                        duration: 2000
-                    });
-                    this.status = "未知";
-                    reject(error);
+            return getTomcatStatus().then(response => {
+                const data = response.data || {};
+                this.status = data.status || "未知";
+                this.memoryInfo = data.memoryInfo || {
+                    totalMemoryMb: 0,
+                    availableMemoryMb: 0,
+                    usedMemoryMb: 0,
+                    tomcatResidentMemoryMb: 0
+                };
+                this.lastRefreshTime = this.formatDateTime(new Date());
+            }).catch(error => {
+                uni.showToast({
+                    title: "查询状态失败: " + (error.msg || error.message),
+                    icon: "none",
+                    duration: 2000
                 });
+                this.status = "未知";
             });
         },
 
@@ -336,6 +425,61 @@ export default {
                     }
                 }
             });
+        },
+
+        /**
+         * 清理系统缓存（新增方法）
+         */
+        handleClearCache() {
+            uni.showModal({
+                title: '警告',
+                content: '清理系统缓存将释放被占用的内存，但可能导致短时间内磁盘IO升高。确定继续吗？',
+                confirmText: '确定',
+                cancelText: '取消',
+                success: (res) => {
+                    if (res.confirm) {
+                        this.clearingCache = true;
+                        clearSystemCache().then(response => {
+                            uni.showToast({
+                                title: response.msg || '缓存清理成功',
+                                icon: "success",
+                                duration: 2000
+                            });
+                            this.queryStatus(); // 刷新内存信息
+                        }).catch(error => {
+                            uni.showToast({
+                                title: error.msg || '缓存清理失败',
+                                icon: "none",
+                                duration: 2000
+                            });
+                        }).finally(() => {
+                            this.clearingCache = false;
+                        });
+                    } else {
+                        uni.showToast({
+                            title: '已取消清理操作',
+                            icon: "none",
+                            duration: 2000
+                        });
+                    }
+                }
+            });
+        },
+
+        /**
+         * 格式化内存数值，保留两位小数（新增方法）
+         */
+        formatMemory(value) {
+            if (value === undefined || value === null || isNaN(value)) return '0.00';
+            return Number(value).toFixed(2);
+        },
+
+        /**
+         * 计算进度百分比（新增方法）
+         */
+        getProgressPercentage(part, total) {
+            if (!total || total === 0) return 0;
+            return ((part / total) * 100).toFixed(1);
         },
 
         /**
@@ -620,6 +764,130 @@ export default {
     color: #e0e0e0;
     line-height: 1.6;
     white-space: pre-wrap;
+}
+
+/* 新增：内存卡片样式 */
+.memory-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.memory-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    border-left: 4px solid;
+    transition: all 0.3s;
+}
+
+.total-memory {
+    border-left-color: #409eff;
+}
+
+.total-memory .memory-label {
+    color: #409eff;
+}
+
+.used-memory {
+    border-left-color: #f56c6c;
+}
+
+.used-memory .memory-label {
+    color: #f56c6c;
+}
+
+.available-memory {
+    border-left-color: #67c23a;
+}
+
+.available-memory .memory-label {
+    color: #67c23a;
+}
+
+.tomcat-memory {
+    border-left-color: #e6a23c;
+}
+
+.tomcat-memory .memory-label {
+    color: #e6a23c;
+}
+
+.memory-label {
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.memory-value {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.memory-progress {
+    margin-top: 6px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background-color: #e6e6e6;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #409eff;
+    border-radius: 3px;
+}
+
+.total-memory .progress-fill {
+    background-color: #409eff;
+}
+
+.used-memory .progress-fill {
+    background-color: #f56c6c;
+}
+
+.available-memory .progress-fill {
+    background-color: #67c23a;
+}
+
+.tomcat-memory .progress-fill {
+    background-color: #e6a23c;
+}
+
+/* 缓存清理区域 */
+.cache-clear-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px dashed #e6e6e6;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.clear-cache-btn {
+    background-color: #e6a23c;
+    color: #fff;
+    height: 44px;
+    width: 100%;
+}
+
+.clear-cache-btn:disabled {
+    background-color: #f5d7a7;
+    opacity: 0.7;
+}
+
+.cache-tip {
+    font-size: 11px;
+    color: #8392a5;
+    background: #f5f7fa;
+    padding: 6px 10px;
+    border-radius: 12px;
+    line-height: 1.4;
 }
 
 /* 新增：GitHub 检测相关样式 */
