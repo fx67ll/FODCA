@@ -18,7 +18,13 @@
                 <view>
                   <uni-list-chat v-for="ita in item.chaseList" :key="ita.numKey"
                     :avatar="'https://test.fx67ll.com/fx67ll-img-collection-for-lottery/' + item.numberType + '.jpg'"
-                    :title="ita.title" :note="ita.chaseNumber">
+                    :title="ita.title">
+                    <template v-slot:note>
+                      <view class="fx67ll-number-display">
+                        <text v-for="(token, ti) in ita.chaseTokens" :key="ti"
+                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{ token.text }}</text>
+                      </view>
+                    </template>
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ ita.updateTime }}
@@ -36,7 +42,13 @@
                 <view>
                   <uni-list-chat v-for="itb in item.recordList" :key="itb.numKey" :avatar="'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
                     (8 - item.numberType)
-                    " :title="itb.title" :note="itb.recordNumber">
+                    " :title="itb.title">
+                    <template v-slot:note>
+                      <view class="fx67ll-number-display">
+                        <text v-for="(token, ti) in itb.recordTokens" :key="ti"
+                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{ token.text }}</text>
+                      </view>
+                    </template>
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ itb.updateTime }}
@@ -55,7 +67,13 @@
                   <uni-list-chat v-for="itb in item.winningList" :key="itb.numKey" :avatar="item.winFlag === 'Y'
                     ? lotteryTypeMap[item.numberType].winImg
                     : lotteryTypeMap[item.numberType].ggImg
-                    " :title="itb.title" :note="itb.winningNumber">
+                    " :title="itb.title">
+                    <template v-slot:note>
+                      <view class="fx67ll-number-display">
+                        <text v-for="(token, ti) in itb.winningTokens" :key="ti"
+                          :class="['fx67ll-num-token', token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-winning']">{{ token.text }}</text>
+                      </view>
+                    </template>
                     <template v-slot:default>
                       <view :style="{ fontSize: '12px', color: '#999' }">
                         {{ itb.winningText }}
@@ -400,6 +418,39 @@ export default {
     this.resetSearchFilter();
   },
   methods: {
+    // 将号码字符串解析为带匹配标记的token数组，用于高亮显示中奖号码
+    parseNumberTokens(numberStr, winningStr, numberType) {
+      if (!numberStr || numberStr === "暂无数据") {
+        return [{ text: numberStr || "暂无数据", matched: false, isSep: false }];
+      }
+      const type = parseInt(numberType);
+      const tokens = [];
+      if ([1, 2].includes(type)) {
+        // 大乐透/双色球：前区-后区，逗号分隔
+        const numParts = numberStr.split("-");
+        const winParts = winningStr ? winningStr.split("-") : [];
+        const frontNums = numParts[0] ? numParts[0].split(",") : [];
+        const backNums = numParts[1] ? numParts[1].split(",") : [];
+        const frontWinSet = new Set(winParts[0] ? winParts[0].split(",").map((n) => n.trim()) : []);
+        const backWinSet = new Set(winParts[1] ? winParts[1].split(",").map((n) => n.trim()) : []);
+        frontNums.forEach((num) => {
+          tokens.push({ text: num.trim(), matched: winningStr ? frontWinSet.has(num.trim()) : false, isSep: false });
+        });
+        if (backNums.length > 0) {
+          tokens.push({ text: "-", isSep: true, isZoneSep: true, matched: false });
+          backNums.forEach((num) => {
+            tokens.push({ text: num.trim(), matched: winningStr ? backWinSet.has(num.trim()) : false, isSep: false });
+          });
+        }
+      } else {
+        // 排列三/排列五/七星彩：按位置逐位匹配，同一位置数字相同才算命中
+        const winNums = winningStr ? winningStr.split(",").map((n) => n.trim()) : [];
+        numberStr.split(",").forEach((num, i) => {
+          tokens.push({ text: num.trim(), matched: winningStr ? (winNums[i] !== undefined && winNums[i] === num.trim()) : false, isSep: false });
+        });
+      }
+      return tokens;
+    },
     // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
@@ -478,6 +529,7 @@ export default {
               title: "固定追号",
               updateTime: self.subStrUpdateTime(item?.updateTime) || self.subStrUpdateTime(item?.createTime) || "暂无数据",
               chaseNumber: ita || "暂无数据",
+              chaseTokens: self.parseNumberTokens(ita, wl[0] || null, item?.numberType),
               isRed,
               winText: self.getWinText(winFlag, item?.winningPrice, isRed),
             });
@@ -494,6 +546,7 @@ export default {
               title: self.getTitleByNumberType(item?.numberType),
               updateTime: self.subStrUpdateTime(item?.updateTime) || self.subStrUpdateTime(item?.createTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
+              recordTokens: self.parseNumberTokens(itb, wl[0] || null, item?.numberType),
               isRed,
               winText: self.getWinText(winFlag, item?.winningPrice, isRed),
             });
@@ -506,6 +559,7 @@ export default {
               title: "本期开奖号码",
               winningText: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
+              winningTokens: self.parseNumberTokens(itc, null, item?.numberType),
               winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "本期未中奖",
             });
           });
