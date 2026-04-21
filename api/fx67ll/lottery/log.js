@@ -51,3 +51,12 @@ export function listTotalReward(query) {
     params: query,
   });
 }
+
+// 查询历史号码出现频率统计
+export function listHistoryStatistics(query) {
+  return request({
+    url: '/lottery/log/getLotteryHistoryStatistics',
+    method: 'get',
+    params: query
+  })
+}
