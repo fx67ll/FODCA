@@ -19,6 +19,7 @@ yarn.lock
 .hbuilderx
 .vscode
 .history
+.claude
 
 neverUploadToGithub.js
 /node_modules
