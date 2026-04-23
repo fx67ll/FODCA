@@ -99,8 +99,8 @@
               'color-low-freq-second': index === 1 && settingInfo.isNeedLowFrequencyCombination,
               'color-low-freq-third': index === 2 && settingInfo.isNeedLowFrequencyCombination
             }">{{
-        itemFirst.num
-              }}</span>
+              itemFirst.num
+            }}</span>
             {{
               item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
             }}
@@ -1588,16 +1588,73 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
 
+      // 1. 获取系统信息
+      const systemInfo = uni.getSystemInfoSync();
+      const windowHeight = systemInfo.windowHeight;          // 可用窗口高度
+      const statusBarHeight = systemInfo.statusBarHeight || 0; // 状态栏高度（仅小程序/H5部分支持）
+      // 预留顶部标题与关闭按钮的安全距离（可根据实际 zb-drawer 的标题栏高度调整）
+      const titleBarHeight = 44; // 常见标题栏高度
+      const bottomPadding = 20;  // 底部留白，避免按钮贴边
+
+      // 2. 计算内容实际所需高度（基于设置项数量）
+      let contentItemCount = 0;
+
+      // 基础必选项（所有用户都有的设置项）
+      contentItemCount += 4; // 注数、是否重复、包含幸运数字、仅生成一次
+
+      // 根据用户名动态添加高级选项
+      if (this.userName === 'fx67ll') {
+        contentItemCount += 5; // 追号、高频组合、低频组合、随机排列五、周五三连提示（如果有显示）
+      } else {
+        if (this.settingInfo.isNeedAddPastRewardNumber) {
+          contentItemCount += 2; // 高频号码开关 + 查询期数
+        } else {
+          contentItemCount += 1; // 只显示高频号码开关
+        }
+      }
+
+      // 每个设置项的高度（根据需要微调，单位 px）
+      const itemHeight = {
+        h5: 50,      // H5 端每项高度
+        mpWeixin: 55 // 小程序端可能稍高
+      };
+
+      // 底部保存按钮高度 + 上下边距
+      const buttonAreaHeight = {
+        h5: 60,
+        mpWeixin: 70
+      };
+
+      // 提示文字区域高度（如果有 tip 文字显示）
+      const tipHeight = 40;
+
+      // 各平台基础项高度计算
       // #ifdef H5
-      const lowestDrawerHeight = 460 + 80;
-      // #endif
-      // #ifdef MP-WEIXIN
-      const lowestDrawerHeight = 510 + 80;
+      const contentItemTotalHeight = contentItemCount * itemHeight.h5;
+      const extraButtonHeight = buttonAreaHeight.h5;
       // #endif
 
-      const systemInfo = uni.getSystemInfoSync();
-      const bestDrawerHeight = systemInfo.windowHeight * 0.8;
-      this.drawerHeight = `${systemInfo.windowHeight > lowestDrawerHeight ? bestDrawerHeight : systemInfo.windowHeight - 23}px`;
+      // #ifdef MP-WEIXIN
+      const contentItemTotalHeight = contentItemCount * itemHeight.mpWeixin;
+      const extraButtonHeight = buttonAreaHeight.mpWeixin;
+      // #endif
+
+      // 是否有提示文字（代码中 userName 非 fx67ll 时会显示两条 tip）
+      const hasTip = this.userName !== 'fx67ll';
+      const tipTotalHeight = hasTip ? tipHeight : 0;
+
+      // 内容所需最小高度 = 所有设置项 + 提示 + 按钮区域 + 顶部标题栏（抽屉自带的标题栏，zb-drawer 会处理，此处加入是为了防止抽屉内容顶到标题栏）
+      const requiredHeight = titleBarHeight + contentItemTotalHeight + tipTotalHeight + extraButtonHeight + bottomPadding;
+
+      // 3. 确定最终抽屉高度：取 requiredHeight 与最大可用高度之间的较小值
+      const maxAvailableHeight = windowHeight - statusBarHeight - titleBarHeight;
+      const extraHeight = this.userName === 'fx67ll' ? 44 : 188
+      const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight) + extraHeight;
+
+      console.log('系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', bestDrawerHeight);
+
+      // 4. 设置抽屉高度
+      this.drawerHeight = `${bestDrawerHeight}px`;
 
       this.drawerType += 1;
       this.isShowDrawer = true;
