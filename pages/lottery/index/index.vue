@@ -83,11 +83,12 @@
             {{
               item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
             }}
-            <span v-if="item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0">
+            <view class="fx67ll-number-item-back"
+              v-if="item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0">
               <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">
                 {{ itemSecond.num }}
               </span>
-            </span>
+            </view>
           </view>
         </view>
 
@@ -194,27 +195,37 @@
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isOnlyFirstToday"
             @change="isOnlyFirstTodayChange" />
         </view>
-        <view class="fx67ll-setting-item">
-          <span>是否需要总结过往高频中奖号码</span>
+        <view class="fx67ll-setting-item" v-if="userName !== 'fx67ll'">
+          <span>过往最高频中奖号码是否要包含在内</span>
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedAddPastRewardNumber"
             @change="isNeedAddPastChange" />
         </view>
-        <view class="fx67ll-setting-item" v-if="settingInfo.isNeedAddPastRewardNumber">
+        <view class="fx67ll-setting-item" v-if="userName !== 'fx67ll' && settingInfo.isNeedAddPastRewardNumber">
           <span>需要总结的过往期数</span>
           <uni-number-box :min="1" :max="1023" v-model="settingInfo.pastCheckCount"
             @change="pastCheckCountChange"></uni-number-box>
+        </view>
+        <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
+          <span>是否需要带一注高频号码组合</span>
+          <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedHighFrequencyCombination"
+            @change="isNeedHighFrequencyCombinationChange" />
+        </view>
+        <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
+          <span>是否需要带一注低频号码组合</span>
+          <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLowFrequencyCombination"
+            @change="isNeedLowFrequencyCombinationChange" />
         </view>
         <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
           <span>是否需要带一注随机排列五</span>
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyRandomPL5"
             @change="isNeedDailyRandomPL5Change" />
         </view>
-        <view class="fx67ll-setting-tip">
+        <view class="fx67ll-setting-tip" v-if="userName !== 'fx67ll'">
           Tip-1：修改其他设置会重置
           <text>"当日是否仅允许生成一次随机"</text>
           设置，并且开启该配置会自动上传生成的号码记录
         </view>
-        <view class="fx67ll-setting-tip"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效 </view>
+        <view class="fx67ll-setting-tip" v-if="userName !== 'fx67ll'"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效 </view>
         <!-- #ifdef H5 -->
         <button class="fx67ll-btn-save fx67ll-btn-save-h5" type="primary" :loading="isNetworkLoading"
           @click="saveLuckySettingDebounce(false)">
@@ -350,6 +361,10 @@ export default {
         isNeedDailyRandomPL5: false,
         // 周五是否已经完成一键三连，fx67ll个人用配置
         isDoneOneClickThreeFriday: false,
+        // 是否需要带一注高频号码组合
+        isNeedHighFrequencyCombination: false,
+        // 是否需要带一注低频号码组合
+        isNeedLowFrequencyCombination: false,
       },
       // 幸运进度条
       luckyRandomProgrss: 0,
@@ -1040,10 +1055,28 @@ export default {
         return tempList;
       }
     },
+    // 辅助方法：将工具函数返回的数组转为内部号码对象格式
+    buildFreqNumberObj(numberArray, numberType) {
+      let first = [], second = [];
+      if (numberType === '1') { // 大乐透
+        first = numberArray.slice(0, 5);
+        second = numberArray.slice(5, 7);
+      } else { // 双色球
+        first = numberArray.slice(0, 6);
+        second = numberArray.slice(6, 7);
+      }
+      return {
+        timeStamp: new Date().getTime(),
+        lotteryNumberFirst: first,
+        lotteryNumberSecond: second
+      };
+    },
     // 组装今日随机号码
     async packageRandomList(chasingNumber, pastHighFreNumber) {
       this.luckyNumberList = [];
       let randomInitLength = this.settingInfo.luckyCount;
+
+      const dayOfYear = moment().dayOfYear();
 
       if (this.userName && this.userName === "fx67ll") {
         randomInitLength =
@@ -1073,6 +1106,32 @@ export default {
           this.luckyNumberList.push(this.packageTempObjForWX(pastHighFreNumber));
         }
 
+        // 🔽🔽🔽 在这里插入高频/低频组合处理（大乐透） 🔽🔽🔽
+        // 注意：只有当 todayWeek 不是周五时才会执行
+        if (this.todayWeek !== '5') {
+          try {
+            const res = await listHistoryStatistics();
+            if (res?.code === 200 && res?.rows) {
+              const freqData = getLotteryNumberByFrequency(res, dayOfYear);
+
+              if (this.settingInfo.isNeedHighFrequencyCombination && this.userName === "fx67ll") {
+                const highObj = this.buildFreqNumberObj(freqData.lotteryDLTHighFrequency, '1');
+                this.luckyNumberList.push(this.packageTempObjForWX(highObj));
+                randomInitLength--;  // 扣减一注
+              }
+
+              if (this.settingInfo.isNeedLowFrequencyCombination && this.userName === "fx67ll") {
+                const lowObj = this.buildFreqNumberObj(freqData.lotteryDLTLowFrequency, '1');
+                this.luckyNumberList.push(this.packageTempObjForWX(lowObj));
+                randomInitLength--;  // 扣减一注
+              }
+            }
+          } catch (e) {
+            console.error('获取高频/低频组合失败', e);
+          }
+        }
+        // 🔼🔼🔼 插入结束 🔼🔼🔼
+
         for (var i = 0; i < randomInitLength; i++) {
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("DLT", i))
@@ -1095,12 +1154,38 @@ export default {
           this.luckyNumberList.push(this.packageTempObjForWX(pastHighFreNumber));
         }
 
+        // 🔽🔽🔽 在这里插入高频/低频组合处理（双色球） 🔽🔽🔽
+        if (this.todayWeek !== '5') {
+          try {
+            const res = await listHistoryStatistics();
+            if (res?.code === 200 && res?.rows) {
+              const freqData = getLotteryNumberByFrequency(res, dayOfYear);
+
+              if (this.settingInfo.isNeedHighFrequencyCombination && this.userName === "fx67ll") {
+                const highObj = this.buildFreqNumberObj(freqData.lotterySSQHighFrequency, '2');
+                this.luckyNumberList.push(this.packageTempObjForWX(highObj));
+                randomInitLength--;
+              }
+
+              if (this.settingInfo.isNeedLowFrequencyCombination && this.userName === "fx67ll") {
+                const lowObj = this.buildFreqNumberObj(freqData.lotterySSQLowFrequency, '2');
+                this.luckyNumberList.push(this.packageTempObjForWX(lowObj));
+                randomInitLength--;
+              }
+            }
+          } catch (e) {
+            console.error('获取高频/低频组合失败', e);
+          }
+        }
+        // 🔼🔼🔼 插入结束 🔼🔼🔼
+
         for (var i = 0; i < randomInitLength; i++) {
           this.luckyNumberList.push(
             this.packageTempObjForWX(this.packageTempObj("SSQ", i))
           );
         }
       }
+
       // 如果打开了只允许一注随机则需要缓存当日的随机号码
       if (this.settingInfo.isOnlyFirstToday) {
         this.settingInfo.localLuckyNumberList = this.luckyNumberList;
@@ -1549,6 +1634,16 @@ export default {
     // 监听是否需要日常排列五
     isNeedDailyRandomPL5Change(e) {
       this.settingInfo.isNeedDailyRandomPL5 = e?.detail?.value;
+    },
+    // 监听是否需要带一注高频号码组合
+    isNeedHighFrequencyCombinationChange(e) {
+      this.settingInfo.isNeedHighFrequencyCombination = e?.detail?.value;
+      if (this.settingInfo.isOnlyFirstToday) this.resetIsOnlyFirstToday();
+    },
+    // 监听是否需要带一注低频号码组合
+    isNeedLowFrequencyCombinationChange(e) {
+      this.settingInfo.isNeedLowFrequencyCombination = e?.detail?.value;
+      if (this.settingInfo.isOnlyFirstToday) this.resetIsOnlyFirstToday();
     },
     // 图片上传结束后需要还原加载状态
     afterPicUploadFinished() {
