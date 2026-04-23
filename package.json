@@ -1,6 +1,6 @@
 {
   "name": "fx67ll-app",
-  "version": "0.6.12",
+  "version": "0.6.13",
   "description": "fx6ll's Life App",
   "main": "main.js",
   "dependencies": {
