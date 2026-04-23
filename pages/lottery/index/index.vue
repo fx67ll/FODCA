@@ -1648,8 +1648,7 @@ export default {
 
       // 3. 确定最终抽屉高度：取 requiredHeight 与最大可用高度之间的较小值
       const maxAvailableHeight = windowHeight - statusBarHeight - titleBarHeight;
-      const extraHeight = this.userName === 'fx67ll' ? 44 : 188
-      const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight) + extraHeight;
+      const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight);
 
       console.log('系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', bestDrawerHeight);
 
