@@ -64,6 +64,7 @@
         </button>
       </view>
     </view>
+
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
         todayWeek === "5" ? "0" : settingInfo.todayLuckyNumber
@@ -75,7 +76,7 @@
     <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible.sync="isShowDrawer" :radius="true"
       :height="drawerHeight" :before-close="handleDrawerClose">
       <view v-if="showType === 'luckyNumber'">
-        <view id="luckyNumberText" class="fx67ll-number-box">
+        <!-- <view id="luckyNumberText" class="fx67ll-number-box">
           <view class="fx67ll-number-item" v-for="item in luckyNumberList" :key="item.timeStamp">
             <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key">{{
               itemFirst.num
@@ -86,6 +87,30 @@
             <view class="fx67ll-number-item-back"
               v-if="item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0">
               <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key">
+                {{ itemSecond.num }}
+              </span>
+            </view>
+          </view>
+        </view> -->
+        <view id="luckyNumberText" class="fx67ll-number-box">
+          <view class="fx67ll-number-item" v-for="(item, index) in luckyNumberList" :key="item.timeStamp">
+            <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key" :class="{
+              'color-daily-chasing': index === 0 && settingInfo.isNeedDailyChasingNumber,
+              'color-low-freq-second': index === 1 && settingInfo.isNeedLowFrequencyCombination,
+              'color-low-freq-third': index === 2 && settingInfo.isNeedLowFrequencyCombination
+            }">{{
+        itemFirst.num
+              }}</span>
+            {{
+              item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
+            }}
+            <view class="fx67ll-number-item-back"
+              v-if="item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0">
+              <span v-for="itemSecond in item.lotteryNumberSecond" :key="itemSecond.key" :class="{
+                'color-daily-chasing': index === 0 && settingInfo.isNeedDailyChasingNumber,
+                'color-low-freq-second': index === 1 && settingInfo.isNeedLowFrequencyCombination,
+                'color-low-freq-third': index === 2 && settingInfo.isNeedLowFrequencyCombination
+              }">
                 {{ itemSecond.num }}
               </span>
             </view>
@@ -206,17 +231,22 @@
             @change="pastCheckCountChange"></uni-number-box>
         </view>
         <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-          <span>是否需要带一注高频号码组合</span>
+          <span>是否添加一注每日追号</span>
+          <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyChasingNumber"
+            @change="isNeedDailyChasingNumberChange" />
+        </view>
+        <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
+          <span>是否添加一注历史开奖高频号码组合</span>
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedHighFrequencyCombination"
             @change="isNeedHighFrequencyCombinationChange" />
         </view>
         <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-          <span>是否需要带一注低频号码组合</span>
+          <span>是否添加一注历史开奖低频号码组合</span>
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLowFrequencyCombination"
             @change="isNeedLowFrequencyCombinationChange" />
         </view>
         <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-          <span>是否需要带一注随机排列五</span>
+          <span>是否添加一注随机排列五</span>
           <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyRandomPL5"
             @change="isNeedDailyRandomPL5Change" />
         </view>
@@ -225,7 +255,8 @@
           <text>"当日是否仅允许生成一次随机"</text>
           设置，并且开启该配置会自动上传生成的号码记录
         </view>
-        <view class="fx67ll-setting-tip" v-if="userName !== 'fx67ll'"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效 </view>
+        <view class="fx67ll-setting-tip" v-if="userName !== 'fx67ll'"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效
+        </view>
         <!-- #ifdef H5 -->
         <button class="fx67ll-btn-save fx67ll-btn-save-h5" type="primary" :loading="isNetworkLoading"
           @click="saveLuckySettingDebounce(false)">
@@ -365,6 +396,8 @@ export default {
         isNeedHighFrequencyCombination: false,
         // 是否需要带一注低频号码组合
         isNeedLowFrequencyCombination: false,
+        // 是否需要添加每日追号
+        isNeedDailyChasingNumber: true,
       },
       // 幸运进度条
       luckyRandomProgrss: 0,
@@ -1091,7 +1124,7 @@ export default {
       }
 
       if (mapLotteryNumberType(this.todayWeek) === "1") {
-        if (this.userName && this.userName === "fx67ll") {
+        if (this.userName && this.userName === "fx67ll" && this.settingInfo.isNeedDailyChasingNumber) {
           if (
             chasingNumber?.lotteryNumberFirst?.length === 5 &&
             chasingNumber?.lotteryNumberSecond?.length === 2
@@ -1139,7 +1172,7 @@ export default {
         }
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
-        if (this.userName && this.userName === "fx67ll") {
+        if (this.userName && this.userName === "fx67ll" && this.settingInfo.isNeedDailyChasingNumber) {
           if (
             chasingNumber?.lotteryNumberFirst?.length === 6 &&
             chasingNumber?.lotteryNumberSecond?.length === 1
@@ -1556,10 +1589,10 @@ export default {
       this.showType = "luckySetting";
 
       // #ifdef H5
-      const lowestDrawerHeight = 460;
+      const lowestDrawerHeight = 460 + 80;
       // #endif
       // #ifdef MP-WEIXIN
-      const lowestDrawerHeight = 510;
+      const lowestDrawerHeight = 510 + 80;
       // #endif
 
       const systemInfo = uni.getSystemInfoSync();
@@ -1638,12 +1671,14 @@ export default {
     // 监听是否需要带一注高频号码组合
     isNeedHighFrequencyCombinationChange(e) {
       this.settingInfo.isNeedHighFrequencyCombination = e?.detail?.value;
-      if (this.settingInfo.isOnlyFirstToday) this.resetIsOnlyFirstToday();
     },
     // 监听是否需要带一注低频号码组合
     isNeedLowFrequencyCombinationChange(e) {
       this.settingInfo.isNeedLowFrequencyCombination = e?.detail?.value;
-      if (this.settingInfo.isOnlyFirstToday) this.resetIsOnlyFirstToday();
+    },
+    // 监听是否需要每日追号
+    isNeedDailyChasingNumberChange(e) {
+      this.settingInfo.isNeedDailyChasingNumber = e?.detail?.value;
     },
     // 图片上传结束后需要还原加载状态
     afterPicUploadFinished() {

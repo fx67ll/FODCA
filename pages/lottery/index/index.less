@@ -50,6 +50,28 @@
 }
 
 // 弹窗中文字样式
+// .fx67ll-number-box {
+//   padding: 70rpx;
+//   .fx67ll-number-item {
+//     display: flex;
+//     justify-content: space-around;
+//     margin: 0 auto;
+//     margin-bottom: 20rpx;
+//     text-align: center;
+//     span {
+//       width: 50rpx;
+//     }
+//     .fx67ll-number-item-back {
+//       display: flex;
+//       justify-content: space-around;
+//       text-align: center;
+//       span:first-child {
+//         width: 60rpx;
+//       }
+//     }
+//   }
+// }
+// 弹窗中文字样式
 .fx67ll-number-box {
   padding: 70rpx;
   .fx67ll-number-item {
@@ -60,6 +82,18 @@
     text-align: center;
     span {
       width: 50rpx;
+      /* 新增追号颜色 */
+      &.color-daily-chasing {
+        color: #2ecc71;
+      }
+      /* 新增第二排低频颜色 */
+      &.color-low-freq-second {
+        color: #ff5a5f;
+      }
+      /* 新增第三排低频颜色 */
+      &.color-low-freq-third {
+        color: #409eff;
+      }
     }
     .fx67ll-number-item-back {
       display: flex;
@@ -67,6 +101,18 @@
       text-align: center;
       span:first-child {
         width: 60rpx;
+      }
+      /* 后区号码同样适用颜色规则 */
+      span {
+        &.color-daily-chasing {
+          color: #2ecc71;
+        }
+        &.color-low-freq-second {
+          color: #ff5a5f;
+        }
+        &.color-low-freq-third {
+          color: #409eff;
+        }
       }
     }
   }
