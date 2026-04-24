@@ -258,10 +258,19 @@
         <view class="fx67ll-setting-tip" v-if="userName !== 'fx67ll'"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效
         </view>
         <!-- #ifdef H5 -->
-        <button class="fx67ll-btn-save fx67ll-btn-save-h5" type="primary" :loading="isNetworkLoading"
+        <!-- <button class="fx67ll-btn-save fx67ll-btn-save-h5" type="primary" :loading="isNetworkLoading"
           @click="saveLuckySettingDebounce(false)">
           保存设置到云端
-        </button>
+        </button> -->
+        <view class="fx67ll-btn-save fx67ll-btn-save-h5 fx67ll-setting-btn">
+          <button class="fx67ll-btn-default" type="primary" :loading="isNetworkLoading"
+            @click="saveLuckySettingDebounce(false)">
+            保存设置到云端
+          </button>
+          <button class="fx67ll-btn-close" type="warn" :loading="isNetworkLoading" @click="handleDrawerClose">
+            关闭
+          </button>
+        </view>
         <!-- #endif -->
         <!-- #ifdef MP-WEIXIN -->
         <button class="fx67ll-btn-save" type="primary" :loading="isNetworkLoading"
@@ -1588,58 +1597,36 @@ export default {
     editLuckySetting() {
       this.showType = "luckySetting";
 
-      // 1. 获取系统信息
+      // #ifdef MP-WEIXIN
+      // 小程序端：保持原有的精确高度计算逻辑
       const systemInfo = uni.getSystemInfoSync();
-      const windowHeight = systemInfo.windowHeight;          // 可用窗口高度
-      const statusBarHeight = systemInfo.statusBarHeight || 0; // 状态栏高度（仅小程序/H5部分支持）
-      // 预留顶部标题与关闭按钮的安全距离（可根据实际 zb-drawer 的标题栏高度调整）
-      const titleBarHeight = 44; // 常见标题栏高度
-      const bottomPadding = 20;  // 底部留白，避免按钮贴边
+      const windowHeight = systemInfo.windowHeight;
+      const statusBarHeight = systemInfo.statusBarHeight || 0;
+      const titleBarHeight = 44;
+      const bottomPadding = 20;
 
-      // 2. 计算内容实际所需高度（基于设置项数量）
       let contentItemCount = 0;
+      contentItemCount += 4;
 
       // 基础必选项（所有用户都有的设置项）
       contentItemCount += 4; // 注数、是否重复、包含幸运数字、仅生成一次
 
       // 根据用户名动态添加高级选项
       if (this.userName === 'fx67ll') {
-        contentItemCount += 5; // 追号、高频组合、低频组合、随机排列五、周五三连提示（如果有显示）
+        contentItemCount += 5;
       } else {
         if (this.settingInfo.isNeedAddPastRewardNumber) {
-          contentItemCount += 2; // 高频号码开关 + 查询期数
+          contentItemCount += 2;
         } else {
-          contentItemCount += 1; // 只显示高频号码开关
+          contentItemCount += 1;
         }
       }
 
-      // 每个设置项的高度（根据需要微调，单位 px）
-      const itemHeight = {
-        h5: 50,      // H5 端每项高度
-        mpWeixin: 55 // 小程序端可能稍高
-      };
-
-      // 底部保存按钮高度 + 上下边距
-      const buttonAreaHeight = {
-        h5: 60,
-        mpWeixin: 70
-      };
-
-      // 提示文字区域高度（如果有 tip 文字显示）
+      const itemHeight = 55;
+      const buttonAreaHeight = 70;
       const tipHeight = 40;
-
-      // 各平台基础项高度计算
-      // #ifdef H5
-      const contentItemTotalHeight = contentItemCount * itemHeight.h5;
-      const extraButtonHeight = buttonAreaHeight.h5;
-      // #endif
-
-      // #ifdef MP-WEIXIN
-      const contentItemTotalHeight = contentItemCount * itemHeight.mpWeixin;
-      const extraButtonHeight = buttonAreaHeight.mpWeixin;
-      // #endif
-
-      // 是否有提示文字（代码中 userName 非 fx67ll 时会显示两条 tip）
+      const contentItemTotalHeight = contentItemCount * itemHeight;
+      const extraButtonHeight = buttonAreaHeight;
       const hasTip = this.userName !== 'fx67ll';
       const tipTotalHeight = hasTip ? tipHeight : 0;
 
@@ -1650,10 +1637,16 @@ export default {
       const maxAvailableHeight = windowHeight - statusBarHeight - titleBarHeight;
       const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight);
 
-      console.log('系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', bestDrawerHeight);
-
-      // 4. 设置抽屉高度
+      console.log('小程序端 - 系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', bestDrawerHeight);
       this.drawerHeight = `${bestDrawerHeight}px`;
+      // #endif
+
+      // #ifdef H5
+      // H5端（含移动端浏览器）：直接设为100%高度，内部内容区域超出自动滚动
+      // 注意：需确保 zb-drawer 内部的内容容器样式设置了 overflow-y: auto
+      this.drawerHeight = '90%';
+      console.log('H5端 - 设置高度为90%，内部内容自动滚动');
+      // #endif
 
       this.drawerType += 1;
       this.isShowDrawer = true;
