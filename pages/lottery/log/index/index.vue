@@ -22,7 +22,8 @@
                     <template v-slot:note>
                       <view class="fx67ll-number-display">
                         <text v-for="(token, ti) in ita.chaseTokens" :key="ti"
-                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{ token.text }}</text>
+                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{
+                            token.text }}</text>
                       </view>
                     </template>
                     <template v-slot:default>
@@ -40,13 +41,16 @@
                 </view>
 
                 <view>
-                  <uni-list-chat v-for="itb in item.recordList" :key="itb.numKey" :avatar="'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' +
-                    (8 - item.numberType)
-                    " :title="itb.title">
+                  <uni-list-chat v-for="itb in item.recordList" :key="itb.numKey" :avatar="'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + (
+                    itb.title === '高频号码' ? 23 :
+                      itb.title === '低频号码' ? 8 :
+                        (8 - item.numberType)
+                  )" :title="itb.title">
                     <template v-slot:note>
                       <view class="fx67ll-number-display">
                         <text v-for="(token, ti) in itb.recordTokens" :key="ti"
-                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{ token.text }}</text>
+                          :class="['fx67ll-num-token', token.matched ? 'fx67ll-num-matched' : (token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-normal')]">{{
+                            token.text }}</text>
                       </view>
                     </template>
                     <template v-slot:default>
@@ -71,7 +75,8 @@
                     <template v-slot:note>
                       <view class="fx67ll-number-display">
                         <text v-for="(token, ti) in itb.winningTokens" :key="ti"
-                          :class="['fx67ll-num-token', token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-winning']">{{ token.text }}</text>
+                          :class="['fx67ll-num-token', token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-winning']">{{
+                            token.text }}</text>
                       </view>
                     </template>
                     <template v-slot:default>
@@ -186,6 +191,7 @@
 import logDrawer from "@/pages/lottery/component/logDrawer.vue";
 
 import { getLogList, delLog, editLog, getLogInfo } from "@/api/fx67ll/lottery/log";
+import { getSetting } from "@/api/fx67ll/lottery/setting";
 import {
   diffTimeStrFromNow,
   compareStringsBasic,
@@ -401,7 +407,9 @@ export default {
       // logDrawer组件多选操作按钮名称
       operaBtnName: "提交多选数据",
       // 打开logDrawer组件的默认选中数据
-      defaultSelectedList: null
+      defaultSelectedList: null,
+      // 存储用户配置
+      settingInfo: {},
     };
   },
   onShow() {
@@ -413,11 +421,23 @@ export default {
   onLoad() {
     // 设置语言为中文
     moment.locale("zh-cn");
+    // 初始化用户配置
+    this.initCacheSetting();
   },
   onunload() {
     this.resetSearchFilter();
   },
   methods: {
+    // 初始化配置
+    initCacheSetting() {
+      const self = this;
+      getSetting().then((res) => {
+        if (res?.code === 200 && res?.data) {
+          const lotterySetting = res?.data?.lotterySetting;
+          self.settingInfo = JSON.parse(lotterySetting) || {};
+        }
+      });
+    },
     // 将号码字符串解析为带匹配标记的token数组，用于高亮显示中奖号码
     parseNumberTokens(numberStr, winningStr, numberType) {
       if (!numberStr || numberStr === "暂无数据") {
@@ -536,14 +556,30 @@ export default {
           });
         }
         if (rl.length > 0 && rl[0] !== "") {
-          rl.forEach((itb) => {
+          rl.forEach((itb, rlIndex) => {
             const isRed =
               !wl[0] ||
               compareStringsCheckIsLowestReward(itb, wl[0]) ||
               compareStringsBasic(itb, wl[0]) > 2;
+
+            // 动态设置标题
+            let itemTitle = self.getTitleByNumberType(item?.numberType);
+            if (self.userName === "fx67ll" && [1, 2, '1', '2'].includes(item?.numberType)) {
+              const { isNeedHighFrequencyCombination, isNeedLowFrequencyCombination } = self.settingInfo;
+
+              if (isNeedHighFrequencyCombination && !isNeedLowFrequencyCombination && rl?.length - 1 > 0) {
+                if (rlIndex === 0) itemTitle = "高频号码";
+              } else if (!isNeedHighFrequencyCombination && isNeedLowFrequencyCombination && rl?.length - 1 > 0) {
+                if (rlIndex === 0) itemTitle = "低频号码";
+              } else if (isNeedHighFrequencyCombination && isNeedLowFrequencyCombination && rl?.length - 2 > 0) {
+                if (rlIndex === 0) itemTitle = "高频号码";
+                else if (rlIndex === 1) itemTitle = "低频号码";
+              }
+            }
+
             tmpObj.recordList.push({
               numKey: new Date().getTime() + self.getRandomIndex(),
-              title: self.getTitleByNumberType(item?.numberType),
+              title: itemTitle,
               updateTime: self.subStrUpdateTime(item?.updateTime) || self.subStrUpdateTime(item?.createTime) || "暂无数据",
               recordNumber: itb || "暂无数据",
               recordTokens: self.parseNumberTokens(itb, wl[0] || null, item?.numberType),
@@ -1463,5 +1499,5 @@ export default {
 </script>
 
 <style lang="less">
-@import url("./index.less");
+@import "./index.less";
 </style>
