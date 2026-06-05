@@ -75,7 +75,7 @@
                     <template v-slot:note>
                       <view class="fx67ll-number-display">
                         <text v-for="(token, ti) in itb.winningTokens" :key="ti"
-                          :class="['fx67ll-num-token', token.isSep ? 'fx67ll-num-sep' : 'fx67ll-num-winning']">{{
+                          :class="['fx67ll-num-token', token.isSep ? 'fx67ll-num-sep' : (token.matched ? 'fx67ll-num-winning-matched' : 'fx67ll-num-winning')]">{{
                             token.text }}</text>
                       </view>
                     </template>
@@ -471,6 +471,47 @@ export default {
       }
       return tokens;
     },
+    // 将中奖号码解析为token数组，标记哪些数字出现在购买记录或追号中
+    buildWinningTokens(winningStr, recordNumList, chaseNumList, numberType) {
+      if (!winningStr || winningStr === "暂无数据") {
+        return [{ text: winningStr || "暂无数据", matched: false, isSep: false }];
+      }
+      const type = parseInt(numberType);
+      const tokens = [];
+      const allNums = [...(recordNumList || []), ...(chaseNumList || [])].filter(Boolean);
+      if ([1, 2].includes(type)) {
+        // 前后区：只要购买号码中相同区有此数字即高亮
+        const frontSet = new Set();
+        const backSet = new Set();
+        allNums.forEach((numStr) => {
+          const parts = numStr.split("-");
+          if (parts[0]) parts[0].split(",").forEach((n) => frontSet.add(n.trim()));
+          if (parts[1]) parts[1].split(",").forEach((n) => backSet.add(n.trim()));
+        });
+        const wParts = winningStr.split("-");
+        const wFront = wParts[0] ? wParts[0].split(",") : [];
+        const wBack = wParts[1] ? wParts[1].split(",") : [];
+        wFront.forEach((n) => tokens.push({ text: n.trim(), matched: frontSet.has(n.trim()), isSep: false }));
+        if (wBack.length > 0) {
+          tokens.push({ text: "-", isSep: true, matched: false });
+          wBack.forEach((n) => tokens.push({ text: n.trim(), matched: backSet.has(n.trim()), isSep: false }));
+        }
+      } else {
+        // 排列三/排列五/七星彩：按位置匹配，只有同一位置出现过该数字才高亮
+        const wNums = winningStr.split(",").map((n) => n.trim());
+        const positionSets = wNums.map(() => new Set());
+        allNums.forEach((numStr) => {
+          const nums = numStr.split(",").map((n) => n.trim());
+          nums.forEach((n, i) => {
+            if (i < positionSets.length) positionSets[i].add(n);
+          });
+        });
+        wNums.forEach((n, i) => {
+          tokens.push({ text: n, matched: positionSets[i].has(n), isSep: false });
+        });
+      }
+      return tokens;
+    },
     // 获取log数据
     queryLogList(pageNum, pageSize) {
       const self = this;
@@ -595,7 +636,7 @@ export default {
               title: "本期开奖号码",
               winningText: tmpObj.winFlag === "Y" ? "☆(￣▽￣)/$:*" : "o(╥﹏╥)o",
               winningNumber: itc || "暂无数据",
-              winningTokens: self.parseNumberTokens(itc, null, item?.numberType),
+              winningTokens: self.buildWinningTokens(itc, cl, rl, item?.numberType),
               winText: tmpObj.winFlag === "Y" ? "恭喜今日中奖" : "本期未中奖",
             });
           });
