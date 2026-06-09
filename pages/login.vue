@@ -99,10 +99,13 @@
 
 <script>
 import { getCodeImg } from "@/api/login";
+
 import _ from "@/node_modules/underscore";
+
 // 日期时间处理
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
+
 // #ifdef MP-WEIXIN
 import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
 import { decryptString } from "@/utils/index";

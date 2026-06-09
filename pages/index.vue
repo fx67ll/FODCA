@@ -14,6 +14,7 @@
 
 <script>
 import { getAvatar } from "@/api/system/user";
+
 import _ from "@/node_modules/underscore";
 
 import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
