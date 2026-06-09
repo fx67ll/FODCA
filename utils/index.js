@@ -1,5 +1,7 @@
 import moment from 'moment';
-import CryptoJS from 'crypto-js';
+// import CryptoJS from 'crypto-js';
+import AES from 'crypto-js/aes';
+import Utf8 from 'crypto-js/enc-utf8';
 
 // 快速排序
 export function quickSort(tempArr) {
@@ -41,8 +43,10 @@ export function diffTimeStrFromNow(timeStr) {
 
 // 解密函数
 export function decryptString(encryptedText, key) {
-  const decryptedBytes = CryptoJS.AES.decrypt(encryptedText, key);
-  const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+  // const decryptedBytes = CryptoJS.AES.decrypt(encryptedText, key);
+  // const decryptedText = decryptedBytes.toString(CryptoJS.enc.Utf8);
+  const decryptedBytes = AES.decrypt(encryptedText, key);
+  const decryptedText = decryptedBytes.toString(Utf8);
   return decryptedText;
 }
 
