@@ -211,9 +211,8 @@ import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
 
 // 日期时间处理
-import moment from "moment";
-import "moment/locale/zh-cn";
-import "moment/locale/zh-cn";
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
 
 export default {
   components: { logDrawer, uniListChat, uniPopup, uniPopupDialog, vTabs },
