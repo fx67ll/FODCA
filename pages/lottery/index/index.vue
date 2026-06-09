@@ -77,7 +77,8 @@
       :height="drawerHeight" :before-close="handleDrawerClose">
       <view v-if="showType === 'luckyNumber'">
         <view id="luckyNumberText" class="fx67ll-number-box">
-          <view class="fx67ll-number-item" v-for="(item, index) in luckyNumberList" :key="item.timeStamp" @click="openConfigLogDrawer">
+          <view class="fx67ll-number-item" v-for="(item, index) in luckyNumberList" :key="item.timeStamp"
+            @click="openConfigLogDrawer">
             <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key" :class="{
               'color-daily-chasing': index === 0 && settingInfo.isNeedDailyChasingNumber && userName === 'fx67ll',
               'color-low-freq-second': index === (settingInfo.isNeedDailyChasingNumber ? 1 : 0) && settingInfo.isNeedHighFrequencyCombination && userName === 'fx67ll',
@@ -151,13 +152,19 @@
             ocrTagList.length > 0 &&
             ocrTagCheckList &&
             ocrTagCheckList.length === 0
-          ">尝试点击识别结果中你需要的的文字分块吧！</view>
+          ">
+            尝试点击识别结果中你需要的的文字分块吧！
+          </view>
+
           <view class="fx67ll-drawer-title" v-if="
             ocrTagList &&
             ocrTagList.length > 0 &&
             ocrTagCheckList &&
             ocrTagCheckList.length > 0
-          ">您已选中以下识别结果:</view>
+          ">
+            您已选中以下识别结果:
+          </view>
+
           <view class="fx67ll-ocr-result" v-if="ocrTagList && ocrTagList.length > 0">
             <span v-for="(item, index) in ocrTagList" :key="item.timeStamp" :class="{
               'fx67ll-ocr-tag': item.isCheck,
@@ -198,81 +205,98 @@
             <switch class="fx67ll-setting-switch" :checked="settingInfo.isOnlyFirstToday"
               @change="isOnlyFirstTodayChange" />
           </view>
-          <view class="fx67ll-setting-item"
-            v-if="!(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic && userName === 'fx67ll')">
-            <span>是否允许出现重复串号</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedRepeat" @change="isNeedRepeatChange" />
+
+          <!-- 额外配置：随机生成设置 -->
+          <view class="fx67ll-setting-group-header" @click="isExpandRandomSetting = !isExpandRandomSetting">
+            <text class="fx67ll-setting-group-title">额外配置：随机生成设置</text>
+            <text class="fx67ll-setting-group-arrow">{{ isExpandRandomSetting ? '▲' : '▼' }}</text>
           </view>
-          <view class="fx67ll-setting-item" v-if="!settingInfo.isHotColdWeighted || !settingInfo.isOverrideRandomLogic">
-            <span>当日幸运数字是否要包含在内</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLuckyNumber"
-              @change="isNeedLuckyNumberChange" />
+          <view v-show="isExpandRandomSetting" class="fx67ll-setting-group-body">
+            <view class="fx67ll-setting-item"
+              v-if="!(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic && userName === 'fx67ll')">
+              <span>是否允许出现重复串号</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedRepeat" @change="isNeedRepeatChange" />
+            </view>
+            <view class="fx67ll-setting-item"
+              v-if="!settingInfo.isHotColdWeighted || !settingInfo.isOverrideRandomLogic">
+              <span>当日幸运数字是否要包含在内</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLuckyNumber"
+                @change="isNeedLuckyNumberChange" />
+            </view>
+            <view class="fx67ll-setting-item"
+              v-if="userName === 'fx67ll' && !(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic)">
+              <span>过往最高频中奖号码是否要包含在内</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedAddPastRewardNumber"
+                @change="isNeedAddPastChange" />
+            </view>
+            <view class="fx67ll-setting-item"
+              v-if="userName === 'fx67ll' && settingInfo.isNeedAddPastRewardNumber && !(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic)">
+              <span>需要总结的过往期数</span>
+              <uni-number-box :min="1" :max="1023" v-model="settingInfo.pastCheckCount"
+                @change="pastCheckCountChange"></uni-number-box>
+            </view>
+            <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
+              <span>随机生成的号码是否需要冷热加权</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isHotColdWeighted"
+                @change="isHotColdWeightedChange" />
+            </view>
+            <view class="fx67ll-setting-item-group" v-show="settingInfo.isHotColdWeighted && userName === 'fx67ll'">
+              <view class="fx67ll-setting-item">
+                <radio-group class="fx67ll-setting-radio-group" @change="hotColdWeightTypeChange">
+                  <label class="fx67ll-setting-radio-label">
+                    <radio value="hot" :checked="settingInfo.hotColdWeightType === 'hot'" />
+                    <span class="fx67ll-setting-radio-text">热加权</span>
+                  </label>
+                  <label class="fx67ll-setting-radio-label">
+                    <radio value="cold" :checked="settingInfo.hotColdWeightType === 'cold'" />
+                    <span class="fx67ll-setting-radio-text">冷加权</span>
+                  </label>
+                </radio-group>
+              </view>
+              <view class="fx67ll-setting-item">
+                <span>冷热加权是否需要覆盖当前随机逻辑</span>
+                <switch class="fx67ll-setting-switch" :checked="settingInfo.isOverrideRandomLogic"
+                  @change="isOverrideRandomLogicChange" />
+              </view>
+            </view>
           </view>
-          <view class="fx67ll-setting-item"
-            v-if="userName === 'fx67ll' && !(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic)">
-            <span>过往最高频中奖号码是否要包含在内</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedAddPastRewardNumber"
-              @change="isNeedAddPastChange" />
+
+          <!-- 额外配置：每日追号设置（仅管理员可见） -->
+          <view class="fx67ll-setting-group-header" @click="isExpandChasingSetting = !isExpandChasingSetting"
+            v-if="userName === 'fx67ll'">
+            <text class="fx67ll-setting-group-title">额外配置：每日追号设置</text>
+            <text class="fx67ll-setting-group-arrow">{{ isExpandChasingSetting ? '▲' : '▼' }}</text>
           </view>
-          <view class="fx67ll-setting-item"
-            v-if="userName === 'fx67ll' && settingInfo.isNeedAddPastRewardNumber && !(settingInfo.isHotColdWeighted && settingInfo.isOverrideRandomLogic)">
-            <span>需要总结的过往期数</span>
-            <uni-number-box :min="1" :max="1023" v-model="settingInfo.pastCheckCount"
-              @change="pastCheckCountChange"></uni-number-box>
-          </view>
-          <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-            <span>随机生成的号码是否需要冷热加权</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isHotColdWeighted"
-              @change="isHotColdWeightedChange" />
-          </view>
-          <view class="fx67ll-setting-item-group" v-show="settingInfo.isHotColdWeighted && userName === 'fx67ll'">
+          <view v-show="isExpandChasingSetting && userName === 'fx67ll'" class="fx67ll-setting-group-body">
             <view class="fx67ll-setting-item">
-              <radio-group class="fx67ll-setting-radio-group" @change="hotColdWeightTypeChange">
-                <label class="fx67ll-setting-radio-label">
-                  <radio value="hot" :checked="settingInfo.hotColdWeightType === 'hot'" />
-                  <span class="fx67ll-setting-radio-text">热加权</span>
-                </label>
-                <label class="fx67ll-setting-radio-label">
-                  <radio value="cold" :checked="settingInfo.hotColdWeightType === 'cold'" />
-                  <span class="fx67ll-setting-radio-text">冷加权</span>
-                </label>
-              </radio-group>
+              <span>是否添加一注每日追号</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyChasingNumber"
+                @change="isNeedDailyChasingNumberChange" />
             </view>
             <view class="fx67ll-setting-item">
-              <span>冷热加权是否需要覆盖当前随机逻辑</span>
-              <switch class="fx67ll-setting-switch" :checked="settingInfo.isOverrideRandomLogic"
-                @change="isOverrideRandomLogicChange" />
+              <span>是否添加一注历史开奖高频号码组合</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedHighFrequencyCombination"
+                @change="isNeedHighFrequencyCombinationChange" />
+            </view>
+            <view class="fx67ll-setting-item">
+              <span>是否添加一注历史开奖低频号码组合</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLowFrequencyCombination"
+                @change="isNeedLowFrequencyCombinationChange" />
+            </view>
+            <view class="fx67ll-setting-item">
+              <span>是否添加一注随机排列五</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyRandomPL5"
+                @change="isNeedDailyRandomPL5Change" />
             </view>
           </view>
-          <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-            <span>是否添加一注每日追号</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyChasingNumber"
-              @change="isNeedDailyChasingNumberChange" />
-          </view>
-          <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-            <span>是否添加一注历史开奖高频号码组合</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedHighFrequencyCombination"
-              @change="isNeedHighFrequencyCombinationChange" />
-          </view>
-          <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-            <span>是否添加一注历史开奖低频号码组合</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedLowFrequencyCombination"
-              @change="isNeedLowFrequencyCombinationChange" />
-          </view>
-          <view class="fx67ll-setting-item" v-if="userName === 'fx67ll'">
-            <span>是否添加一注随机排列五</span>
-            <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyRandomPL5"
-              @change="isNeedDailyRandomPL5Change" />
-          </view>
+          <view class="fx67ll-setting-tip-placeholder"></view>
           <view class="fx67ll-setting-tip">
-            Tip-1：修改其他设置会重置
-            <text>"当日是否仅允许生成一次随机"</text>
-            设置，并且开启该配置会自动上传生成的号码记录
+            Tip-1：修改其他设置会重置<text>"当日是否仅允许生成一次随机"</text>，开启该配置会自动上传生成的号码记录
           </view>
-          <view class="fx67ll-setting-tip"> Tip-2：摇奖设置会自动保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效
+          <view class="fx67ll-setting-tip"> Tip-2：摇奖设置优先保存到本地，本地缓存会有丢失风险，请按需保存到云端，部分配置次日生效
           </view>
           <view class="fx67ll-setting-tip" v-if="userName === 'fx67ll'">
-            Tip-3：冷热加权配置开启之后，如果关闭覆盖配置则随机号码之中，会有一注是加权随机号码；如果打开覆盖配置。则全部随机均采用加权随机生成逻辑
+            Tip-3：冷热加权配置开启之后，如果关闭覆盖配置，则随机号码之中会有一注是加权随机号码。如果打开覆盖配置，则所有随机均采用加权随机生成逻辑
           </view>
           <!-- 底部占位，防止内容被固定按钮遮挡 -->
           <view class="fx67ll-setting-scroll-placeholder"></view>
@@ -459,6 +483,9 @@ export default {
       // 配置记录Drawer组件相关参数
       isShowConfigLogDrawer: false,
       configLogDrawerHeight: '88%',
+      // 设置分组折叠状态
+      isExpandRandomSetting: false,
+      isExpandChasingSetting: false,
       // 幸运进度条
       luckyRandomProgrss: 0,
       // 达成幸运百分百的次数
@@ -932,7 +959,7 @@ export default {
 
         // #ifdef H5
         this.drawerHeight = `${170 +
-          this.settingInfo.luckyCount * 30 +
+          this.luckyNumberList.length * 30 +
           50 +
           (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
           }px`;
@@ -940,7 +967,7 @@ export default {
 
         // #ifdef MP-WEIXIN
         this.drawerHeight = `${200 +
-          this.settingInfo.luckyCount * 30 +
+          this.luckyNumberList.length * 30 +
           (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
           }px`;
         // #endif
@@ -1294,10 +1321,10 @@ export default {
         const weightedObj = await this.buildWeightedNumberObj(numType, this.settingInfo.hotColdWeightType);
         if (weightedObj) {
           this.luckyNumberList.push(this.packageTempObjForWX(weightedObj));
-          log(`[随机生成] 第 ${randomInitLength} 注（${weightName}加权，不参与随机配置检查）- 前区：${weightedObj.lotteryNumberFirst.join(',')}，后区：${weightedObj.lotteryNumberSecond.join(',')}`);
         } else {
           const fallback = this.packageTempObj(lotteryKey, normalCount);
           this.luckyNumberList.push(this.packageTempObjForWX(fallback));
+          log(`[冷热加权] ${weightName}加权失败，降级为普通随机 - 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
           log(`[随机生成] 第 ${randomInitLength} 注（${weightName}加权失败，降级普通随机，同样不参与随机配置检查）- 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
         }
       } else if (isHotColdOverride) {
@@ -1310,11 +1337,8 @@ export default {
             attempt++;
             const weightedObj = await this.buildWeightedNumberObj(numType, this.settingInfo.hotColdWeightType);
             finalObj = weightedObj || this.packageTempObj(lotteryKey, i + attempt);
-            const label = weightedObj ? `${weightName}加权` : `${weightName}加权失败降级`;
-            if (attempt > 1) {
-              log(`[随机生成] 第 ${i + 1} 注（${label}）重摇第 ${attempt} 次 - 前区：${finalObj.lotteryNumberFirst.join(',')}，后区：${finalObj.lotteryNumberSecond.join(',')}`);
-            } else {
-              log(`[随机生成] 第 ${i + 1} 注（${label}）- 前区：${finalObj.lotteryNumberFirst.join(',')}，后区：${finalObj.lotteryNumberSecond.join(',')}`);
+            if (!weightedObj) {
+              log(`[冷热加权] 第 ${i + 1} 注${attempt > 1 ? `重摇第 ${attempt} 次` : ''}加权失败，降级为普通随机 - 前区：${finalObj.lotteryNumberFirst.join(',')}，后区：${finalObj.lotteryNumberSecond.join(',')}`);
             }
             break;
           } while (attempt < 444);
