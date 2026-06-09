@@ -75,9 +75,9 @@
     <!-- 页面底部抽屉 -->
     <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible.sync="isShowDrawer" :radius="true"
       :height="drawerHeight" :before-close="handleDrawerClose">
-      <view v-if="showType === 'luckyNumber'" @click="openConfigLogDrawer">
+      <view v-if="showType === 'luckyNumber'">
         <view id="luckyNumberText" class="fx67ll-number-box">
-          <view class="fx67ll-number-item" v-for="(item, index) in luckyNumberList" :key="item.timeStamp">
+          <view class="fx67ll-number-item" v-for="(item, index) in luckyNumberList" :key="item.timeStamp" @click="openConfigLogDrawer">
             <span v-for="itemFirst in item.lotteryNumberFirst" :key="itemFirst.key" :class="{
               'color-daily-chasing': index === 0 && settingInfo.isNeedDailyChasingNumber && userName === 'fx67ll',
               'color-low-freq-second': index === (settingInfo.isNeedDailyChasingNumber ? 1 : 0) && settingInfo.isNeedHighFrequencyCombination && userName === 'fx67ll',
@@ -325,11 +325,11 @@ import uniIcons from "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue
 import uniNumberBox from "@/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue";
 
 // underscores函数库
-import _ from "underscore";
+import _ from "@/node_modules/underscore";
 
 // 日期时间处理
-import moment from "moment";
-import "moment/locale/zh-cn";
+import moment from "@/node_modules/moment";
+import "@/node_modules/moment/locale/zh-cn";
 
 // 各种工具类
 import {
@@ -873,9 +873,6 @@ export default {
         lines.push('本次生成未产生任何配置日志');
       }
       this.settingInfo.lastGenerateConfigLog = [...lines];
-      console.log('==================== 本次号码生成配置日志汇总 ====================');
-      lines.forEach(line => console.log(line));
-      console.log('=================================================================');
     },
     // 打开配置记录弹窗
     openConfigLogDrawer() {
@@ -923,7 +920,6 @@ export default {
           // 如果打开了带一注随机排列五则需要自动生成随机排列五
           const isNeedDailyRandomPL5 = this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll";
           if (isNeedDailyRandomPL5) {
-            console.log('[随机排列五] 配置生效 → 开始生成并上传今日随机排列五');
             this._configLogLines && this._configLogLines.push('[随机排列五] 配置生效 → 开始生成并上传今日随机排列五');
             this.getOtherLuckyNumberDebounce(4);
           } else {
@@ -979,7 +975,6 @@ export default {
             if (allNums.length > 0) {
               // 取出现频率最高的那个数字
               const topNum = sortNumberByFrequency(allNums, 1)[0];
-              console.log(`[过往高频] 过往 ${this.settingInfo.pastCheckCount} 期出现频率最高的号码：${topNum}`);
               return topNum;
             }
             return null;
@@ -1150,9 +1145,8 @@ export default {
       const lotteryKey = lotteryType === '1' ? 'DLT' : 'SSQ';
       const numType = lotteryType === '1' ? 1 : 2;
 
-      // 日志工具：同时打印并收集
+      // 日志工具：只写入配置记录弹窗，不打印到控制台
       const log = (msg) => {
-        console.log(msg);
         this._configLogLines && this._configLogLines.push(msg);
       };
 
@@ -1226,7 +1220,7 @@ export default {
             }
           }
         } catch (e) {
-          console.error('获取高频/低频组合失败：', e);
+          console.error('获取高频/低频组合失败：' + JSON.stringify(e));
         }
         // 🔼🔼🔼 高频低频组合需求 结束 🔼🔼🔼
       }
@@ -1355,7 +1349,6 @@ export default {
       // 覆盖模式下幸运数字逻辑不生效（仅管理员 fx67ll 的冷热加权生效）
       if (this.settingInfo.isHotColdWeighted && this.settingInfo.isOverrideRandomLogic && this.userName === "fx67ll") {
         const msg = '[幸运数字] 跳过 - 冷热加权覆盖模式已开启，幸运数字强制包含逻辑不生效';
-        console.log(msg);
         this._configLogLines && this._configLogLines.push(msg);
         return true;
       }
@@ -1375,12 +1368,10 @@ export default {
           });
         });
         const msg = `[幸运数字] 检查 - 今日幸运数字：${self.settingInfo.todayLuckyNumber}，本次号码${hasTodayLuckyNumber ? '已包含，无需重摇' : '未包含，将重新摇号'}`;
-        console.log(msg);
         self._configLogLines && self._configLogLines.push(msg);
         return hasTodayLuckyNumber;
       } else {
         const msg = '[幸运数字] 跳过 - 「当日幸运数字包含」未开启，不做强制检查';
-        console.log(msg);
         self._configLogLines && self._configLogLines.push(msg);
         return true;
       }
@@ -1574,11 +1565,12 @@ export default {
 
       // 上面H5的实现方式有点问题，统一使用小程序的处理方式即可
       luckyContent = this.packageContextForWX();
+      const totalCount = this.luckyNumberList.length;
       if (mapLotteryNumberType(this.todayWeek) === "1") {
-        luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码大乐透\n";
+        luckyTitle = " 老板买" + totalCount + "注自选号码大乐透\n";
       }
       if (mapLotteryNumberType(this.todayWeek) === "2") {
-        luckyTitle = " 老板买" + this.settingInfo.luckyCount + "注自选号码双色球\n";
+        luckyTitle = " 老板买" + totalCount + "注自选号码双色球\n";
       }
 
       // if (this.userName && this.userName === "fx67ll") {
@@ -1612,17 +1604,17 @@ export default {
         success: function (res) {
           // #ifdef H5
           // 微信不支持关闭复制成功提示所以暂时只支持H5
-          self.isNeedCloseDrawerConfirm("已为您成功复制到剪切板");
+          self.isNeedCloseDrawerConfirm("已为您成功复制到剪切板~");
           // #endif
-          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
+          console.log("复制到剪切板操作成功: " + JSON.stringify(res));
         },
         fail: function (err) {
           uni.showToast({
-            title: "卧槽复制失败了！请联系管理员处理! ",
+            title: "复制到剪切板操作失败！请联系管理员处理! ",
             icon: "none",
             duration: 1998,
           });
-          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
+          console.error("复制到剪切板操作失败: " + JSON.stringify(err));
         },
       });
     },
@@ -1631,28 +1623,26 @@ export default {
       const self = this;
       let context = "";
       _.each(this.luckyNumberList, function (item, index) {
-        if (index < self.settingInfo.luckyCount) {
-          let singleContextFirst = "";
-          let singleContextSecond = "";
-          _.each(item.lotteryNumberFirst, function (ita, ina) {
-            singleContextFirst = singleContextFirst.concat(
-              ina === 0 ? ` ` : "",
-              `${JSON.stringify(ita.num)}  `
-            );
-          });
-          _.each(item.lotteryNumberSecond, function (itb, inb) {
-            singleContextSecond = singleContextSecond.concat(
-              inb === 0 ? ` ` : "",
-              `${JSON.stringify(itb.num)}  `
-            );
-          });
-          context = context.concat(
-            index === 0 ? "\n" : "",
-            `${singleContextFirst}- ${singleContextSecond}`,
-            "\n",
-            index + 1 !== self.luckyNumberList.length ? "\n" : ""
+        let singleContextFirst = "";
+        let singleContextSecond = "";
+        _.each(item.lotteryNumberFirst, function (ita, ina) {
+          singleContextFirst = singleContextFirst.concat(
+            ina === 0 ? ` ` : "",
+            `${JSON.stringify(ita.num)}  `
           );
-        }
+        });
+        _.each(item.lotteryNumberSecond, function (itb, inb) {
+          singleContextSecond = singleContextSecond.concat(
+            inb === 0 ? ` ` : "",
+            `${JSON.stringify(itb.num)}  `
+          );
+        });
+        context = context.concat(
+          index === 0 ? "\n" : "",
+          `${singleContextFirst}- ${singleContextSecond}`,
+          "\n",
+          index + 1 !== self.luckyNumberList.length ? "\n" : ""
+        );
       });
       return context;
     },
@@ -1773,21 +1763,17 @@ export default {
     // 监听注数监听
     luckyCountChange(e) {
       this.settingInfo.luckyCount = e;
-      console.log(`[随机注数] 配置生效 → 当前注数设置为：${e}`);
       // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[随机注数] 联动重置 → 注数变更，已重置「当日仅允许生成一次随机」');
       }
     },
     // 监听是否允许重复
     isNeedRepeatChange(e) {
       this.settingInfo.isNeedRepeat = e?.detail?.value;
-      console.log(`[允许重复串号] 配置生效 → ${e?.detail?.value ? '已开启，允许出现重复串号' : '已关闭，不允许重复串号'}`);
       // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[允许重复串号] 联动重置 → 已重置「当日仅允许生成一次随机」');
       }
     },
     // 监听当日是否只允许出现一注随机号码
@@ -1798,10 +1784,7 @@ export default {
       if (!e?.detail?.value) {
         this.settingInfo.firstRandomDate = null;
         this.settingInfo.localLuckyNumberList = [];
-        console.log('[仅生成一次] 配置生效 → 已关闭，清除当日已缓存的号码记录，允许重新生成');
         // this.saveLuckySettingLocal();
-      } else {
-        console.log('[仅生成一次] 配置生效 → 已开启，当日仅允许生成一次随机号码，生成后自动上传');
       }
     },
     // 其他设置修改需要重置当日只允许出现一注随机号码
@@ -1815,52 +1798,42 @@ export default {
     // 监听当日幸运数字是否必须出现在当日随机号码中
     isNeedLuckyNumberChange(e) {
       this.settingInfo.isNeedLuckyNumber = e?.detail?.value;
-      console.log(`[幸运数字包含] 配置生效 → ${e?.detail?.value ? `已开启，当日幸运数字（${this.settingInfo.todayLuckyNumber}）必须出现在随机号码中` : '已关闭，不强制包含幸运数字'}`);
       // this.saveLuckySettingLocal();
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[幸运数字包含] 联动重置 → 已重置「当日仅允许生成一次随机」');
       }
     },
     // 监听是否需要追加一注过往中奖号码出现的高频数字
     isNeedAddPastChange(e) {
       this.settingInfo.isNeedAddPastRewardNumber = e?.detail?.value;
-      console.log(`[过往高频号码] 配置生效 → ${e?.detail?.value ? `已开启，将查询过往 ${this.settingInfo.pastCheckCount} 期高频中奖号码，令高频数字更容易出现在随机号码中` : '已关闭'}`);
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[过往高频号码] 联动重置 → 已重置「当日仅允许生成一次随机」');
       }
       // this.saveLuckySettingLocal();
     },
     // 监听需要查询过往多少期
     pastCheckCountChange(e) {
       this.settingInfo.pastCheckCount = e;
-      console.log(`[过往期数] 配置生效 → 过往高频号码统计期数设置为：${e} 期`);
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[过往期数] 联动重置 → 已重置「当日仅允许生成一次随机」');
       }
       // this.saveLuckySettingLocal();
     },
     // 监听是否需要日常排列五
     isNeedDailyRandomPL5Change(e) {
       this.settingInfo.isNeedDailyRandomPL5 = e?.detail?.value;
-      console.log(`[随机排列五] 配置生效 → ${e?.detail?.value ? '已开启，每日自动生成并上传一注随机排列五' : '已关闭'}`);
     },
     // 监听是否需要带一注高频号码组合
     isNeedHighFrequencyCombinationChange(e) {
       this.settingInfo.isNeedHighFrequencyCombination = e?.detail?.value;
-      console.log(`[高频号码组合] 配置生效 → ${e?.detail?.value ? '已开启，将追加一注历史开奖高频号码组合' : '已关闭'}`);
     },
     // 监听是否需要带一注低频号码组合
     isNeedLowFrequencyCombinationChange(e) {
       this.settingInfo.isNeedLowFrequencyCombination = e?.detail?.value;
-      console.log(`[低频号码组合] 配置生效 → ${e?.detail?.value ? '已开启，将追加一注历史开奖低频号码组合' : '已关闭'}`);
     },
     // 监听是否需要每日追号
     isNeedDailyChasingNumberChange(e) {
       this.settingInfo.isNeedDailyChasingNumber = e?.detail?.value;
-      console.log(`[每日追号] 配置生效 → ${e?.detail?.value ? '已开启，将在号码列表首位追加每日固定追号' : '已关闭'}`);
     },
     // 🔽🔽🔽 冷热加权需求 开始 🔽🔽🔽
     // 监听是否开启冷热加权
@@ -1871,28 +1844,22 @@ export default {
         // 打开冷热加权：默认热加权、默认不覆盖随机逻辑
         this.settingInfo.hotColdWeightType = 'hot';
         this.settingInfo.isOverrideRandomLogic = false;
-        console.log('[冷热加权] 配置生效 → 开启冷热加权，默认热加权，默认不覆盖随机逻辑（额外追加一注冷热加权号码）');
         // 如果当前只生成一注随机是打开的，参考Tip1重置
         if (this.settingInfo.isOnlyFirstToday) {
           this.resetIsOnlyFirstToday();
-          console.log('[冷热加权] 配置生效 → 检测到「当日仅允许生成一次随机」已开启，已自动重置');
         }
       } else {
         this.settingInfo.isOverrideRandomLogic = false;
-        console.log('[冷热加权] 配置生效 → 关闭冷热加权，已自动关闭覆盖随机逻辑');
         if (this.settingInfo.isOnlyFirstToday) {
           this.resetIsOnlyFirstToday();
-          console.log('[冷热加权] 联动重置 → 已重置「当日仅允许生成一次随机」');
         }
       }
     },
     // 监听冷热加权类型单选
     hotColdWeightTypeChange(e) {
       this.settingInfo.hotColdWeightType = e?.detail?.value;
-      console.log(`[冷热加权] 配置生效 → 加权类型切换为：${e?.detail?.value === 'hot' ? '热加权' : '冷加权'}`);
       if (this.settingInfo.isOnlyFirstToday) {
         this.resetIsOnlyFirstToday();
-        console.log('[冷热加权] 联动重置 → 已重置「当日仅允许生成一次随机」');
       }
     },
     // 监听是否覆盖当前随机逻辑
@@ -1915,21 +1882,15 @@ export default {
           closedItems.push('过往高频号码包含');
         }
         const closedMsg = closedItems.length > 0 ? `，已自动关闭并隐藏：${closedItems.join('、')}` : '，上述三项配置均已关闭';
-        console.log(`[冷热加权] 配置生效 → 覆盖随机逻辑已开启，全部注数由冷热加权生成${closedMsg}`);
         if (this.settingInfo.isOnlyFirstToday) {
           this.resetIsOnlyFirstToday();
-          console.log('[冷热加权覆盖] 联动重置 → 已重置「当日仅允许生成一次随机」');
         }
       } else {
-        console.log('[冷热加权] 配置生效 → 覆盖随机逻辑已关闭，冷热加权额外追加一注，其余配置恢复显示');
         if (this.settingInfo.isOnlyFirstToday) {
           this.resetIsOnlyFirstToday();
-          console.log('[冷热加权覆盖] 联动重置 → 已重置「当日仅允许生成一次随机」');
         }
       }
     },
-    // 🔼🔼🔼 冷热加权需求 结束 🔼🔼🔼
-    // 🔽🔽🔽 冷热加权需求 开始 🔽🔽🔽
     // 使用冷热加权逻辑生成一注号码对象
     async buildWeightedNumberObj(numberType, weightType) {
       try {
@@ -1939,16 +1900,15 @@ export default {
         const numType = parseInt(numberType);
         const lotteryName = numType === 1 ? '大乐透' : '双色球';
         const weightName = weightType === 'hot' ? '热加权' : '冷加权';
-        console.log(`====================冷热加权开始（${lotteryName} · ${weightName}）====================`);
+        console.log(`====================开始计算冷热加权（${lotteryName} · ${weightName}）====================`);
         this._configLogLines && this._configLogLines.push(`[冷热加权] 开始 - ${lotteryName} · ${weightName}`);
 
         const logPool = (zone, pool) => {
           const weightMap = {};
           pool.forEach(n => { weightMap[n] = (weightMap[n] || 0) + 1; });
           const sorted = Object.entries(weightMap).sort((a, b) => b[1] - a[1]);
-          const msg = `[冷热加权] ${zone}加权池大小：${pool.length}，号码权重（号码:权重）：${sorted.map(([n, w]) => `${n}:${w}`).join('  ')}`;
-          console.log(msg);
-          this._configLogLines && this._configLogLines.push(msg);
+          // 权重池详情只打印到控制台，不写入弹窗日志
+          console.log(`[冷热加权] ${zone}加权池大小：${pool.length}，号码权重（号码:权重）：${sorted.map(([n, w]) => `${n}:${w}`).join('  ')}`);
         };
 
         if (numType === 1) {
@@ -1959,12 +1919,8 @@ export default {
           logPool('后区', backPool);
           const front = drawFromWeightedPool(frontPool, 5);
           const back = drawFromWeightedPool(backPool, 2);
-          const msg = `[冷热加权] 大乐透${weightName}结果已追加 - 前区：${front.join(',')}，后区：${back.join(',')}`;
-          console.log(msg);
-          this._configLogLines && this._configLogLines.push(`[冷热加权] 抽取完成 - 大乐透前区 ${front.join(',')}，后区 ${back.join(',')}`);
-          console.log('====================冷热加权结束====================');
+          const msg = `[冷热加权] 大乐透${weightName}结果 - 前区：${front.join(',')}，后区：${back.join(',')}`;
           this._configLogLines && this._configLogLines.push(msg);
-          this._configLogLines && this._configLogLines.push('[冷热加权] 结束');
           return { timeStamp: new Date().getTime(), lotteryNumberFirst: front, lotteryNumberSecond: back };
         }
         if (numType === 2) {
@@ -1975,17 +1931,13 @@ export default {
           logPool('后区', backPool);
           const front = drawFromWeightedPool(frontPool, 6);
           const back = drawFromWeightedPool(backPool, 1);
-          const msg = `[冷热加权] 双色球${weightName}结果已追加 - 前区：${front.join(',')}，后区：${back.join(',')}`;
-          console.log(msg);
-          this._configLogLines && this._configLogLines.push(`[冷热加权] 抽取完成 - 双色球前区 ${front.join(',')}，后区 ${back.join(',')}`);
-          console.log('====================冷热加权结束====================');
+          const msg = `[冷热加权] 双色球${weightName}结果 - 前区：${front.join(',')}，后区：${back.join(',')}`;
           this._configLogLines && this._configLogLines.push(msg);
-          this._configLogLines && this._configLogLines.push('[冷热加权] 结束');
           return { timeStamp: new Date().getTime(), lotteryNumberFirst: front, lotteryNumberSecond: back };
         }
         return null;
       } catch (e) {
-        console.error('冷热加权号码生成失败：', e);
+        console.error('冷热加权号码生成失败：' + JSON.stringify(e));
         return null;
       }
     },
@@ -2015,20 +1967,20 @@ export default {
           // #ifdef H5
           // 微信不支持关闭复制成功提示所以暂时只支持H5
           uni.showToast({
-            title: "已为您成功复制到剪切板! ",
+            title: "已为您成功复制到剪切板~",
             icon: "none",
             duration: 1998,
           });
           // #endif
-          console.log("uni.setClipboardData - success: " + JSON.stringify(res));
+          console.log("复制到剪切板操作成功: " + JSON.stringify(res));
         },
         fail: function (err) {
           uni.showToast({
-            title: "卧槽复制失败了！请联系管理员处理! ",
+            title: "复制到剪切板操作失败！请联系管理员处理! ",
             icon: "none",
             duration: 1998,
           });
-          console.error("uni.setClipboardData - fail: " + JSON.stringify(err));
+          console.error("复制到剪切板操作失败: " + JSON.stringify(err));
         },
       });
     },
@@ -2191,43 +2143,6 @@ export default {
     uploadPicForBaiDuOcr(fileList) {
       const self = this;
       this.isNetworkLoading = true;
-      // uniCloud.uploadFile({
-      //   // #ifdef H5
-      //   filePath: fileList[0].path,
-      //   cloudPath: fileList[0].name,
-      //   // #endif
-      //   // #ifdef MP-WEIXIN
-      //   filePath: fileList[0].tempFilePath,
-      //   cloudPath: moment().format("YYYY-MM-DD hh:mm:ss"),
-      //   // #endif
-      //   // 后续添加进度条功能，先用百分比代替
-      //   onUploadProgress: function (progressEvent) {
-      //     const percentLoadingPercent = Math.round(
-      //       (progressEvent.loaded * 100) / progressEvent.total
-      //     );
-      //     self.pictureUploadNumber = parseInt(percentLoadingPercent);
-      //   },
-      //   success: (uploadFileRes) => {
-      //     // console.log("uploadFileRes", uploadFileRes);
-      //     if (uploadFileRes && uploadFileRes?.success && uploadFileRes?.fileID) {
-      //       self.qryBaiduOcrConfig(uploadFileRes?.fileID);
-      //     } else {
-      //       self.afterPicUploadFinished();
-      //     }
-      //   },
-      //   fail: (err) => {
-      //     uni.showToast({
-      //       title: "uniCloud图片上传接口调用失败，请联系管理员！",
-      //       icon: "none",
-      //       duration: 1998,
-      //     });
-      //     console.error("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
-      //     self.afterPicUploadFinished();
-      //   },
-      //   complete: (res) => {
-      //     console.log("uniCloud图片上传接口调用完成: " + JSON.stringify(res));
-      //   },
-      // });
       uni.uploadFile({
         url: "https://vip.fx67ll.com/vip-api/common/upload", //仅为示例，非真实的接口地址
         // #ifdef H5
@@ -2255,15 +2170,15 @@ export default {
         },
         fail: (err) => {
           uni.showToast({
-            title: "uniCloud图片上传接口调用失败，请联系管理员！",
+            title: "ruoyi-fx67ll 图片上传接口调用失败，请联系管理员！",
             icon: "none",
             duration: 1998,
           });
-          console.error("uniCloud图片上传接口调用失败: " + JSON.stringify(err));
+          console.error("ruoyi-fx67ll 图片上传接口调用失败: " + JSON.stringify(err));
           self.afterPicUploadFinished();
         },
         complete: (res) => {
-          console.log("uniCloud图片上传接口调用完成: " + JSON.stringify(res));
+          console.log("ruoyi-fx67ll 图片上传接口调用完成: " + JSON.stringify(res));
         },
       });
     },
@@ -2381,10 +2296,21 @@ export default {
         urls: [self.lotteryTicketArr[0]],
         longPressActions: {
           success: function (data) {
-            // console.log('选中了第' + (data.tapIndex + 1) + '个按钮,第' + (data.index + 1) + '张图片');
+            const successMsg = '预览图片长按操作成功：' + '选中了第' + (data.tapIndex + 1) + '个按钮,第' + (data.index + 1) + '张图片';
+            uni.showToast({
+              title: successMsg,
+              icon: "none",
+              duration: 1998,
+            });
+            console.log(successMsg);
           },
           fail: function (err) {
-            // console.error(err.errMsg);
+            uni.showToast({
+              title: "预览图片长按操作失败，请联系管理员！",
+              icon: "none",
+              duration: 1998,
+            });
+            console.error('预览图片长按操作失败：' + JSON.stringify(err));
           },
         },
       });
@@ -2419,9 +2345,8 @@ export default {
         this.countStartTime = moment().format("X");
       } else {
         const nowTime = moment().format("X");
-        console.log(
-          "当前计算已耗时：",
-          this.getTimeDuration(this.countStartTime, nowTime, "milliseconds")
+        console.log('====================开始计算今天是不是幸运日====================');
+        console.log("当前计算已耗时：", this.getTimeDuration(this.countStartTime, nowTime, "milliseconds")
         );
       }
       const self = this;
@@ -2886,8 +2811,8 @@ export default {
             await new Promise(resolve => setTimeout(resolve, 233));
             return searchRecursively(daysBack + 1);
           }
-        } catch (error) {
-          console.error(`查询第${daysBack}天前的记录时出错:`, error);
+        } catch (e) {
+          console.error(`查询第${daysBack}天前的记录时出错:`, e);
           await new Promise(resolve => setTimeout(resolve, 233));
           return searchRecursively(daysBack + 1);
         }
