@@ -188,7 +188,7 @@
 </template>
 
 <script>
-import logDrawer from "@/pages/lottery/component/logDrawer.vue";
+import logDrawer from "@/pages/lottery/component/logDrawer/logDrawer.vue";
 
 import { getLogList, delLog, editLog, getLogInfo } from "@/api/fx67ll/lottery/log";
 import { getSetting } from "@/api/fx67ll/lottery/setting";
@@ -211,9 +211,9 @@ import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
 
 // 日期时间处理
-import moment from "@/node_modules/moment";
+import moment from "moment";
 import "moment/locale/zh-cn";
-import "@/node_modules/moment/locale/zh-cn";
+import "moment/locale/zh-cn";
 
 export default {
   components: { logDrawer, uniListChat, uniPopup, uniPopupDialog, vTabs },

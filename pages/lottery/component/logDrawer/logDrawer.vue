@@ -83,8 +83,8 @@
 </template>
 
 <script>
-import moment from "@/node_modules/moment";
-import "@/node_modules/moment/locale/zh-cn";
+import moment from "moment";
+import "moment/locale/zh-cn";
 
 export default {
   name: "LogDrawer",
