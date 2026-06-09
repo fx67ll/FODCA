@@ -86,13 +86,17 @@
       &.color-daily-chasing {
         color: #2ecc71;
       }
-      /* 新增第二排低频颜色 */
+      /* 历史高频号码组合颜色 */
       &.color-low-freq-second {
         color: #ff5a5f;
       }
-      /* 新增第三排低频颜色 */
+      /* 历史低频号码组合颜色 */
       &.color-low-freq-third {
         color: #409eff;
+      }
+      /* 冷热加权追加注颜色 */
+      &.color-hot-cold-append {
+        color: #ffa940;
       }
     }
     .fx67ll-number-item-back {
@@ -119,15 +123,6 @@
 }
 
 @copy-btn-gap: 40rpx;
-.fx67ll-btn-save {
-  width: calc(100% - @copy-btn-gap * 2);
-  position: absolute;
-  bottom: @copy-btn-gap;
-  left: @copy-btn-gap;
-}
-.fx67ll-btn-save-h5 {
-  bottom: calc(@copy-btn-gap + 50px);
-}
 .fx67ll-drawer-btn-box {
   width: calc(100% - @copy-btn-gap * 2);
   position: absolute;
@@ -213,7 +208,22 @@
 
 // 弹窗中设置样式
 .fx67ll-drawer-setting {
-  padding: 50rpx 60rpx 60rpx 60rpx;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+
+  .fx67ll-setting-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 50rpx 60rpx 0 60rpx;
+  }
+
+  .fx67ll-setting-scroll-placeholder {
+    height: 44rpx;
+  }
+
   .fx67ll-setting-item {
     display: flex;
     justify-content: space-between;
@@ -226,15 +236,44 @@
   .fx67ll-setting-item:last-child {
     margin-bottom: 0;
   }
+  .fx67ll-setting-item-group {
+    margin-bottom: 30rpx;
+  }
+
+  .fx67ll-setting-radio-group {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  .fx67ll-setting-radio-label {
+    display: flex;
+    align-items: center;
+    margin-right: 40rpx;
+    font-size: 28rpx;
+  }
+  .fx67ll-setting-radio-text {
+    padding-left: 10rpx;
+  }
+
   .fx67ll-setting-tip {
     font-size: 26rpx;
     color: @topic-red;
-    margin-bottom: 20rpx;
+    margin-top: 20rpx;
     text {
       padding: 0 10rpx;
     }
   }
+
   @icon-size: 180rpx;
+  .fx67ll-setting-fixed-btn {
+    flex-shrink: 0;
+    width: calc(100% - 80rpx);
+    margin: 0 40rpx;
+  }
+  .fx67ll-setting-fixed-btn-h5 {
+    padding: 20rpx 0 40rpx 0;
+    padding-bottom: calc(40rpx + 50px);
+  }
   .fx67ll-setting-btn {
     display: flex;
     justify-content: space-between;
@@ -242,7 +281,73 @@
     .fx67ll-btn-default {
       width: calc(100% - @icon-size);
     }
-    // .fx67ll-btn-close {}
+  }
+}
+
+// 号码展示区域底部配置记录入口提示
+.fx67ll-number-config-tip {
+  text-align: center;
+  font-size: 24rpx;
+  color: #aaa;
+  padding: 10rpx 0 60rpx 0;
+  text-decoration: underline;
+}
+
+// 配置记录弹窗
+.fx67ll-config-log-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+
+  .fx67ll-config-log-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40rpx 50rpx 0 50rpx;
+  }
+
+  .fx67ll-config-log-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 28rpx;
+    line-height: 1.7;
+
+    .fx67ll-config-log-index {
+      flex-shrink: 0;
+      width: 44rpx;
+      font-size: 24rpx;
+      color: #bbb;
+      padding-top: 2rpx;
+    }
+
+    .fx67ll-config-log-text {
+      flex: 1;
+      font-size: 28rpx;
+      color: #333;
+      word-break: break-all;
+    }
+  }
+
+  .fx67ll-config-log-empty {
+    text-align: center;
+    font-size: 28rpx;
+    color: #ccc;
+    padding: 60rpx 0;
+  }
+
+  .fx67ll-config-log-placeholder {
+    height: 2rpx;
+  }
+
+  .fx67ll-config-log-btn-box {
+    flex-shrink: 0;
+    padding: 20rpx 50rpx 144rpx 50rpx;
+    background-color: #ffffff;
+
+    .fx67ll-config-log-btn {
+      width: 100%;
+    }
   }
 }
 

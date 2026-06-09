@@ -1,5 +1,5 @@
-import moment from '@/node_modules/moment';
-import CryptoJS from '@/node_modules/crypto-js';
+import moment from 'moment';
+import CryptoJS from 'crypto-js';
 
 // 快速排序
 export function quickSort(tempArr) {
@@ -1037,4 +1037,54 @@ export function getLotteryNumberByFrequency(data, dayOfYear) {
       ...getLotteryNumberByTypeZone(groups.SSQBack, 1, 'asc', normalized),
     ],
   };
+}
+
+/**
+ * 从频率统计数据中构建加权随机池
+ * @param {Array} rows - 接口返回的 rows 数组
+ * @param {number} numberType - 彩票类型数字（1=大乐透，2=双色球）
+ * @param {string|null} zone - '前区'|'后区'|null（null 表示无分区）
+ * @param {string} weightType - 'hot'（热加权）| 'cold'（冷加权）
+ * @returns {Array|null} 加权随机池，失败返回 null
+ */
+export function buildWeightedPool(rows, numberType, zone, weightType) {
+  const filtered = rows.filter(r => r.numberType === numberType && (zone ? r.zone === zone : true));
+  if (!filtered.length) return null;
+  const sorted = [...filtered].sort((a, b) => b.occurrenceCount - a.occurrenceCount);
+  const pool = [];
+  sorted.forEach((item, rankIndex) => {
+    const weight = weightType === 'hot' ? sorted.length - rankIndex : rankIndex + 1;
+    const nums = item.numbers
+      .split(',')
+      .map(n => parseInt(n.trim()))
+      .filter(n => !isNaN(n));
+    nums.forEach(n => {
+      for (let w = 0; w < weight; w++) {
+        pool.push(n);
+      }
+    });
+  });
+  return pool;
+}
+
+/**
+ * 从加权池中不重复地抽取 count 个号码，返回升序数组
+ * @param {Array} pool - 加权随机池
+ * @param {number} count - 需要抽取的数量
+ * @returns {Array} 升序排列的号码数组
+ */
+export function drawFromWeightedPool(pool, count) {
+  const result = [];
+  const remaining = [...pool];
+  while (result.length < count && remaining.length > 0) {
+    const idx = Math.floor(Math.random() * remaining.length);
+    const num = remaining[idx];
+    if (!result.includes(num)) {
+      result.push(num);
+    }
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      if (remaining[i] === num) remaining.splice(i, 1);
+    }
+  }
+  return result.sort((a, b) => a - b);
 }
