@@ -963,18 +963,18 @@ export default {
         }
 
         // #ifdef H5
-        this.drawerHeight = `${170 +
-          this.luckyNumberList.length * 30 +
-          50 +
-          (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
-          }px`;
+        this.drawerHeight = `${310 +
+          this.luckyNumberList.length * 60 +
+          100 +
+          (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
+          }rpx`;
         // #endif
 
         // #ifdef MP-WEIXIN
-        this.drawerHeight = `${100 +
-          this.luckyNumberList.length * 30 +
-          (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
-          }px`;
+        this.drawerHeight = `${340 +
+          this.luckyNumberList.length * 60 +
+          (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
+          }rpx`;
         // #endif
 
         this.drawerType = 0;
