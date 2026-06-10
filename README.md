@@ -8,6 +8,42 @@ fx67ll One Data Center App
 ## 0.6.18.20260610
 * 修复号码生成配置记录日志缺少冷热加权详情的问题  
 * 优化代码结构，修复控制台异常输出  
+* 优化配置大JSON保存的时候存在生产重复数据的问题
+
+---
+
+### 当前 settingInfo 读写流程梳理
+```
+初始化（onLoad → initProcess → initCacheSetting）
+  └─ getSetting()
+       ├─ 成功 → settingInfoId = res.data.settingId，使用云端数据
+       └─ 失败 → settingInfoId = null，fallback 到 initCacheSettingLocal()（读本地）
+
+写操作（saveLuckySettingLocal）← 被大量地方调用
+  ├─ 调 saveLuckySettingDebounce(true) → saveLuckySetting(isNoNeedToast=true)
+  │    ├─ settingInfoId 有值 → updateSetting（PUT）
+  │    └─ settingInfoId 无值 → addSetting（POST）← ⚠️ 这是根因
+  └─ localStorage.setItem / wx.setStorage（本地同步写）
+```
+
+### 当前 settingInfo 读写优先级
+- **读**：云端优先，失败 fallback 本地
+- **写**：本地和云端同步写，云端走防抖 233ms
+
+### 造成 settingInfo 重复数据的三个根因场景
+**原有逻辑在以下三种场景下会产生多余的云端 `addSetting` 调用，造成后台重复数据：**
+| 场景 | 原因 |
+|------|------|
+| 场景一：`getSetting` 失败 | 失败后 `settingInfoId = null`，后续所有 `saveLuckySettingLocal` 均走 `addSetting` |
+| 场景二：多次初始化并发 | 快速切 Tab 触发多次 `initCacheSetting`，`settingInfoId` 未返回前中途保存走 `addSetting` |
+| 场景三：`addSetting` 成功到 ID 赋值的时序窗口 | `addSetting` 响应未回时再次触发保存，又走一次 `addSetting` |
+
+### settingInfo 云端保存逻辑优化
+1. 新增 `_isFetchingSettingId` 标志（data）  
+2. `initCacheSetting` 加锁 + 失败时不清空 ID  
+3. `saveLuckySetting` 加守卫 + `addSetting` 期间也加锁  
+
+---
 
 ## 0.6.17.20260609
 * 优化打包流程，减少打包后文件体积  
