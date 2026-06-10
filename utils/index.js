@@ -143,10 +143,22 @@ export function compareStringsCheckIsLowestReward(str1, str2) {
 
 // 返回双色球和大乐透的中奖信息
 export function checkLotteryResultForSSQDLT(lotteryType, recordNumStr, winNumStr) {
-  const frontNumbers = recordNumStr.split('-')[0].split(',');
-  const backNumbers = recordNumStr.split('-')[1].split(',');
-  const winningFrontNumbers = winNumStr.split('-')[0].split(',');
-  const winningBackNumbers = winNumStr.split('-')[1].split(',');
+  const frontNumbers = recordNumStr
+    .split('-')[0]
+    .split(',')
+    .map(n => n.trim());
+  const backNumbers = recordNumStr
+    .split('-')[1]
+    .split(',')
+    .map(n => n.trim());
+  const winningFrontNumbers = winNumStr
+    .split('-')[0]
+    .split(',')
+    .map(n => n.trim());
+  const winningBackNumbers = winNumStr
+    .split('-')[1]
+    .split(',')
+    .map(n => n.trim());
 
   const result = {
     prizeLevel: 0,
@@ -156,137 +168,97 @@ export function checkLotteryResultForSSQDLT(lotteryType, recordNumStr, winNumStr
 
   const frontMatchCount = frontNumbers.filter(num => winningFrontNumbers.includes(num)).length;
   const backMatchCount = backNumbers.filter(num => winningBackNumbers.includes(num)).length;
-  const totalMatchCount = frontMatchCount + backMatchCount;
 
-  if (lotteryType === 1) {
-    // 一等奖奖金为浮动奖金
-    // 二等奖奖金为浮动奖金
-    // 三等奖固定奖金10000元
-    // 四等奖固定奖金3000元
-    // 五等奖固定奖金300元
-    // 六等奖固定奖金200元
-    // 七等奖固定奖金100元
-    // 八等奖固定奖金15元
-    // 九等奖固定奖金5元
-    switch (totalMatchCount) {
-      case 7:
-        result.prizeLevel = 1;
-        result.prizeText = '一等奖';
-        result.prizeAmount = 10000000;
-        break;
-      case 6:
-        if (backMatchCount === 2) {
-          result.prizeLevel = 4;
-          result.prizeText = '四等奖';
-          result.prizeAmount = 3000;
-        } else if (backMatchCount === 1) {
-          result.prizeLevel = 2;
-          result.prizeText = '二等奖';
-          result.prizeAmount = 5000000;
-        }
-        break;
-      case 5:
-        if (backMatchCount === 2) {
-          result.prizeLevel = 6;
-          result.prizeText = '六等奖';
-          result.prizeAmount = 200;
-        } else if (backMatchCount === 1) {
-          result.prizeLevel = 5;
-          result.prizeText = '五等奖';
-          result.prizeAmount = 300;
-        } else {
-          result.prizeLevel = 5;
-          result.prizeText = '三等奖';
-          result.prizeAmount = 10000;
-        }
-        break;
-      case 4:
-        if (backMatchCount > 0) {
-          result.prizeLevel = 8;
-          result.prizeText = '八等奖';
-          result.prizeAmount = 15;
-        } else {
-          result.prizeLevel = 7;
-          result.prizeText = '七等奖';
-          result.prizeAmount = 100;
-        }
-        break;
-      case 3:
-        result.prizeLevel = 9;
-        result.prizeText = '九等奖';
-        result.prizeAmount = 5;
-        break;
-      case 2:
-        if (backMatchCount === 2) {
-          result.prizeLevel = 9;
-          result.prizeText = '九等奖';
-          result.prizeAmount = 5;
-        }
-        break;
-      default:
-        result.prizeText = '未中奖';
-        break;
+  if (lotteryType === 1 || lotteryType === '1') {
+    // 大乐透官方中奖规则（前区5个1-35，后区2个1-12）
+    // 一等奖：前5+后2（浮动，参考行情约1000万）
+    // 二等奖：前5+后1（浮动，参考行情约50万）
+    // 三等奖：前5+后0，固定10000元
+    // 四等奖：前4+后2，固定3000元
+    // 五等奖：前4+后1，固定300元
+    // 六等奖：前3+后2 / 前4+后0，固定200元
+    // 七等奖：前3+后1 / 前2+后2，固定100元
+    // 八等奖：前3+后0 / 前1+后2 / 前2+后1，固定15元
+    // 九等奖：前0+后2 / 前1+后1，固定5元
+    if (frontMatchCount === 5 && backMatchCount === 2) {
+      result.prizeLevel = 1;
+      result.prizeText = '一等奖';
+      result.prizeAmount = 10000000;
+    } else if (frontMatchCount === 5 && backMatchCount === 1) {
+      result.prizeLevel = 2;
+      result.prizeText = '二等奖';
+      result.prizeAmount = 500000;
+    } else if (frontMatchCount === 5 && backMatchCount === 0) {
+      result.prizeLevel = 3;
+      result.prizeText = '三等奖';
+      result.prizeAmount = 10000;
+    } else if (frontMatchCount === 4 && backMatchCount === 2) {
+      result.prizeLevel = 4;
+      result.prizeText = '四等奖';
+      result.prizeAmount = 3000;
+    } else if (frontMatchCount === 4 && backMatchCount === 1) {
+      result.prizeLevel = 5;
+      result.prizeText = '五等奖';
+      result.prizeAmount = 300;
+    } else if ((frontMatchCount === 3 && backMatchCount === 2) || (frontMatchCount === 4 && backMatchCount === 0)) {
+      result.prizeLevel = 6;
+      result.prizeText = '六等奖';
+      result.prizeAmount = 200;
+    } else if ((frontMatchCount === 3 && backMatchCount === 1) || (frontMatchCount === 2 && backMatchCount === 2)) {
+      result.prizeLevel = 7;
+      result.prizeText = '七等奖';
+      result.prizeAmount = 100;
+    } else if (
+      (frontMatchCount === 3 && backMatchCount === 0) ||
+      (frontMatchCount === 1 && backMatchCount === 2) ||
+      (frontMatchCount === 2 && backMatchCount === 1)
+    ) {
+      result.prizeLevel = 8;
+      result.prizeText = '八等奖';
+      result.prizeAmount = 15;
+    } else if ((frontMatchCount === 0 && backMatchCount === 2) || (frontMatchCount === 1 && backMatchCount === 1)) {
+      result.prizeLevel = 9;
+      result.prizeText = '九等奖';
+      result.prizeAmount = 5;
+    } else {
+      result.prizeText = '未中奖';
     }
   }
 
-  if (lotteryType === 2) {
-    // 一等奖奖金为浮动奖金
-    // 二等奖奖金为浮动奖金
-    // 三等奖固定奖金3000元
-    // 四等奖固定奖金200元
-    // 五等奖固定奖金10元
-    // 六等奖固定奖金5元
-    switch (totalMatchCount) {
-      case 7:
-        result.prizeLevel = 1;
-        result.prizeText = '一等奖';
-        result.prizeAmount = 5000000;
-        break;
-      case 6:
-        if (backMatchCount === 1) {
-          result.prizeLevel = 3;
-          result.prizeText = '三等奖';
-          result.prizeAmount = 3000;
-        } else {
-          result.prizeLevel = 2;
-          result.prizeText = '二等奖';
-          result.prizeAmount = 100000;
-        }
-        break;
-      case 5:
-        result.prizeLevel = 4;
-        result.prizeText = '四等奖';
-        result.prizeAmount = 200;
-        break;
-      case 4:
-        result.prizeLevel = 5;
-        result.prizeText = '五等奖';
-        result.prizeAmount = 10;
-        break;
-      case 3:
-        if (backMatchCount === 1) {
-          result.prizeLevel = 6;
-          result.prizeText = '六等奖';
-          result.prizeAmount = 5;
-        }
-        break;
-      case 2:
-        if (backMatchCount === 1) {
-          result.prizeLevel = 6;
-          result.prizeText = '六等奖';
-          result.prizeAmount = 5;
-        }
-        break;
-      case 1:
-        if (backMatchCount === 1) {
-          result.prizeLevel = 6;
-          result.prizeText = '六等奖';
-          result.prizeAmount = 5;
-        }
-        break;
-      default:
-        result.prizeText = '未中奖';
-        break;
+  if (lotteryType === 2 || lotteryType === '2') {
+    // 双色球官方中奖规则（前区6个1-33，后区1个1-16）
+    // 一等奖：前6+后1（浮动，参考行情约500万）
+    // 二等奖：前6+后0（浮动，参考行情约10万）
+    // 三等奖：前5+后1，固定3000元
+    // 四等奖：前5+后0 / 前4+后1，固定200元
+    // 五等奖：前4+后0 / 前3+后1，固定10元
+    // 六等奖：前2+后1 / 前1+后1 / 前0+后1，固定5元
+    if (frontMatchCount === 6 && backMatchCount === 1) {
+      result.prizeLevel = 1;
+      result.prizeText = '一等奖';
+      result.prizeAmount = 5000000;
+    } else if (frontMatchCount === 6 && backMatchCount === 0) {
+      result.prizeLevel = 2;
+      result.prizeText = '二等奖';
+      result.prizeAmount = 100000;
+    } else if (frontMatchCount === 5 && backMatchCount === 1) {
+      result.prizeLevel = 3;
+      result.prizeText = '三等奖';
+      result.prizeAmount = 3000;
+    } else if ((frontMatchCount === 5 && backMatchCount === 0) || (frontMatchCount === 4 && backMatchCount === 1)) {
+      result.prizeLevel = 4;
+      result.prizeText = '四等奖';
+      result.prizeAmount = 200;
+    } else if ((frontMatchCount === 4 && backMatchCount === 0) || (frontMatchCount === 3 && backMatchCount === 1)) {
+      result.prizeLevel = 5;
+      result.prizeText = '五等奖';
+      result.prizeAmount = 10;
+    } else if (backMatchCount === 1 && frontMatchCount <= 2) {
+      result.prizeLevel = 6;
+      result.prizeText = '六等奖';
+      result.prizeAmount = 5;
+    } else {
+      result.prizeText = '未中奖';
     }
   }
 
