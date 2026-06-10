@@ -580,8 +580,10 @@ export default {
         const wl = item?.winningNumber?.split("/") || [];
         if (cl.length > 0 && cl[0] !== "") {
           cl.forEach((ita) => {
+            const isDltOrSsq = [1, 2, '1', '2'].includes(item?.numberType);
             const isRed =
               !wl[0] ||
+              !isDltOrSsq ||
               compareStringsCheckIsLowestReward(ita, wl[0]) ||
               compareStringsBasic(ita, wl[0]) > 2;
             tmpObj.chaseList.push({
@@ -597,8 +599,10 @@ export default {
         }
         if (rl.length > 0 && rl[0] !== "") {
           rl.forEach((itb, rlIndex) => {
+            const isDltOrSsq = [1, 2, '1', '2'].includes(item?.numberType);
             const isRed =
               !wl[0] ||
+              !isDltOrSsq ||
               compareStringsCheckIsLowestReward(itb, wl[0]) ||
               compareStringsBasic(itb, wl[0]) > 2;
 
