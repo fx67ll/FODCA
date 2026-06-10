@@ -320,26 +320,8 @@
     </zb-drawer>
 
     <!-- 配置记录弹窗 -->
-    <zb-drawer mode="bottom" title="本次号码生成配置记录日志" :wrapperClosable="true" :visible.sync="isShowConfigLogDrawer"
-      :radius="true" :height="configLogDrawerHeight">
-      <view class="fx67ll-config-log-drawer">
-        <scroll-view scroll-y="true" class="fx67ll-config-log-scroll">
-          <view v-if="settingInfo.lastGenerateConfigLog">
-            <view class="fx67ll-config-log-item" v-for="(line, idx) in settingInfo.lastGenerateConfigLog" :key="idx">
-              <text class="fx67ll-config-log-index">{{ idx + 1 }}.</text>
-              <text class="fx67ll-config-log-text">{{ line }}</text>
-            </view>
-          </view>
-          <view v-else class="fx67ll-config-log-empty">暂无配置记录</view>
-          <view class="fx67ll-config-log-placeholder"></view>
-        </scroll-view>
-        <!-- #ifdef H5 -->
-        <view class="fx67ll-config-log-btn-box">
-          <button class="fx67ll-config-log-btn" type="warn" @click="isShowConfigLogDrawer = false">关 闭</button>
-        </view>
-        <!-- #endif -->
-      </view>
-    </zb-drawer>
+    <config-log-drawer :isShowConfigLogDrawer.sync="isShowConfigLogDrawer" :configLogList="settingInfo.lastGenerateConfigLog"
+      :configLogDrawerHeight="configLogDrawerHeight"></config-log-drawer>
   </view>
 </template>
 
@@ -347,6 +329,9 @@
 // 官方组件库
 import uniIcons from "@/uni_modules/uni-icons/components/uni-icons/uni-icons.vue";
 import uniNumberBox from "@/uni_modules/uni-number-box/components/uni-number-box/uni-number-box.vue";
+
+// 号码生成配置日志组件
+import configLogDrawer from "@/pages/lottery/component/configLogDrawer/configLogDrawer.vue";
 
 // underscores函数库
 import _ from "@/node_modules/underscore";
@@ -388,6 +373,7 @@ export default {
   components: {
     uniIcons,
     uniNumberBox,
+    configLogDrawer,
   },
   data() {
     return {
@@ -572,6 +558,8 @@ export default {
           // #ifdef MP-WEIXIN
           this.initCacheSetting();
           // #endif
+          this.isExpandRandomSetting = false;
+          this.isExpandChasingSetting = false;
         }
       },
       deep: true, // 深度监测对象的变化
@@ -910,6 +898,8 @@ export default {
     // 这里的回调微信会直接报错，H5正常，所以微信采用watch函数来监听弹窗显示隐藏的变化来重新加载数据
     handleDrawerClose() {
       this.initCacheSetting();
+      this.isExpandRandomSetting = false;
+      this.isExpandChasingSetting = false;
       this.isShowDrawer = false;
     },
     // #endif
@@ -968,7 +958,7 @@ export default {
         // #endif
 
         // #ifdef MP-WEIXIN
-        this.drawerHeight = `${200 +
+        this.drawerHeight = `${100 +
           this.luckyNumberList.length * 30 +
           (this.settingInfo.isNeedDailyRandomPL5 ? 30 : 0)
           }px`;
