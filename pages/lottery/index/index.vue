@@ -469,6 +469,8 @@ export default {
       // 配置记录Drawer组件相关参数
       isShowConfigLogDrawer: false,
       configLogDrawerHeight: '88%',
+      // 标志：正在拉取云端 settingId，期间阻塞云端保存，防止并发 add 产生重复记录
+      _isFetchingSettingId: false,
       // 设置分组折叠状态
       isExpandRandomSetting: false,
       isExpandChasingSetting: false,
@@ -621,6 +623,8 @@ export default {
     // noToast，默认不用传，传true表示不会提示保存成功或失败的信息，传false表示正常提示
     saveLuckySetting(isNoNeedToast) {
       const self = this;
+      // 正在拉取 settingId 期间，跳过云端保存，避免并发 add 产生重复记录
+      if (this._isFetchingSettingId) return;
       this.isNetworkLoading = true;
       if (this.settingInfoId) {
         const updateParams = {
@@ -633,21 +637,39 @@ export default {
             !isNoNeedToast,
             "摇奖设置已成功新增到云端~",
             "摇奖设置保存新增到云端失败，请联系管理员！",
-            false
           );
         });
       } else {
         const addParams = {
           lotterySetting: JSON.stringify(this.settingInfo),
         };
+        // 标记正在 add，防止 add 成功前的时序窗口再次触发 add
+        this._isFetchingSettingId = true;
         addSetting(addParams).then((res) => {
+          self._isFetchingSettingId = false;
+          if (res?.code === 200) {
+            // 优先从 add 响应直接拿 settingId，避免再发一次 getSetting
+            const newId = res?.data?.settingId || res?.settingId || null;
+            if (newId) {
+              self.settingInfoId = newId;
+            } else {
+              // 响应里没有 ID 时才补查一次
+              getSetting().then((getRes) => {
+                if (getRes?.code === 200 && getRes?.data?.settingId) {
+                  self.settingInfoId = getRes.data.settingId;
+                }
+              });
+            }
+          }
           self.showSavingToast(
             res?.code,
             !isNoNeedToast,
             "摇奖设置已成功保存到云端~",
             "摇奖设置保存修改到云端失败，请联系管理员！",
-            true
           );
+        }).catch(() => {
+          self._isFetchingSettingId = false;
+          self.isNetworkLoading = false;
         });
       }
     },
@@ -656,21 +678,13 @@ export default {
       this.saveLuckySetting(isNoNeedToast);
     }, 1023), // `saveLuckySettingDebounce` 的 233ms 防抖在 `onHide` + 摇号同时触发时仍然不够，建议改为 800ms~1s。
     // 调用新增或修改接口之后的统一处理
-    showSavingToast(resCode, isNeedTip, successTip, failTip, isNeedQuerySettingId) {
-      const self = this;
+    showSavingToast(resCode, isNeedTip, successTip, failTip) {
       if (resCode === 200) {
         if (isNeedTip && successTip) {
           uni.showToast({
             title: successTip,
             icon: "none",
             duration: 1998,
-          });
-        }
-        if (isNeedQuerySettingId) {
-          getSetting().then((res) => {
-            if (res?.code === 200 && res?.data) {
-              self.settingInfoId = res?.data?.settingId;
-            }
           });
         }
       } else {
@@ -753,40 +767,39 @@ export default {
       const self = this;
       this.$modal.loading("加载配置中，请耐心等待...");
       this.isNetworkLoading = true;
+      // 拉取期间加锁，阻止并发 addSetting
+      this._isFetchingSettingId = true;
       getSetting().then((res) => {
         if (res?.code === 200 && res?.data) {
-          this.settingInfoId = res?.data?.settingId;
-          const lotterySetting = res?.data?.lotterySetting;
-          const settingInfo = JSON.parse(lotterySetting) || {};
+          self.settingInfoId = res.data.settingId;
+          const settingInfo = JSON.parse(res.data.lotterySetting) || {};
           if (_.has(settingInfo, "firstRandomDate")) {
-            self.settingInfo = {
-              ...settingInfo,
-            };
-            // 如果打开了只允许一注随机则需要重新渲染当日的随机号码
+            self.settingInfo = { ...settingInfo };
             if (
               self.settingInfo.isOnlyFirstToday &&
               self.settingInfo.firstRandomDate === moment().format("YYYY-MM-DD")
             ) {
               self.luckyNumberList = self.settingInfo.localLuckyNumberList;
             }
-            // 初始化完缓存配置项后初始化今日幸运数字
             self.initTodayLuckyNumber(settingInfo.luckyNumberDate);
-            // 初始化模拟摇奖配置
             self.initDrawLottery();
           } else {
-            // 初始化完缓存配置项后初始化今日幸运数字
             self.initTodayLuckyNumber(null);
           }
         } else {
-          // 如果云端摇奖设置获取失败，则自动加载本地摇奖设置，并默认没有保存过摇奖设置
-          this.settingInfoId = null;
-          this.initCacheSettingLocal();
+          // 云端获取失败：保留已有 settingInfoId（不清空），降级读本地
+          self.initCacheSettingLocal();
           uni.showToast({
             title: "获取云端摇奖设置失败！已为您自动加载本地摇奖设置~",
             icon: "none",
             duration: 1998,
           });
         }
+        self._isFetchingSettingId = false;
+        self.$modal.closeLoading();
+        self.isNetworkLoading = false;
+      }).catch(() => {
+        self._isFetchingSettingId = false;
         self.$modal.closeLoading();
         self.isNetworkLoading = false;
       });
