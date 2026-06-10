@@ -666,7 +666,7 @@ export default {
     // 保存设置到服务端 - 防抖处理
     saveLuckySettingDebounce: _.debounce(function (isNoNeedToast) {
       this.saveLuckySetting(isNoNeedToast);
-    }, 233),
+    }, 1023), // `saveLuckySettingDebounce` 的 233ms 防抖在 `onHide` + 摇号同时触发时仍然不够，建议改为 800ms~1s。
     // 调用新增或修改接口之后的统一处理
     showSavingToast(resCode, isNeedTip, successTip, failTip, isNeedQuerySettingId) {
       const self = this;
@@ -947,10 +947,12 @@ export default {
           // 如果打开了带一注随机排列五则需要自动生成随机排列五
           const isNeedDailyRandomPL5 = this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll";
           if (isNeedDailyRandomPL5) {
-            this._configLogLines && this._configLogLines.push('[随机排列五] 配置生效 → 开始生成并上传今日随机排列五');
+            const msg = '[随机排列五] 配置生效 → 开始生成并上传今日随机排列五';
+            this._configLogLines && this._configLogLines.push(msg);
             this.getOtherLuckyNumberDebounce(4);
           } else {
-            this._configLogLines && this._configLogLines.push('[随机排列五] 未开启，跳过');
+            const msg = '[随机排列五] 未开启，跳过';
+            this._configLogLines && this._configLogLines.push(msg);
           }
 
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
@@ -1924,15 +1926,15 @@ export default {
         const numType = parseInt(numberType);
         const lotteryName = numType === 1 ? '大乐透' : '双色球';
         const weightName = weightType === 'hot' ? '热加权' : '冷加权';
-        console.log(`====================开始计算冷热加权（${lotteryName} · ${weightName}）====================`);
-        this._configLogLines && this._configLogLines.push(`[冷热加权] 开始 - ${lotteryName} · ${weightName}`);
+        const msg = `[冷热加权] 开始 - ${lotteryName} · ${weightName}`;
+        this._configLogLines && this._configLogLines.push(msg);
 
         const logPool = (zone, pool) => {
           const weightMap = {};
           pool.forEach(n => { weightMap[n] = (weightMap[n] || 0) + 1; });
           const sorted = Object.entries(weightMap).sort((a, b) => b[1] - a[1]);
-          // 权重池详情只打印到控制台，不写入弹窗日志
-          console.log(`[冷热加权] ${zone}加权池大小：${pool.length}，号码权重（号码:权重）：${sorted.map(([n, w]) => `${n}:${w}`).join('  ')}`);
+          const msg = `[冷热加权] ${zone}加权池（共${pool.length}个）号码权重：${sorted.map(([n, w]) => `${n}:${w}`).join(' ')}`;
+          this._configLogLines && this._configLogLines.push(msg);
         };
 
         if (numType === 1) {
