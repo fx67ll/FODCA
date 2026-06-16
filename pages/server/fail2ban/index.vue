@@ -5,7 +5,8 @@
             <view class="status-header">
                 <text class="title">Fail2ban 防护状态</text>
                 <view class="refresh-container">
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="handleRefresh"></uni-icons>
+                    <uni-icons type="refresh" size="16" color="#409eff" @click="handleRefresh"
+                        :class="{ 'rotate': isRefreshing }"></uni-icons>
                     <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
                 </view>
             </view>
@@ -62,7 +63,7 @@
                     <view class="trend-bar">
                         <view class="trend-fill" :style="{ width: Math.min(item.count * 2, 100) + '%' }"></view>
                     </view>
-                    <text class="trend-count">{{ item.count }}</text>
+                    <text class="trend-count">{{ item.count }} 次</text>
                 </view>
             </view>
         </view>
@@ -74,66 +75,16 @@
             </view>
 
             <view class="jail-list">
-                <view class="jail-item" v-for="jail in jailList" :key="jail.name" @click="toggleJailDetail(jail)">
+                <view class="jail-item" v-for="jail in jailList" :key="jail.name" @click="openJailDetail(jail)">
                     <view class="jail-main">
                         <view class="jail-name">{{ jail.name }}</view>
                         <view class="jail-stats">
-                            <text class="stat">封禁: {{ jail.currentlyBanned }}</text>
-                            <text class="stat">累计: {{ jail.totalBanned }}</text>
-                            <text class="stat">失败: {{ jail.totalFailed }}</text>
+                            <text class="stat">封禁: {{ jail.currentlyBanned || 0 }}</text>
+                            <text class="stat">累计: {{ jail.totalBanned || 0 }}</text>
+                            <text class="stat">失败: {{ jail.totalFailed || 0 }}</text>
                         </view>
                     </view>
-                    <uni-icons :type="expandedJails.includes(jail.name) ? 'arrowup' : 'arrowdown'" size="14"
-                        color="#c0c4cc"></uni-icons>
-                </view>
-
-                <!-- 监狱详情平铺区域（无弹窗） -->
-                <view class="jail-detail" v-for="jail in expandedJailDetails" :key="jail.name"
-                    v-show="expandedJails.includes(jail.name)">
-                    <view class="detail-section">
-                        <text class="section-title">防护配置</text>
-                        <view class="detail-grid">
-                            <view class="detail-item">
-                                <text class="detail-label">封禁时间</text>
-                                <text class="detail-value">{{ jail.config.bantime || '未知' }}秒</text>
-                            </view>
-                            <view class="detail-item">
-                                <text class="detail-label">检测窗口</text>
-                                <text class="detail-value">{{ jail.config.findtime || '未知' }}秒</text>
-                            </view>
-                            <view class="detail-item">
-                                <text class="detail-label">最大失败</text>
-                                <text class="detail-value">{{ jail.config.maxretry || '未知' }}</text>
-                            </view>
-                            <view class="detail-item">
-                                <text class="detail-label">监控端口</text>
-                                <text class="detail-value">{{ jail.config.port || '未知' }}</text>
-                            </view>
-                        </view>
-                    </view>
-
-                    <view class="detail-section">
-                        <view class="section-header">
-                            <text class="section-title">当前被封禁IP ({{ jail.bannedIps.length || 0 }})</text>
-                            <view class="ip-actions">
-                                <button class="btn btn-primary btn-small" @click="copyAllIps(jail.bannedIps)"
-                                    :disabled="!jail.bannedIps || jail.bannedIps.length === 0">
-                                    复制全部
-                                </button>
-                            </view>
-                        </view>
-
-                        <view class="banned-ips">
-                            <view class="ip-tag" v-for="ip in jail.bannedIps" :key="ip">
-                                <text class="ip-text">{{ ip }}</text>
-                                <uni-icons type="copy" size="12" color="#fff"
-                                    @click.stop="copySingleIp(ip)"></uni-icons>
-                            </view>
-                            <view v-if="!jail.bannedIps || jail.bannedIps.length === 0" class="empty-text">
-                                暂无被封禁IP
-                            </view>
-                        </view>
-                    </view>
+                    <uni-icons type="arrowright" size="14" color="#c0c4cc"></uni-icons>
                 </view>
             </view>
         </view>
@@ -148,14 +99,14 @@
             </view>
 
             <view class="ip-list">
-                <view class="ip-item" v-for="(item, index) in topAttackIps.slice(0, 10)" :key="index">
+                <view class="ip-item" v-for="(item, index) in topAttackIpsWithClass.slice(0, 10)" :key="index">
                     <view class="ip-rank">{{ index + 1 }}</view>
                     <view class="ip-info">
                         <text class="ip-address">{{ item.ip }}</text>
                         <text class="ip-count">攻击 {{ item.count }} 次</text>
                     </view>
-                    <view class="ip-threat" :class="getThreatClass(item.count)">
-                        {{ getThreatLevelText(item.count) }}
+                    <view class="ip-threat" :class="item.threatClass">
+                        {{ item.threatText }}
                     </view>
                     <uni-icons type="copy" size="16" color="#409eff" @click="copySingleIp(item.ip)"></uni-icons>
                 </view>
@@ -182,7 +133,6 @@
                 </view>
             </view>
 
-            <!-- 加载更多 -->
             <view class="load-more" @click="loadMoreIps" v-if="hasMoreIps">
                 <text>加载更多</text>
             </view>
@@ -199,13 +149,14 @@
                     <picker :range="logLimitOptions" range-key="label" @change="onLogLimitChange">
                         <text class="picker-text">{{ currentLogLimit.label }}</text>
                     </picker>
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="refreshLogs"></uni-icons>
+                    <uni-icons type="refresh" size="16" color="#409eff" @click="refreshLogs"
+                        :class="{ 'rotate': isLoadingLogs }"></uni-icons>
                 </view>
             </view>
 
             <view class="log-container">
-                <view class="log-item" v-for="(log, index) in paginatedLogs" :key="index"
-                    :class="getLogClass(log.level)" v-if="paginatedLogs.length > 0">
+                <view class="log-item" v-for="(log, index) in paginatedLogsWithClass" :key="index" :class="log.logClass"
+                    v-if="paginatedLogsWithClass.length > 0">
                     <view class="log-header">
                         <text class="log-time">{{ log.time }}</text>
                         <text class="log-level">[{{ log.level }}]</text>
@@ -215,17 +166,77 @@
                         <uni-icons type="copy" size="14" color="#409eff" @click="copySingleIp(log.ip)"></uni-icons>
                     </view>
                 </view>
-                <view v-if="paginatedLogs.length === 0" class="empty-text">
-                    暂无被封禁IP
+                <view v-if="paginatedLogsWithClass.length === 0" class="empty-text">
+                    暂无攻击日志
                 </view>
             </view>
 
-            <!-- 加载更多 -->
             <view class="load-more" @click="loadMoreLogs" v-if="hasMoreLogs">
                 <text>加载更多</text>
             </view>
             <view class="no-more" v-else-if="filteredLogs.length > logPageSize">
                 <text>没有更多了</text>
+            </view>
+        </view>
+
+        <!-- 监狱详情弹窗 -->
+        <view class="jail-detail-mask" v-show="showJailDetail" @click="closeJailDetail"></view>
+        <view class="jail-detail-popup" :class="{ 'show': showJailDetail }">
+            <view class="popup-header">
+                <text class="popup-title">{{ currentJailDetail.name || '监狱详情' }}</text>
+                <uni-icons type="close" size="20" color="#909399" @click="closeJailDetail"></uni-icons>
+            </view>
+            <view class="popup-content">
+                <view v-if="!isJailDetailLoading" class="jail-detail">
+                    <view class="detail-section">
+                        <text class="section-title">防护配置</text>
+                        <view class="detail-grid">
+                            <view class="detail-item">
+                                <text class="detail-label">封禁时间</text>
+                                <text class="detail-value">{{ currentJailDetail.config.bantime || '未知' }}秒</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">检测窗口</text>
+                                <text class="detail-value">{{ currentJailDetail.config.findtime || '未知' }}秒</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">最大失败</text>
+                                <text class="detail-value">{{ currentJailDetail.config.maxretry || '未知' }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">监控端口</text>
+                                <text class="detail-value">{{ currentJailDetail.config.port || '未知' }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="detail-section">
+                        <view class="section-header">
+                            <text class="section-title">当前被封禁IP ({{ currentJailDetail.bannedIps.length || 0 }})</text>
+                            <view class="ip-actions">
+                                <button class="btn btn-primary btn-small"
+                                    @click="copyAllIps(currentJailDetail.bannedIps)"
+                                    :disabled="currentJailDetail.bannedIps.length === 0">
+                                    复制全部
+                                </button>
+                            </view>
+                        </view>
+
+                        <view class="banned-ips">
+                            <view class="ip-tag" v-for="ip in currentJailDetail.bannedIps" :key="ip">
+                                <text class="ip-text">{{ ip }}</text>
+                                <uni-icons type="copy" size="12" color="#fff"
+                                    @click.stop="copySingleIp(ip)"></uni-icons>
+                            </view>
+                            <view v-if="currentJailDetail.bannedIps.length === 0" class="empty-text">
+                                暂无被封禁IP
+                            </view>
+                        </view>
+                    </view>
+                </view>
+                <view v-else class="loading-text">
+                    {{ loadingText }}
+                </view>
             </view>
         </view>
     </view>
@@ -258,23 +269,35 @@ export default {
 
             // ==================== 监狱管理 ====================
             jailList: [],
-            expandedJails: [], // 已展开的监狱名称列表
-            expandedJailDetails: [], // 已展开的监狱详情数据
+            currentJailDetail: {
+                name: '',
+                config: {
+                    bantime: '',
+                    findtime: '',
+                    maxretry: '',
+                    port: ''
+                },
+                bannedIps: []
+            },
+            isJailDetailLoading: false,
+            showJailDetail: false,
+            loadingText: "加载中...",
+            jailDetailTimeout: null, // 超时定时器
 
             // ==================== 攻击统计 ====================
-            topAttackIps: [], // 攻击来源Top 20
-            trendData: [], // 24小时攻击趋势数据
+            topAttackIps: [],
+            trendData: [],
 
             // ==================== 全量封禁IP ====================
-            allBannedIps: [], // 所有被封禁的IP（去重后）
-            ipCurrentPage: 1, // IP列表当前页码
-            ipPageSize: 50, // IP列表每页条数（移动端优化）
+            allBannedIps: [],
+            ipCurrentPage: 1,
+            ipPageSize: 50,
 
             // ==================== 日志管理 ====================
-            recentLogs: [], // 原始日志数据
-            logLimit: 200, // 日志返回条数（参数化）
-            logCurrentPage: 1, // 日志当前页码
-            logPageSize: 20, // 日志每页条数（移动端优化）
+            recentLogs: [],
+            logLimit: 200,
+            logCurrentPage: 1,
+            logPageSize: 20,
             logLimitOptions: [
                 { label: "50条", value: 50 },
                 { label: "100条", value: 100 },
@@ -285,70 +308,71 @@ export default {
             currentLogLimit: { label: "200条", value: 200 },
 
             // ==================== 加载状态 ====================
-            isRefreshing: false, // 整体刷新状态
-            isLoadingLogs: false, // 日志刷新状态
+            isRefreshing: false,
+            isLoadingLogs: false,
 
             // ==================== 其他 ====================
-            lastRefreshTime: "", // 最后刷新时间
-            refreshInterval: null // 自动刷新定时器
+            lastRefreshTime: "",
+            refreshInterval: null
         };
     },
     computed: {
-        /**
-         * 过滤后的日志列表（移动端暂不支持级别和监狱筛选，如需可自行添加）
-         */
         filteredLogs() {
             return this.recentLogs;
         },
 
-        /**
-         * 分页后的日志列表（移动端加载更多模式）
-         */
         paginatedLogs() {
             const end = this.logCurrentPage * this.logPageSize;
             return this.filteredLogs.slice(0, end);
         },
 
-        /**
-         * 分页后的全量封禁IP列表（移动端加载更多模式）
-         */
         paginatedBannedIps() {
             const end = this.ipCurrentPage * this.ipPageSize;
             return this.allBannedIps.slice(0, end);
         },
 
-        /**
-         * 是否还有更多IP可以加载
-         */
         hasMoreIps() {
             return this.ipCurrentPage * this.ipPageSize < this.allBannedIps.length;
         },
 
-        /**
-         * 是否还有更多日志可以加载
-         */
         hasMoreLogs() {
             return this.logCurrentPage * this.logPageSize < this.filteredLogs.length;
+        },
+
+        topAttackIpsWithClass() {
+            return this.topAttackIps.map(item => {
+                return {
+                    ...item,
+                    threatClass: this.getThreatClass(item.count),
+                    threatText: this.getThreatLevelText(item.count)
+                }
+            })
+        },
+
+        paginatedLogsWithClass() {
+            return this.paginatedLogs.map(log => {
+                return {
+                    ...log,
+                    logClass: this.getLogClass(log.level)
+                }
+            })
         }
     },
     onLoad() {
-        // 页面加载时加载所有数据
         this.loadAllData();
-        // 设置自动刷新，每30秒更新一次
         this.refreshInterval = setInterval(() => {
             this.loadAllData();
         }, 30000);
     },
     onUnload() {
-        // 页面卸载时清除定时器
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
         }
+        if (this.jailDetailTimeout) {
+            clearTimeout(this.jailDetailTimeout);
+        }
     },
     methods: {
-        /**
-         * 加载所有数据
-         */
         async loadAllData() {
             try {
                 await Promise.all([
@@ -360,138 +384,200 @@ export default {
                 ]);
                 this.lastRefreshTime = this.formatDateTime(new Date());
             } catch (error) {
+                console.error("全局数据加载失败:", error);
                 uni.showToast({
                     title: "加载数据失败",
-                    icon: "none"
+                    icon: "none",
+                    duration: 2000
                 });
             }
         },
 
-        /**
-         * 手动刷新所有数据
-         */
         handleRefresh() {
+            if (this.isRefreshing) return;
             this.isRefreshing = true;
             this.loadAllData().finally(() => {
                 this.isRefreshing = false;
             });
         },
 
-        /**
-         * 刷新日志数据
-         */
         refreshLogs() {
+            if (this.isLoadingLogs) return;
             this.isLoadingLogs = true;
             this.loadRecentLogs().finally(() => {
                 this.isLoadingLogs = false;
+                this.lastRefreshTime = this.formatDateTime(new Date());
             });
         },
 
-        /**
-         * 日志条数选择器改变事件
-         */
         onLogLimitChange(e) {
             this.currentLogLimit = this.logLimitOptions[e.detail.value];
             this.logLimit = this.currentLogLimit.value;
             this.loadRecentLogs();
         },
 
-        /**
-         * 加载Fail2ban服务状态
-         */
         async loadServiceStatus() {
-            const response = await getFail2banStatus();
-            const data = response.data || {};
-            this.serviceStatus = data.status || "未知";
-            this.serviceInfo = data;
-        },
-
-        /**
-         * 加载监狱列表
-         */
-        async loadJailList() {
-            const response = await getJailList();
-            this.jailList = response.data || [];
-        },
-
-        /**
-         * 加载攻击统计数据
-         */
-        async loadAttackStats() {
-            const response = await getAttackStats();
-            this.topAttackIps = response.data.topAttackIps || [];
-
-            // 转换趋势数据格式
-            const trend = response.data.hourlyTrend || {};
-            this.trendData = Object.entries(trend).map(([hour, count]) => ({
-                hour,
-                count
-            }));
-        },
-
-        /**
-         * 加载全量封禁IP列表
-         */
-        async loadAllBannedIps() {
-            const response = await getAllBannedIps();
-            const data = response.data || {};
-            const bannedIpsByJail = data.bannedIpsByJail || {};
-
-            // 合并所有监狱的IP并去重
-            const allIps = new Set();
-            Object.values(bannedIpsByJail).forEach(ips => {
-                ips.forEach(ip => allIps.add(ip));
-            });
-            this.allBannedIps = Array.from(allIps);
-            // 重置IP分页
-            this.ipCurrentPage = 1;
-        },
-
-        /**
-         * 加载最近日志（支持参数化）
-         */
-        async loadRecentLogs() {
-            const response = await getRecentLogs({
-                limit: this.logLimit
-            });
-            this.recentLogs = response.data || [];
-            // 重置日志分页
-            this.logCurrentPage = 1;
-        },
-
-        /**
-         * 切换监狱详情展开/收起（平铺展示，无弹窗）
-         * @param {Object} row 监狱行数据
-         */
-        async toggleJailDetail(row) {
-            const index = this.expandedJails.indexOf(row.name);
-            if (index > -1) {
-                // 收起详情
-                this.expandedJails.splice(index, 1);
-                this.expandedJailDetails = this.expandedJailDetails.filter(
-                    jail => jail.name !== row.name
-                );
-            } else {
-                // 展开详情
-                try {
-                    const response = await getJailDetail(row.name);
-                    this.expandedJails.push(row.name);
-                    this.expandedJailDetails.push(response.data);
-                } catch (error) {
-                    uni.showToast({
-                        title: "获取监狱详情失败",
-                        icon: "none"
-                    });
-                }
+            try {
+                const response = await getFail2banStatus();
+                const data = response.data || {};
+                this.serviceStatus = data.status || "未知";
+                this.serviceInfo = data;
+            } catch (error) {
+                console.error("加载服务状态失败:", error);
             }
         },
 
-        // ==================== IP复制功能 ====================
+        async loadJailList() {
+            try {
+                const response = await getJailList();
+                this.jailList = response.data || [];
+                console.log("监狱列表加载成功:", this.jailList);
+            } catch (error) {
+                console.error("加载监狱列表失败:", error);
+            }
+        },
+
+        async loadAttackStats() {
+            try {
+                const response = await getAttackStats();
+                this.topAttackIps = response.data.topAttackIps || [];
+                const trend = response.data.hourlyTrend || {};
+                this.trendData = Object.entries(trend).map(([hour, count]) => ({
+                    hour,
+                    count
+                }));
+            } catch (error) {
+                console.error("加载攻击统计失败:", error);
+            }
+        },
+
+        async loadAllBannedIps() {
+            try {
+                const response = await getAllBannedIps();
+                const data = response.data || {};
+                const bannedIpsByJail = data.bannedIpsByJail || {};
+                const allIps = new Set();
+                Object.values(bannedIpsByJail).forEach(ips => {
+                    ips.forEach(ip => allIps.add(ip));
+                });
+                this.allBannedIps = Array.from(allIps);
+                this.ipCurrentPage = 1;
+            } catch (error) {
+                console.error("加载全量封禁IP失败:", error);
+            }
+        },
+
+        async loadRecentLogs() {
+            try {
+                const response = await getRecentLogs({
+                    limit: this.logLimit
+                });
+                this.recentLogs = response.data || [];
+                this.logCurrentPage = 1;
+            } catch (error) {
+                console.error("加载日志失败:", error);
+            }
+        },
 
         /**
-         * 复制单个IP到剪贴板
-         * @param {String} ip IP地址
+         * 打开监狱详情弹窗（终极修复版）
+         * 解决：一直加载中、错误未捕获、状态不重置、接口超时等问题
          */
+        async openJailDetail(jail) {
+            // 防重复点击
+            if (this.isJailDetailLoading) {
+                console.log("正在加载中，请勿重复点击");
+                return;
+            }
+
+            // 重置状态
+            this.isJailDetailLoading = true;
+            this.loadingText = "加载中...";
+            this.currentJailDetail = {
+                name: jail.name,
+                config: {
+                    bantime: '',
+                    findtime: '',
+                    maxretry: '',
+                    port: ''
+                },
+                bannedIps: []
+            };
+            this.showJailDetail = true;
+
+            // 10秒超时保护 - 强制结束加载
+            this.jailDetailTimeout = setTimeout(() => {
+                console.error("监狱详情请求超时");
+                this.loadingText = "请求超时，请重试";
+                this.isJailDetailLoading = false;
+            }, 10000);
+
+            try {
+                console.log("开始请求监狱详情:", jail.name);
+
+                // 双重错误捕获：try-catch + .catch
+                const response = await getJailDetail(jail.name).catch(err => {
+                    console.error("接口直接报错:", err);
+                    throw err;
+                });
+
+                console.log("监狱详情接口返回:", response);
+
+                // 数据兼容性处理 - 兼容各种返回格式
+                let data = response.data || response;
+
+                // 确保数据结构完整
+                if (!data.config) data.config = {};
+                if (!data.bannedIps) data.bannedIps = [];
+
+                // 赋值给当前详情
+                this.currentJailDetail = data;
+                console.log("监狱详情加载成功:", this.currentJailDetail);
+
+            } catch (error) {
+                console.error("获取监狱详情失败:", error);
+                this.loadingText = "加载失败，请重试\n错误信息: " + (error.message || "未知错误");
+                uni.showToast({
+                    title: "获取详情失败",
+                    icon: "none",
+                    duration: 2000
+                });
+            } finally {
+                // 强制清除超时定时器
+                if (this.jailDetailTimeout) {
+                    clearTimeout(this.jailDetailTimeout);
+                    this.jailDetailTimeout = null;
+                }
+                // 强制关闭加载状态 - 无论成功失败
+                this.isJailDetailLoading = false;
+                console.log("加载状态已重置");
+            }
+        },
+
+        closeJailDetail() {
+            this.showJailDetail = false;
+            // 关闭时清除超时定时器
+            if (this.jailDetailTimeout) {
+                clearTimeout(this.jailDetailTimeout);
+                this.jailDetailTimeout = null;
+            }
+            // 延迟清空数据
+            setTimeout(() => {
+                this.currentJailDetail = {
+                    name: '',
+                    config: {
+                        bantime: '',
+                        findtime: '',
+                        maxretry: '',
+                        port: ''
+                    },
+                    bannedIps: []
+                };
+                this.loadingText = "加载中...";
+            }, 300);
+        },
+
+        // ==================== IP复制功能 ====================
         copySingleIp(ip) {
             uni.setClipboardData({
                 data: ip,
@@ -504,10 +590,6 @@ export default {
             });
         },
 
-        /**
-         * 复制全部IP到剪贴板
-         * @param {Array} ips IP地址数组
-         */
         copyAllIps(ips) {
             if (!ips || ips.length === 0) {
                 uni.showToast({
@@ -528,55 +610,31 @@ export default {
             });
         },
 
-        /**
-         * 复制全部Top攻击IP到剪贴板
-         */
         copyAllTopIps() {
             const ips = this.topAttackIps.map(item => item.ip);
             this.copyAllIps(ips);
         },
 
-        /**
-         * 复制所有封禁IP到剪贴板
-         */
         copyAllBannedIps() {
             this.copyAllIps(this.allBannedIps);
         },
 
         // ==================== 加载更多功能 ====================
-
-        /**
-         * 加载更多IP
-         */
         loadMoreIps() {
             this.ipCurrentPage++;
         },
 
-        /**
-         * 加载更多日志
-         */
         loadMoreLogs() {
             this.logCurrentPage++;
         },
 
         // ==================== 工具方法 ====================
-
-        /**
-         * 根据攻击次数获取威胁等级CSS类
-         * @param {Number} count 攻击次数
-         * @returns {String} CSS类名
-         */
         getThreatClass(count) {
             if (count > 200) return "threat-high";
             if (count > 100) return "threat-medium";
             return "threat-low";
         },
 
-        /**
-         * 根据攻击次数获取威胁等级文本
-         * @param {Number} count 攻击次数
-         * @returns {String} 威胁等级文本
-         */
         getThreatLevelText(count) {
             if (count > 200) return "极高危";
             if (count > 100) return "高危";
@@ -584,11 +642,6 @@ export default {
             return "低危";
         },
 
-        /**
-         * 根据日志级别获取对应的CSS类
-         * @param {String} level 日志级别
-         * @returns {String} CSS类名
-         */
         getLogClass(level) {
             const classMap = {
                 "ERROR": "log-error",
@@ -599,11 +652,6 @@ export default {
             return classMap[level] || "log-info";
         },
 
-        /**
-         * 格式化日期时间为字符串
-         * @param {Date} date 日期对象
-         * @returns {String} 格式化后的日期字符串
-         */
         formatDateTime(date) {
             const year = date.getFullYear();
             const month = this.padZero(date.getMonth() + 1);
@@ -614,11 +662,6 @@ export default {
             return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
         },
 
-        /**
-         * 数字补零函数
-         * @param {Number} num 数字
-         * @returns {String} 补零后的两位字符串
-         */
         padZero(num) {
             return num < 10 ? `0${num}` : num;
         }
@@ -679,6 +722,21 @@ export default {
 .refresh-time {
     font-size: 11px;
     color: #8392a5;
+}
+
+/* 刷新按钮旋转动画 */
+.rotate {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* 状态指示器 */
@@ -856,16 +914,70 @@ export default {
     color: #8392a5;
 }
 
-/* 监狱详情 */
+/* 监狱详情弹窗样式 */
+.jail-detail-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.jail-detail-mask[style*="display: block"] {
+    opacity: 1;
+}
+
+.jail-detail-popup {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #fff;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.jail-detail-popup.show {
+    transform: translateY(0);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.popup-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1f2d3d;
+}
+
+.popup-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
 .jail-detail {
-    margin-top: 10px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
+    width: 100%;
 }
 
 .detail-section {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .section-title {
@@ -878,13 +990,16 @@ export default {
 .detail-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 12px;
 }
 
 .detail-item {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
 }
 
 .detail-label {
@@ -893,7 +1008,7 @@ export default {
 }
 
 .detail-value {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
     color: #1f2d3d;
 }
@@ -953,6 +1068,15 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.loading-text {
+    text-align: center;
+    padding: 40px;
+    color: #8392a5;
+    font-size: 14px;
+    white-space: pre-line;
+    /* 支持换行显示错误信息 */
 }
 
 /* 攻击来源列表 */
