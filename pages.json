@@ -165,6 +165,12 @@
       "style": {
         "navigationBarTitleText": "Tomcat服务"
       }
+    },
+    {
+      "path": "pages/server/fail2ban/index",
+      "style": {
+        "navigationBarTitleText": "fail2ban监控"
+      }
     }
   ],
   "tabBar": {

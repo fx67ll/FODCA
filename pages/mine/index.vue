@@ -71,15 +71,15 @@
             <view>打卡工时管理</view>
           </view>
         </view>
-      </view>
-
-      <view class="menu-list">
         <view class="list-cell list-cell-arrow" @click="handleToNoteLog">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="compose" size="20"></uni-icons></view>
             <view>富文本备忘录</view>
           </view>
         </view>
+      </view>
+
+      <view class="menu-list">
         <view class="list-cell list-cell-arrow" @click="handleToCubeGame">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="star" size="20"></uni-icons></view>
@@ -90,6 +90,12 @@
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="paperplane" size="20"></uni-icons></view>
             <view>Tomcat 服务</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleFail2BanServer" v-if="userName && userName === 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="notification" size="20"></uni-icons></view>
+            <view>Fail2Ban 监控</view>
           </view>
         </view>
         <!-- <view class="list-cell list-cell-arrow" @click="handleToEditInfo">
@@ -196,6 +202,9 @@ export default {
     },
     handleTomcatServer() {
       this.$tab.navigateTo("/pages/server/tomcat/index");
+    },
+    handleFail2BanServer() {
+      this.$tab.navigateTo("/pages/server/fail2ban/index");
     },
     handleAbout() {
       this.$tab.navigateTo("/pages/mine/about/index");
