@@ -7,6 +7,7 @@ fx67ll One Data Center App
 
 ## 0.7.1.20260616
 * 优化`Fail2Ban`相关功能  
+* 修复`Tomcat`&`Fail2Ban`页面未做移动端适配的问题  
 
 ## 0.7.0.20260616
 * 新增`Fail2Ban`相关功能  
