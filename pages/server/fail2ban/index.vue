@@ -29,7 +29,7 @@
                     <view class="info-item">
                         <text class="info-label">防火墙：</text>
                         <text class="info-value"
-                            :class="serviceInfo.firewallStatus === '运行中' ? 'text-success' : 'text-danger'">
+                            :class="serviceInfo.firewallStatus.startsWith('运行中') ? 'text-success' : 'text-danger'">
                             {{ serviceInfo.firewallStatus }}
                         </text>
                     </view>
@@ -79,9 +79,9 @@
                     <view class="jail-main">
                         <view class="jail-name">{{ jail.name }}</view>
                         <view class="jail-stats">
+                            <text class="stat">失败: {{ jail.currentlyFailed || 0 }}</text>
                             <text class="stat">封禁: {{ jail.currentlyBanned || 0 }}</text>
                             <text class="stat">累计: {{ jail.totalBanned || 0 }}</text>
-                            <text class="stat">失败: {{ jail.totalFailed || 0 }}</text>
                         </view>
                     </view>
                     <uni-icons type="arrowright" size="14" color="#c0c4cc"></uni-icons>
@@ -93,9 +93,12 @@
         <view class="status-card">
             <view class="status-header">
                 <text class="title">攻击来源 Top 10</text>
-                <button class="btn btn-primary btn-small" @click="copyAllTopIps" :disabled="topAttackIps.length === 0">
-                    复制全部
-                </button>
+                <view class="status-header-btn">
+                    <button class="btn btn-primary btn-small" @click="copyAllTopIps"
+                        :disabled="topAttackIps.length === 0">
+                        复制全部
+                    </button>
+                </view>
             </view>
 
             <view class="ip-list">
@@ -117,10 +120,12 @@
         <view class="status-card">
             <view class="status-header">
                 <text class="title">全量封禁IP (共 {{ allBannedIps.length }} 个)</text>
-                <button class="btn btn-primary btn-small" @click="copyAllBannedIps"
-                    :disabled="allBannedIps.length === 0">
-                    复制全部
-                </button>
+                <view class="status-header-btn">
+                    <button class="btn btn-primary btn-small" @click="copyAllBannedIps"
+                        :disabled="allBannedIps.length === 0">
+                        复制全部
+                    </button>
+                </view>
             </view>
 
             <view class="all-banned-ips">
@@ -151,6 +156,7 @@
                     </picker>
                     <uni-icons type="refresh" size="16" color="#409eff" @click="refreshLogs"
                         :class="{ 'rotate': isLoadingLogs }"></uni-icons>
+                    <text class="refresh-time" v-if="logLastRefreshTime">{{ logLastRefreshTime }}</text>
                 </view>
             </view>
 
@@ -179,7 +185,7 @@
             </view>
         </view>
 
-        <!-- 监狱详情弹窗 -->
+        <!-- 监狱详情弹窗（适配新后端） -->
         <view class="jail-detail-mask" v-show="showJailDetail" @click="closeJailDetail"></view>
         <view class="jail-detail-popup" :class="{ 'show': showJailDetail }">
             <view class="popup-header">
@@ -189,23 +195,27 @@
             <view class="popup-content">
                 <view v-if="!isJailDetailLoading" class="jail-detail">
                     <view class="detail-section">
-                        <text class="section-title">防护配置</text>
+                        <text class="section-title">防护统计</text>
                         <view class="detail-grid">
                             <view class="detail-item">
-                                <text class="detail-label">封禁时间</text>
-                                <text class="detail-value">{{ currentJailDetail.config.bantime || '未知' }}秒</text>
+                                <text class="detail-label">当前失败</text>
+                                <text class="detail-value">{{ currentJailDetail.currentlyFailed || '0' }}</text>
                             </view>
                             <view class="detail-item">
-                                <text class="detail-label">检测窗口</text>
-                                <text class="detail-value">{{ currentJailDetail.config.findtime || '未知' }}秒</text>
+                                <text class="detail-label">当前封禁</text>
+                                <text class="detail-value">{{ currentJailDetail.currentlyBanned || '0' }}</text>
                             </view>
                             <view class="detail-item">
-                                <text class="detail-label">最大失败</text>
-                                <text class="detail-value">{{ currentJailDetail.config.maxretry || '未知' }}</text>
+                                <text class="detail-label">累计封禁</text>
+                                <text class="detail-value">{{ currentJailDetail.totalBanned || '0' }}</text>
                             </view>
                             <view class="detail-item">
-                                <text class="detail-label">监控端口</text>
-                                <text class="detail-value">{{ currentJailDetail.config.port || '未知' }}</text>
+                                <text class="detail-label">总失败尝试</text>
+                                <text class="detail-value">{{ currentJailDetail.totalFailed || '0' }}</text>
+                            </view>
+                            <view class="detail-item" style="grid-column: span 2;">
+                                <text class="detail-label">日志路径</text>
+                                <text class="detail-value">{{ currentJailDetail.logPath || '未知' }}</text>
                             </view>
                         </view>
                     </view>
@@ -271,12 +281,11 @@ export default {
             jailList: [],
             currentJailDetail: {
                 name: '',
-                config: {
-                    bantime: '',
-                    findtime: '',
-                    maxretry: '',
-                    port: ''
-                },
+                currentlyFailed: 0,
+                currentlyBanned: 0,
+                totalBanned: 0,
+                totalFailed: 0,
+                logPath: '',
                 bannedIps: []
             },
             isJailDetailLoading: false,
@@ -306,6 +315,7 @@ export default {
                 { label: "1000条", value: 1000 }
             ],
             currentLogLimit: { label: "200条", value: 200 },
+            logLastRefreshTime: "",
 
             // ==================== 加载状态 ====================
             isRefreshing: false,
@@ -360,6 +370,7 @@ export default {
     },
     onLoad() {
         this.loadAllData();
+        // 与后端缓存TTL保持一致
         this.refreshInterval = setInterval(() => {
             this.loadAllData();
         }, 30000);
@@ -382,7 +393,9 @@ export default {
                     this.loadRecentLogs(),
                     this.loadAllBannedIps()
                 ]);
-                this.lastRefreshTime = this.formatDateTime(new Date());
+                const now = this.formatDateTime(new Date());
+                this.lastRefreshTime = now;
+                this.logLastRefreshTime = now;
             } catch (error) {
                 console.error("全局数据加载失败:", error);
                 uni.showToast({
@@ -406,14 +419,16 @@ export default {
             this.isLoadingLogs = true;
             this.loadRecentLogs().finally(() => {
                 this.isLoadingLogs = false;
-                this.lastRefreshTime = this.formatDateTime(new Date());
+                this.logLastRefreshTime = this.formatDateTime(new Date());
             });
         },
 
         onLogLimitChange(e) {
             this.currentLogLimit = this.logLimitOptions[e.detail.value];
             this.logLimit = this.currentLogLimit.value;
-            this.loadRecentLogs();
+            this.loadRecentLogs().then(() => {
+                this.logLastRefreshTime = this.formatDateTime(new Date());
+            });
         },
 
         async loadServiceStatus() {
@@ -431,7 +446,6 @@ export default {
             try {
                 const response = await getJailList();
                 this.jailList = response.data || [];
-                console.log("监狱列表加载成功:", this.jailList);
             } catch (error) {
                 console.error("加载监狱列表失败:", error);
             }
@@ -480,13 +494,11 @@ export default {
         },
 
         /**
-         * 打开监狱详情弹窗（终极修复版）
-         * 解决：一直加载中、错误未捕获、状态不重置、接口超时等问题
+         * 打开监狱详情弹窗（适配新后端）
          */
         async openJailDetail(jail) {
             // 防重复点击
             if (this.isJailDetailLoading) {
-                console.log("正在加载中，请勿重复点击");
                 return;
             }
 
@@ -495,48 +507,32 @@ export default {
             this.loadingText = "加载中...";
             this.currentJailDetail = {
                 name: jail.name,
-                config: {
-                    bantime: '',
-                    findtime: '',
-                    maxretry: '',
-                    port: ''
-                },
+                currentlyFailed: 0,
+                currentlyBanned: 0,
+                totalBanned: 0,
+                totalFailed: 0,
+                logPath: '',
                 bannedIps: []
             };
             this.showJailDetail = true;
 
-            // 10秒超时保护 - 强制结束加载
+            // 10秒超时保护
             this.jailDetailTimeout = setTimeout(() => {
-                console.error("监狱详情请求超时");
                 this.loadingText = "请求超时，请重试";
                 this.isJailDetailLoading = false;
             }, 10000);
 
             try {
-                console.log("开始请求监狱详情:", jail.name);
-
-                // 双重错误捕获：try-catch + .catch
-                const response = await getJailDetail(jail.name).catch(err => {
-                    console.error("接口直接报错:", err);
-                    throw err;
-                });
-
-                console.log("监狱详情接口返回:", response);
-
-                // 数据兼容性处理 - 兼容各种返回格式
+                const response = await getJailDetail(jail.name);
                 let data = response.data || response;
 
-                // 确保数据结构完整
-                if (!data.config) data.config = {};
+                // 数据兼容性处理
                 if (!data.bannedIps) data.bannedIps = [];
 
-                // 赋值给当前详情
                 this.currentJailDetail = data;
-                console.log("监狱详情加载成功:", this.currentJailDetail);
-
             } catch (error) {
                 console.error("获取监狱详情失败:", error);
-                this.loadingText = "加载失败，请重试\n错误信息: " + (error.message || "未知错误");
+                this.loadingText = "加载失败，请重试";
                 uni.showToast({
                     title: "获取详情失败",
                     icon: "none",
@@ -548,9 +544,7 @@ export default {
                     clearTimeout(this.jailDetailTimeout);
                     this.jailDetailTimeout = null;
                 }
-                // 强制关闭加载状态 - 无论成功失败
                 this.isJailDetailLoading = false;
-                console.log("加载状态已重置");
             }
         },
 
@@ -565,12 +559,11 @@ export default {
             setTimeout(() => {
                 this.currentJailDetail = {
                     name: '',
-                    config: {
-                        bantime: '',
-                        findtime: '',
-                        maxretry: '',
-                        port: ''
-                    },
+                    currentlyFailed: 0,
+                    currentlyBanned: 0,
+                    totalBanned: 0,
+                    totalFailed: 0,
+                    logPath: '',
                     bannedIps: []
                 };
                 this.loadingText = "加载中...";
@@ -691,6 +684,11 @@ export default {
     margin-bottom: 20px;
     padding-bottom: 15px;
     border-bottom: 1px solid #f5f5f5;
+}
+
+.status-header-btn {
+    display: flex;
+    justify-content: flex-end;
 }
 
 .title {
@@ -826,6 +824,7 @@ export default {
     font-weight: 700;
     color: #409eff;
     margin-bottom: 5px;
+    margin-right: 4rpx;
 }
 
 .stat-label {
@@ -939,7 +938,7 @@ export default {
     background-color: #fff;
     border-top-left-radius: 16px;
     border-top-right-radius: 16px;
-    max-height: 80vh;
+    height: 80vh;
     display: flex;
     flex-direction: column;
     z-index: 1000;
@@ -970,6 +969,17 @@ export default {
     overflow-y: auto;
     padding: 20px;
     -webkit-overflow-scrolling: touch;
+}
+
+/* ✅ 加载中状态垂直居中 */
+.popup-content .loading-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
 .jail-detail {
@@ -1076,7 +1086,6 @@ export default {
     color: #8392a5;
     font-size: 14px;
     white-space: pre-line;
-    /* 支持换行显示错误信息 */
 }
 
 /* 攻击来源列表 */
