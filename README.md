@@ -5,6 +5,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.7.1.20260616
+* 优化`Fail2Ban`相关功能  
+
 ## 0.7.0.20260616
 * 新增`Fail2Ban`相关功能  
 
