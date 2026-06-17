@@ -5,7 +5,7 @@
             <view class="status-header">
                 <text class="title">Fail2ban 防护状态</text>
                 <view class="refresh-container">
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="handleRefresh"
+                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="handleRefresh"
                         :class="{ 'rotate': isRefreshing }"></uni-icons>
                     <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
                 </view>
@@ -84,7 +84,7 @@
                             <text class="stat">累计: {{ jail.totalBanned || 0 }}</text>
                         </view>
                     </view>
-                    <uni-icons type="arrowright" size="14" color="#c0c4cc"></uni-icons>
+                    <uni-icons type="arrowright" size="28rpx" color="#c0c4cc"></uni-icons>
                 </view>
             </view>
         </view>
@@ -111,7 +111,7 @@
                     <view class="ip-threat" :class="item.threatClass">
                         {{ item.threatText }}
                     </view>
-                    <uni-icons type="copy" size="16" color="#409eff" @click="copySingleIp(item.ip)"></uni-icons>
+                    <uni-icons type="copy" size="32rpx" color="#409eff" @click="copySingleIp(item.ip)"></uni-icons>
                 </view>
             </view>
         </view>
@@ -131,7 +131,7 @@
             <view class="all-banned-ips">
                 <view class="ip-tag ip-tag-danger" v-for="ip in paginatedBannedIps" :key="ip">
                     <text class="ip-text">{{ ip }}</text>
-                    <uni-icons type="copy" size="12" color="#fff" @click.stop="copySingleIp(ip)"></uni-icons>
+                    <uni-icons type="copy" size="24rpx" color="#fff" @click.stop="copySingleIp(ip)"></uni-icons>
                 </view>
                 <view v-if="allBannedIps.length === 0" class="empty-text">
                     暂无被封禁IP
@@ -154,7 +154,7 @@
                     <picker :range="logLimitOptions" range-key="label" @change="onLogLimitChange">
                         <text class="picker-text">{{ currentLogLimit.label }}</text>
                     </picker>
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="refreshLogs"
+                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="refreshLogs"
                         :class="{ 'rotate': isLoadingLogs }"></uni-icons>
                     <text class="refresh-time" v-if="logLastRefreshTime">{{ logLastRefreshTime }}</text>
                 </view>
@@ -169,7 +169,7 @@
                     </view>
                     <text class="log-message">{{ log.message }}</text>
                     <view class="log-actions" v-if="log.ip">
-                        <uni-icons type="copy" size="14" color="#409eff" @click="copySingleIp(log.ip)"></uni-icons>
+                        <uni-icons type="copy" size="28rpx" color="#409eff" @click="copySingleIp(log.ip)"></uni-icons>
                     </view>
                 </view>
                 <view v-if="paginatedLogsWithClass.length === 0" class="empty-text">
@@ -190,7 +190,7 @@
         <view class="jail-detail-popup" :class="{ 'show': showJailDetail }">
             <view class="popup-header">
                 <text class="popup-title">{{ currentJailDetail.name || '监狱详情' }}</text>
-                <uni-icons type="close" size="20" color="#909399" @click="closeJailDetail"></uni-icons>
+                <uni-icons type="close" size="40rpx" color="#909399" @click="closeJailDetail"></uni-icons>
             </view>
             <view class="popup-content">
                 <view v-if="!isJailDetailLoading" class="jail-detail">
@@ -235,7 +235,7 @@
                         <view class="banned-ips">
                             <view class="ip-tag" v-for="ip in currentJailDetail.bannedIps" :key="ip">
                                 <text class="ip-text">{{ ip }}</text>
-                                <uni-icons type="copy" size="12" color="#fff"
+                                <uni-icons type="copy" size="24rpx" color="#fff"
                                     @click.stop="copySingleIp(ip)"></uni-icons>
                             </view>
                             <view v-if="currentJailDetail.bannedIps.length === 0" class="empty-text">
@@ -662,608 +662,6 @@ export default {
 };
 </script>
 
-<style scoped>
-.app-container {
-    padding: 15px;
-    background-color: #f5f5f5;
-    min-height: 100vh;
-}
-
-.status-card {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 20px 15px;
-    margin-bottom: 15px;
-}
-
-.status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.status-header-btn {
-    display: flex;
-    justify-content: flex-end;
-}
-
-.title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2d3d;
-}
-
-.refresh-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.filter-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.picker-text {
-    font-size: 12px;
-    color: #409eff;
-    padding: 4px 8px;
-    background-color: #e6f4ff;
-    border-radius: 4px;
-}
-
-.refresh-time {
-    font-size: 11px;
-    color: #8392a5;
-}
-
-/* 刷新按钮旋转动画 */
-.rotate {
-    animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* 状态指示器 */
-.status-content {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-.status-indicator {
-    display: flex;
-    align-items: center;
-    margin-right: 20px;
-    margin-bottom: 15px;
-}
-
-.indicator-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    margin-right: 8px;
-    transition: all 0.3s ease;
-}
-
-.indicator-dot.running {
-    background-color: #52c41a;
-    box-shadow: 0 0 8px rgba(82, 196, 26, 0.4);
-}
-
-.indicator-dot.stopped {
-    background-color: #f5222d;
-    box-shadow: 0 0 8px rgba(245, 34, 45, 0.4);
-}
-
-.status-text {
-    font-size: 22px;
-    font-weight: 500;
-    color: #1f2d3d;
-}
-
-.service-info {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-left: 20px;
-}
-
-.info-item {
-    font-size: 13px;
-}
-
-.info-label {
-    color: #8392a5;
-}
-
-.info-value {
-    color: #1f2d3d;
-    font-weight: 500;
-}
-
-.text-success {
-    color: #52c41a !important;
-}
-
-.text-danger {
-    color: #f5222d !important;
-}
-
-/* 统计卡片网格 */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 20px;
-}
-
-.stat-card {
-    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
-    border-radius: 8px;
-    padding: 15px 10px;
-    text-align: center;
-}
-
-.stat-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #409eff;
-    margin-bottom: 5px;
-    margin-right: 4rpx;
-}
-
-.stat-label {
-    font-size: 12px;
-    color: #8392a5;
-}
-
-/* 攻击趋势 */
-.trend-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.trend-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 0;
-}
-
-.trend-hour {
-    width: 50px;
-    font-size: 12px;
-    color: #8392a5;
-}
-
-.trend-bar {
-    flex: 1;
-    height: 12px;
-    background-color: #e6e6e6;
-    border-radius: 6px;
-    margin: 0 10px;
-    overflow: hidden;
-}
-
-.trend-fill {
-    height: 100%;
-    background-color: #f56c6c;
-    border-radius: 6px;
-    transition: width 0.3s ease;
-}
-
-.trend-count {
-    width: 40px;
-    text-align: right;
-    font-size: 12px;
-    font-weight: 500;
-    color: #1f2d3d;
-}
-
-/* 监狱列表 */
-.jail-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.jail-item {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    transition: all 0.3s;
-}
-
-.jail-item:active {
-    background-color: #e9ecef;
-}
-
-.jail-main {
-    flex: 1;
-}
-
-.jail-name {
-    font-size: 16px;
-    font-weight: 500;
-    color: #1f2d3d;
-    margin-bottom: 6px;
-}
-
-.jail-stats {
-    display: flex;
-    gap: 15px;
-    font-size: 12px;
-    color: #8392a5;
-}
-
-/* 监狱详情弹窗样式 */
-.jail-detail-mask {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.jail-detail-mask[style*="display: block"] {
-    opacity: 1;
-}
-
-.jail-detail-popup {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #fff;
-    border-top-left-radius: 16px;
-    border-top-right-radius: 16px;
-    height: 80vh;
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-    transform: translateY(100%);
-    transition: transform 0.3s ease;
-}
-
-.jail-detail-popup.show {
-    transform: translateY(0);
-}
-
-.popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.popup-title {
-    font-size: 17px;
-    font-weight: 600;
-    color: #1f2d3d;
-}
-
-.popup-content {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* ✅ 加载中状态垂直居中 */
-.popup-content .loading-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-.jail-detail {
-    width: 100%;
-}
-
-.detail-section {
-    margin-bottom: 25px;
-}
-
-.section-title {
-    font-size: 15px;
-    font-weight: 500;
-    color: #1f2d3d;
-    margin-bottom: 12px;
-}
-
-.detail-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-}
-
-.detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-}
-
-.detail-label {
-    font-size: 12px;
-    color: #8392a5;
-}
-
-.detail-value {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1f2d3d;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.ip-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn {
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    border: none;
-}
-
-.btn-primary {
-    background-color: #409eff;
-    color: #fff;
-}
-
-.btn-small {
-    padding: 2px 8px;
-    font-size: 11px;
-}
-
-.banned-ips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.ip-tag {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 8px;
-    background-color: #409eff;
-    color: #fff;
-    border-radius: 4px;
-    font-size: 12px;
-}
-
-.ip-tag-danger {
-    background-color: #f56c6c;
-}
-
-.ip-text {
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.loading-text {
-    text-align: center;
-    padding: 40px;
-    color: #8392a5;
-    font-size: 14px;
-    white-space: pre-line;
-}
-
-/* 攻击来源列表 */
-.ip-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.ip-item {
-    display: flex;
-    align-items: center;
-    padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-}
-
-.ip-rank {
-    width: 24px;
-    height: 24px;
-    line-height: 24px;
-    text-align: center;
-    background-color: #409eff;
-    color: #fff;
-    border-radius: 50%;
-    font-size: 12px;
-    font-weight: 500;
-    margin-right: 10px;
-}
-
-.ip-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.ip-address {
-    font-size: 14px;
-    font-weight: 500;
-    color: #1f2d3d;
-}
-
-.ip-count {
-    font-size: 12px;
-    color: #8392a5;
-}
-
-.ip-threat {
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    margin-right: 10px;
-}
-
-.threat-high {
-    background-color: #fef0f0;
-    color: #f56c6c;
-}
-
-.threat-medium {
-    background-color: #fdf6ec;
-    color: #e6a23c;
-}
-
-.threat-low {
-    background-color: #e6f4ff;
-    color: #409eff;
-}
-
-/* 全量封禁IP */
-.all-banned-ips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-/* 日志容器 */
-.log-container {
-    background-color: #1f2d3d;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 15px;
-}
-
-.log-item {
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #304156;
-}
-
-.log-item:last-child {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
-}
-
-.log-header {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 6px;
-}
-
-.log-time {
-    font-size: 11px;
-    color: #8392a5;
-}
-
-.log-level {
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.log-message {
-    font-size: 12px;
-    line-height: 1.5;
-    word-break: break-all;
-}
-
-.log-actions {
-    text-align: right;
-    margin-top: 6px;
-}
-
-.log-error .log-message {
-    color: #ff4d4f;
-}
-
-.log-error .log-level {
-    color: #ff4d4f;
-}
-
-.log-warn .log-message {
-    color: #faad14;
-}
-
-.log-warn .log-level {
-    color: #faad14;
-}
-
-.log-info .log-message {
-    color: #52c41a;
-}
-
-.log-info .log-level {
-    color: #52c41a;
-}
-
-.log-debug .log-message {
-    color: #8392a5;
-}
-
-.log-debug .log-level {
-    color: #8392a5;
-}
-
-/* 加载更多 */
-.load-more {
-    text-align: center;
-    padding: 12px;
-    color: #409eff;
-    font-size: 13px;
-    background-color: #e6f4ff;
-    border-radius: 8px;
-}
-
-.no-more {
-    text-align: center;
-    padding: 12px;
-    color: #8392a5;
-    font-size: 13px;
-}
-
-.empty-text {
-    text-align: center;
-    padding: 20px;
-    color: #8392a5;
-    font-size: 13px;
-}
+<style lang="less" scoped>
+@import url("./index.less");
 </style>

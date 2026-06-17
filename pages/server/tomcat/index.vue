@@ -1,3 +1,4 @@
+# TomcatManager 完整全部px转rpx文件（1px=2rpx，逻辑注释不变）
 <template>
     <view class="app-container">
         <!-- Tomcat 服务管理卡片 -->
@@ -8,7 +9,7 @@
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
                     <!-- <button class="refresh-btn" :loading="isRefreshing" @click="handleRefresh"> -->
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="handleRefresh"></uni-icons>
+                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="handleRefresh"></uni-icons>
                     <!-- <text class="btn-text">手动刷新</text> -->
                     <!-- </button> -->
                     <!-- <text class="refresh-time">最后刷新: {{ lastRefreshTime }}</text> -->
@@ -28,12 +29,12 @@
                 <view class="operation-buttons">
                     <button class="btn start-btn" :disabled="status === '运行中' || isOperating"
                         :loading="isOperating && status !== '运行中'" @click="startTomcat">
-                        <uni-icons type="play" size="14" color="#fff"></uni-icons>
+                        <uni-icons type="play" size="28rpx" color="#fff"></uni-icons>
                         <text class="btn-text">启动服务</text>
                     </button>
                     <button class="btn stop-btn" :disabled="status === '已停止' || isOperating"
                         :loading="isOperating && status !== '已停止'" @click="stopTomcat">
-                        <uni-icons type="stop" size="14" color="#fff"></uni-icons>
+                        <uni-icons type="stop" size="28rpx" color="#fff"></uni-icons>
                         <text class="btn-text">停止服务</text>
                     </button>
                 </view>
@@ -56,7 +57,7 @@
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
                     <!-- <button class="refresh-btn" :loading="isRefreshing" @click="queryStatus"> -->
-                    <uni-icons type="refresh" size="16" color="#409eff" @click="queryStatus"></uni-icons>
+                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="queryStatus"></uni-icons>
                     <!-- <text class="btn-text">手动刷新</text> -->
                     <!-- </button> -->
                     <!-- <text class="refresh-time">最后更新: {{ lastRefreshTime }}</text> -->
@@ -113,7 +114,7 @@
             <!-- 清理缓存区域 -->
             <view class="cache-clear-section">
                 <button class="btn clear-cache-btn" :loading="clearingCache" @click="handleClearCache">
-                    <uni-icons type="trash" size="14" color="#fff"></uni-icons>
+                    <uni-icons type="trash" size="28rpx" color="#fff"></uni-icons>
                     <text class="btn-text">清理系统缓存</text>
                 </button>
                 <text class="cache-tip">执行 sync; echo 3 > /proc/sys/vm/drop_caches 释放内存缓存</text>
@@ -128,7 +129,7 @@
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
                     <!-- <button class="refresh-btn" :loading="isRefreshingGithub" @click="handleRefreshGithub"> -->
-                    <uni-icons type="map-pin-ellipse" size="16" color="#409eff"
+                    <uni-icons type="map-pin-ellipse" size="32rpx" color="#409eff"
                         @click="handleRefreshGithub"></uni-icons>
                     <!-- <text class="btn-text">重置检测</text> -->
                     <!-- </button> -->
@@ -580,432 +581,6 @@ export default {
 };
 </script>
 
-<style scoped>
-/* 全局容器 */
-.app-container {
-    padding: 15px;
-    background-color: #f5f5f5;
-    min-height: 100vh;
-    box-sizing: border-box;
-}
-
-/* 卡片容器 */
-.status-card {
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 20px 15px;
-    margin-bottom: 15px;
-}
-
-/* 头部区域 */
-.status-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #f5f5f5;
-}
-
-.status-header .title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2d3d;
-}
-
-/* 刷新容器 */
-.refresh-container {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* 刷新按钮 */
-.refresh-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 8px;
-    background: transparent;
-    border: none;
-    color: #409eff;
-    font-size: 12px;
-}
-
-.refresh-btn .btn-text {
-    margin-left: 4px;
-}
-
-/* 刷新时间 */
-.refresh-time {
-    font-size: 11px;
-    color: #8392a5;
-}
-
-/* 状态内容区 */
-.status-content {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-}
-
-/* 状态指示器 */
-.status-indicator {
-    display: flex;
-    align-items: center;
-    margin-right: 20px;
-    margin-bottom: 15px;
-}
-
-/* 状态圆点 */
-.indicator-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    margin-right: 8px;
-    transition: all 0.3s ease;
-}
-
-.indicator-dot.running {
-    background-color: #52c41a;
-    box-shadow: 0 0 8px rgba(82, 196, 26, 0.4);
-}
-
-.indicator-dot.stopped {
-    background-color: #f5222d;
-    box-shadow: 0 0 8px rgba(245, 34, 45, 0.4);
-}
-
-/* 状态文字 */
-.status-text {
-    font-size: 22px;
-    font-weight: 500;
-    color: #1f2d3d;
-}
-
-/* 操作按钮区 */
-.operation-buttons {
-    display: flex;
-    gap: 10px;
-    width: 100%;
-}
-
-/* 通用按钮样式 */
-.btn {
-    flex: 1;
-    height: 44px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    font-size: 14px;
-}
-
-/* 启动按钮 */
-.start-btn {
-    background-color: #52c41a;
-    color: #fff;
-}
-
-.start-btn:disabled {
-    background-color: #aaff88;
-    color: #fff;
-    opacity: 0.7;
-}
-
-/* 停止按钮 */
-.stop-btn {
-    background-color: #f5222d;
-    color: #fff;
-}
-
-.stop-btn:disabled {
-    background-color: #ff8888;
-    color: #fff;
-    opacity: 0.7;
-}
-
-.btn .btn-text {
-    margin-left: 6px;
-}
-
-/* 日志区域 */
-.status-log {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f5f7fa;
-    border-radius: 8px;
-}
-
-/* 日志标题 */
-.log-title {
-    font-size: 14px;
-    color: #4e5969;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 10px;
-}
-
-/* 日志内容 */
-.log-content {
-    padding: 10px;
-    background-color: #1f2d3d;
-    border-radius: 6px;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-/* 日志文字 */
-.log-text {
-    font-size: 12px;
-    color: #e0e0e0;
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-/* 新增：内存卡片样式 */
-.memory-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 20px 0;
-}
-
-.memory-item {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
-    border-left: 4px solid;
-    transition: all 0.3s;
-}
-
-.total-memory {
-    border-left-color: #409eff;
-}
-
-.total-memory .memory-label {
-    color: #409eff;
-}
-
-.used-memory {
-    border-left-color: #f56c6c;
-}
-
-.used-memory .memory-label {
-    color: #f56c6c;
-}
-
-.available-memory {
-    border-left-color: #67c23a;
-}
-
-.available-memory .memory-label {
-    color: #67c23a;
-}
-
-.tomcat-memory {
-    border-left-color: #e6a23c;
-}
-
-.tomcat-memory .memory-label {
-    color: #e6a23c;
-}
-
-.memory-label {
-    font-size: 13px;
-    margin-bottom: 6px;
-}
-
-.memory-value {
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 10px;
-}
-
-.memory-progress {
-    margin-top: 6px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background-color: #e6e6e6;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background-color: #409eff;
-    border-radius: 3px;
-}
-
-.total-memory .progress-fill {
-    background-color: #409eff;
-}
-
-.used-memory .progress-fill {
-    background-color: #f56c6c;
-}
-
-.available-memory .progress-fill {
-    background-color: #67c23a;
-}
-
-.tomcat-memory .progress-fill {
-    background-color: #e6a23c;
-}
-
-/* 缓存清理区域 */
-.cache-clear-section {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px dashed #e6e6e6;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.clear-cache-btn {
-    background-color: #e6a23c;
-    color: #fff;
-    height: 44px;
-    width: 100%;
-}
-
-.clear-cache-btn:disabled {
-    background-color: #f5d7a7;
-    opacity: 0.7;
-}
-
-.cache-tip {
-    font-size: 11px;
-    color: #8392a5;
-    background: #f5f7fa;
-    padding: 6px 10px;
-    border-radius: 12px;
-    line-height: 1.4;
-}
-
-/* 新增：GitHub 检测相关样式 */
-.github-content {
-    margin-top: 10px;
-}
-
-.detection-methods {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.method-card {
-    border: 1px solid #e6e6e6;
-    border-radius: 8px;
-    padding: 16px;
-    background-color: #fafafa;
-    transition: all 0.3s ease;
-}
-
-.method-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-color: #d1d1d1;
-}
-
-.method-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.method-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #1f2d3d;
-}
-
-.method-status {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 500;
-}
-
-.status-waiting {
-    background-color: #f5f5f5;
-    color: #8c8c8c;
-}
-
-.status-testing {
-    background-color: #e6f7ff;
-    color: #1890ff;
-}
-
-.status-success {
-    background-color: #f6ffed;
-    color: #52c41a;
-}
-
-.status-error {
-    background-color: #fff2f0;
-    color: #ff4d4f;
-}
-
-.method-desc {
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.desc-text {
-    font-size: 12px;
-    color: #666;
-    line-height: 1.4;
-}
-
-.desc-detail {
-    font-size: 11px;
-    color: #999;
-    line-height: 1.4;
-}
-
-.method-action {
-    text-align: center;
-}
-
-.test-btn {
-    background-color: #409eff;
-    color: #fff;
-    height: 36px;
-    font-size: 13px;
-}
-
-.test-btn:disabled {
-    background-color: #a0cfff;
-    color: #fff;
-    opacity: 0.7;
-}
-
-.detection-result {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f5f7fa;
-    border-radius: 8px;
-}
-
-/* 响应式调整 */
-@media (min-width: 768px) {
-    .detection-methods {
-        flex-direction: row;
-    }
-
-    .method-card {
-        flex: 1;
-    }
-}
+<style lang="less" scoped>
+@import url("./index.less");
 </style>
