@@ -38,16 +38,16 @@
 
             <view class="stats-grid">
                 <view class="stat-card">
-                    <text class="stat-value">{{ serviceInfo.totalJails }}</text>
-                    <text class="stat-label">防护监狱</text>
+                    <view class="stat-value">{{ serviceInfo.totalJails }}</view>
+                    <view class="stat-label">防护监狱</view>
                 </view>
                 <view class="stat-card">
-                    <text class="stat-value">{{ serviceInfo.totalBannedIps }}</text>
-                    <text class="stat-label">当前封禁</text>
+                    <view class="stat-value">{{ serviceInfo.totalBannedIps }}</view>
+                    <view class="stat-label">当前封禁</view>
                 </view>
                 <view class="stat-card">
-                    <text class="stat-value">{{ serviceInfo.totalFailedAttempts }}</text>
-                    <text class="stat-label">总攻击数</text>
+                    <view class="stat-value">{{ serviceInfo.totalFailedAttempts }}</view>
+                    <view class="stat-label">总攻击数</view>
                 </view>
             </view>
         </view>
