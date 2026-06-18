@@ -5,6 +5,10 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.7.2.20260618
+* 优化`Fail2Ban`监控页面，修复页面已知的问题  
+* 新增`Fail2Ban`和`Tomcat`服务是否安装以及系统是否匹配的判断逻辑，如果不符合条件会隐藏所有卡片，锁定状态卡片  
+
 ## 0.7.1.20260617
 * 优化`Fail2Ban`相关功能  
 * 修复`Tomcat`&`Fail2Ban`页面未做移动端适配的问题  
