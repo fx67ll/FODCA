@@ -13,15 +13,19 @@
                 </view>
             </view>
 
+            <!-- 卡片头部：标题独占一行，操作区换行居右 -->
             <view class="status-header">
                 <text class="title">Fail2ban 防护状态</text>
-                <view class="refresh-container">
-                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="handleRefresh"
-                        :class="{ 'rotate': isRefreshing }"></uni-icons>
-                    <text class="refresh-time" v-if="lastRefreshTime">最后刷新: {{ lastRefreshTime }}</text>
+                <view class="header-actions">
+                    <view class="refresh-container">
+                        <text class="refresh-time" v-if="lastRefreshTime">最后刷新: {{ lastRefreshTime }}</text>
+                        <uni-icons type="refresh" size="36rpx" color="#409eff" @click="handleRefresh"
+                            :class="{ 'rotate': isRefreshing }"></uni-icons>
+                    </view>
                 </view>
             </view>
 
+            <!-- 状态内容区：移动端纵向排布，信息更清晰 -->
             <view class="status-content">
                 <view class="status-indicator">
                     <view class="indicator-dot"
@@ -32,23 +36,24 @@
 
                 <view class="service-info">
                     <view class="info-item">
-                        <text class="info-label">版本号：</text>
+                        <text class="info-label">版本号</text>
                         <text class="info-value">{{ serviceInfo.version }}</text>
                     </view>
                     <view class="info-item">
-                        <text class="info-label">运行时间：</text>
-                        <text class="info-value">{{ serviceInfo.uptime }}</text>
-                    </view>
-                    <view class="info-item">
-                        <text class="info-label">防火墙：</text>
+                        <text class="info-label">防火墙状态</text>
                         <text class="info-value"
                             :class="serviceInfo.firewallStatus.startsWith('运行中') ? 'text-success' : 'text-danger'">
                             {{ serviceInfo.firewallStatus }}
                         </text>
                     </view>
+                    <view class="info-item info-item-full">
+                        <text class="info-label">运行时间</text>
+                        <text class="info-value">{{ serviceInfo.uptime }}</text>
+                    </view>
                 </view>
             </view>
 
+            <!-- 统计卡片：移动端默认2列，更宽松易读 -->
             <view class="stats-grid">
                 <view class="stat-card">
                     <view class="stat-value">{{ serviceInfo.totalJails }}</view>
@@ -58,7 +63,7 @@
                     <view class="stat-value">{{ serviceInfo.totalBannedIps }}</view>
                     <view class="stat-label">当前封禁IP</view>
                 </view>
-                <view class="stat-card">
+                <view class="stat-card stat-card-full">
                     <view class="stat-value">{{ serviceInfo.totalFailedAttempts }}</view>
                     <view class="stat-label">总攻击次数</view>
                 </view>
@@ -71,28 +76,42 @@
             <view class="status-card">
                 <view class="status-header">
                     <text class="title">监狱防护状态</text>
-                    <view class="filter-container">
-                        <input v-model="jailFilter" placeholder="搜索监狱" class="search-input" />
-                    </view>
+                    <!-- <view class="header-actions">
+                        <input v-model="jailFilter" placeholder="搜索监狱名称" class="search-input" />
+                    </view> -->
                 </view>
 
                 <view class="jail-list">
                     <view class="jail-item" v-for="jail in paginatedJailList" :key="jail.name"
                         @click="openJailDetail(jail)">
                         <view class="jail-main">
-                            <view class="jail-name">{{ jail.name }}</view>
-                            <view class="jail-status-tag">
-                                <text :class="jail.status === '运行中' ? 'tag-success' : 'tag-info'">{{ jail.status
+                            <view class="jail-header">
+                                <view class="jail-name">{{ jail.name }}</view>
+                                <view class="jail-status-tag">
+                                    <text :class="jail.status === '运行中' ? 'tag-success' : 'tag-info'">{{ jail.status
                                     }}</text>
+                                </view>
                             </view>
                             <view class="jail-stats">
-                                <text class="stat">当前失败: {{ jail.currentlyFailed || 0 }}</text>
-                                <text class="stat">当前封禁: {{ jail.currentlyBanned || 0 }}</text>
-                                <text class="stat">累计封禁: {{ jail.totalBanned || 0 }}</text>
-                                <text class="stat">失败尝试: {{ jail.totalFailed || 0 }}</text>
+                                <view class="jail-stat-item">
+                                    <text class="stat-num">{{ jail.currentlyFailed || 0 }}</text>
+                                    <text class="stat-label">当前失败</text>
+                                </view>
+                                <view class="jail-stat-item">
+                                    <text class="stat-num">{{ jail.currentlyBanned || 0 }}</text>
+                                    <text class="stat-label">当前封禁</text>
+                                </view>
+                                <view class="jail-stat-item">
+                                    <text class="stat-num">{{ jail.totalBanned || 0 }}</text>
+                                    <text class="stat-label">累计封禁</text>
+                                </view>
+                                <view class="jail-stat-item">
+                                    <text class="stat-num">{{ jail.totalFailed || 0 }}</text>
+                                    <text class="stat-label">失败尝试</text>
+                                </view>
                             </view>
                         </view>
-                        <uni-icons type="arrowright" size="28rpx" color="#c0c4cc"></uni-icons>
+                        <uni-icons type="arrowright" size="32rpx" color="#c0c4cc"></uni-icons>
                     </view>
                 </view>
 
@@ -108,9 +127,11 @@
             <!-- ==================== 监狱详情弹窗（完整配置展示） ==================== -->
             <view class="jail-detail-mask" v-show="showJailDetail" @click="closeJailDetail"></view>
             <view class="jail-detail-popup" :class="{ 'show': showJailDetail }">
+                <!-- 移动端弹窗顶部拖拽条，提升交互体验 -->
+                <view class="popup-drag-bar"></view>
                 <view class="popup-header">
                     <text class="popup-title">监狱详情 - {{ currentJailDetail.name || '' }}</text>
-                    <uni-icons type="close" size="40rpx" color="#909399" @click="closeJailDetail"></uni-icons>
+                    <uni-icons type="close" size="44rpx" color="#909399" @click="closeJailDetail"></uni-icons>
                 </view>
                 <view class="popup-content">
                     <view v-if="!isJailDetailLoading" class="jail-detail">
@@ -170,7 +191,7 @@
                                 <view class="detail-item">
                                     <text class="detail-label">白名单IP数量</text>
                                     <text class="detail-value">{{ currentJailDetail.config.ignoreIpList.length
-                                        }} 个</text>
+                                    }} 个</text>
                                 </view>
                                 <view class="detail-item" style="grid-column: span 2;">
                                     <text class="detail-label">监狱白名单</text>
@@ -192,7 +213,7 @@
                         <view class="detail-section">
                             <view class="section-header">
                                 <text class="section-title">当前被封禁IP ({{ currentJailDetail.bannedIps.length
-                                    }})</text>
+                                }})</text>
                                 <view class="ip-actions">
                                     <button class="btn btn-primary btn-small"
                                         @click="copyAllIps(currentJailDetail.bannedIps)"
@@ -247,36 +268,45 @@
                     <text class="title">攻击来源统计 (Top {{ topIpLimit }})</text>
                     <view class="filter-container">
                         <picker :range="topIpOptions" range-key="label" @change="onTopIpLimitChange">
-                            <text class="picker-text">Top{{ topIpLimit }}</text>
+                            <view class="picker-btn">
+                                <text class="picker-text">Top{{ topIpLimit }}</text>
+                            </view>
                         </picker>
                         <picker :range="statsLogLineOptions" range-key="label" @change="onStatsLogLineChange">
-                            <text class="picker-text">{{ currentStatsLogLine.label }}</text>
+                            <view class="picker-btn">
+                                <text class="picker-text">{{ currentStatsLogLine.label }}</text>
+                            </view>
                         </picker>
-                        <button class="btn btn-primary btn-small" @click="copyAllTopIps"
+                        <!-- <button class="btn btn-primary btn-small" @click="copyAllTopIps"
                             :disabled="topAttackIps.length === 0">
                             复制全部
-                        </button>
+                        </button> -->
                     </view>
                 </view>
 
                 <view class="ip-list">
                     <view class="ip-item" v-for="(item, index) in topAttackIpsWithClass.slice(0, topIpLimit)"
                         :key="index">
-                        <view class="ip-rank">{{ index + 1 }}</view>
+                        <view class="ip-rank" :class="index < 3 ? 'rank-top' : ''">{{ index + 1 }}</view>
                         <view class="ip-info">
-                            <text class="ip-address">{{ item.ip }}</text>
+                            <view class="ip-top-row">
+                                <text class="ip-address">{{ item.ip }}</text>
+                                <view class="ip-threat" :class="item.threatClass">
+                                    {{ item.threatText }}
+                                </view>
+                            </view>
                             <view class="jail-tag-wrap">
                                 <text class="ip-jail-tag info-tag" v-for="jail in item.jailList" :key="jail">
                                     {{ jail }}
                                 </text>
-                                <text v-if="!item.jailList.length" style="color:#909399;font-size:22rpx;">未知</text>
+                                <text v-if="!item.jailList.length" style="color:#909399;font-size:22rpx;">未知监狱</text>
                             </view>
                             <text class="ip-count">攻击 {{ item.count }} 次</text>
                         </view>
-                        <view class="ip-threat" :class="item.threatClass">
-                            {{ item.threatText }}
+                        <view class="ip-copy-btn">
+                            <uni-icons type="copy" size="32rpx" color="#409eff"
+                                @click="copySingleIp(item.ip)"></uni-icons>
                         </view>
-                        <uni-icons type="copy" size="32rpx" color="#409eff" @click="copySingleIp(item.ip)"></uni-icons>
                     </view>
                 </view>
             </view>
@@ -284,12 +314,13 @@
             <!-- 全量封禁IP列表卡片 -->
             <view class="status-card">
                 <view class="status-header">
-                    <text class="title">全量封禁IP列表 (共 {{ allBannedIps.length }} 个)</text>
-                    <view class="status-header-btn">
-                        <button class="btn btn-primary btn-small" @click="copyAllBannedIps"
+                    <text class="title">全量封禁IP列表</text>
+                    <view class="header-actions">
+                        <text class="header-sub">共 {{ allBannedIps.length }} 个</text>
+                        <!-- <button class="btn btn-primary btn-small" @click="copyAllBannedIps"
                             :disabled="allBannedIps.length === 0">
-                            复制全部封禁IP
-                        </button>
+                            复制全部
+                        </button> -->
                     </view>
                 </view>
 
@@ -318,17 +349,25 @@
                     <text class="title">最近攻击日志</text>
                     <view class="filter-container">
                         <picker :range="logLevelOptions" range-key="label" @change="onLogLevelChange">
-                            <text class="picker-text">{{ currentLogLevel.label }}</text>
+                            <view class="picker-btn">
+                                <text class="picker-text">{{ currentLogLevel.label }}</text>
+                            </view>
                         </picker>
                         <picker :range="jailNameOptions" range-key="label" @change="onLogJailChange">
-                            <text class="picker-text">{{ currentLogJail.label }}</text>
+                            <view class="picker-btn">
+                                <text class="picker-text">{{ currentLogJail.label }}</text>
+                            </view>
                         </picker>
                         <picker :range="logLimitOptions" range-key="label" @change="onLogLimitChange">
-                            <text class="picker-text">{{ currentLogLimit.label }}</text>
+                            <view class="picker-btn">
+                                <text class="picker-text">{{ currentLogLimit.label }}</text>
+                            </view>
                         </picker>
-                        <uni-icons type="refresh" size="32rpx" color="#409eff" @click="refreshLogs"
-                            :class="{ 'rotate': isLoadingLogs }"></uni-icons>
-                        <text class="refresh-time" v-if="logLastRefreshTime">日志刷新: {{ logLastRefreshTime }}</text>
+                        <view class="log-refresh-box">
+                            <text class="refresh-time" v-if="logLastRefreshTime">{{ logLastRefreshTime }}</text>
+                            <uni-icons type="refresh" size="32rpx" color="#409eff" @click="refreshLogs"
+                                :class="{ 'rotate': isLoadingLogs }"></uni-icons>
+                        </view>
                     </view>
                 </view>
 
@@ -572,9 +611,9 @@ export default {
         }
     },
     watch: {
-        jailFilter() {
-            this.jailCurrentPage = 1;
-        },
+        // jailFilter() {
+        //     this.jailCurrentPage = 1;
+        // },
         jailList(val) {
             this.jailNameOptions = [{ label: "全部", value: "" }];
             val.forEach(jail => {
@@ -860,18 +899,18 @@ export default {
             });
         },
 
-        copyAllTopIps() {
-            const ips = this.topAttackIps.map(item => item.ip);
-            return this.copyAllIps(ips);
-        },
+        // copyAllTopIps() {
+        //     const ips = this.topAttackIps.map(item => item.ip);
+        //     return this.copyAllIps(ips);
+        // },
 
-        copyAllBannedIps() {
-            return this.copyAllIps(this.allBannedIps);
-        },
+        // copyAllBannedIps() {
+        //     return this.copyAllIps(this.allBannedIps);
+        // },
 
-        loadMoreJails() {
-            this.jailCurrentPage++;
-        },
+        // loadMoreJails() {
+        //     this.jailCurrentPage++;
+        // },
         loadMoreIps() {
             this.ipCurrentPage++;
         },
@@ -948,19 +987,22 @@ export default {
 </script>
 
 <style lang="less" scoped>
+/* ==================== 全局容器 ==================== */
 .app-container {
-    padding: 30rpx;
-    background-color: #f5f5f5;
+    padding: 24rpx;
+    background-color: #f5f7fa;
     min-height: 100vh;
+    box-sizing: border-box;
+    padding-bottom: 40rpx;
 }
 
 /* ==================== 全局卡片样式 ==================== */
 .status-card {
     background-color: #fff;
-    border-radius: 24rpx;
-    box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-    padding: 40rpx 30rpx;
-    margin-bottom: 30rpx;
+    border-radius: 20rpx;
+    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+    padding: 32rpx 28rpx;
+    margin-bottom: 24rpx;
     position: relative;
     transition: all 0.3s ease;
 }
@@ -977,8 +1019,8 @@ export default {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.85);
-    border-radius: 24rpx;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20rpx;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -988,7 +1030,7 @@ export default {
 
 .lock-icon {
     color: #909399;
-    margin-bottom: 20rpx;
+    margin-bottom: 32rpx;
 }
 
 .lock-icon.warning-icon {
@@ -1006,70 +1048,103 @@ export default {
 }
 
 .lock-title {
-    font-size: 40rpx;
+    font-size: 38rpx;
     font-weight: 600;
     color: #303133;
-    margin-bottom: 8rpx;
+    margin-bottom: 12rpx;
 }
 
 .lock-desc {
-    font-size: 28rpx;
+    font-size: 26rpx;
     color: #606266;
 }
 
+/* ==================== 卡片头部（移动端上下布局） ==================== */
 .status-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+    margin-bottom: 32rpx;
+    padding-bottom: 24rpx;
+    border-bottom: 1rpx solid #f0f2f5;
+    gap: 20rpx;
+}
+
+.header-actions {
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 40rpx;
-    padding-bottom: 30rpx;
-    border-bottom: 1rpx solid #f5f5f5;
+}
+
+.header-sub {
+    font-size: 24rpx;
+    color: #909399;
 }
 
 .status-header-btn {
+    width: 100%;
     display: flex;
     justify-content: flex-end;
 }
 
 .title {
-    font-size: 36rpx;
+    font-size: 34rpx;
     font-weight: 600;
     color: #1f2d3d;
 }
 
+/* ==================== 刷新与筛选容器 ==================== */
 .refresh-container {
     display: flex;
     align-items: center;
     gap: 16rpx;
 }
 
-.filter-container {
+.log-refresh-box {
     display: flex;
     align-items: center;
-    gap: 20rpx;
+    gap: 12rpx;
+    margin-left: auto;
+}
+
+.filter-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
     flex-wrap: wrap;
 }
 
+/* 搜索框样式优化 */
 .search-input {
-    width: 320rpx;
-    height: 60rpx;
-    padding: 0 16rpx;
+    width: 100%;
+    height: 72rpx;
+    padding: 0 24rpx;
     border: 1rpx solid #e4e7ed;
-    border-radius: 8rpx;
-    font-size: 24rpx;
+    border-radius: 12rpx;
+    font-size: 26rpx;
+    background-color: #f8f9fa;
+    box-sizing: border-box;
+}
+
+/* 选择器按钮优化，加大触控区域 */
+.picker-btn {
+    padding: 12rpx 20rpx;
+    background-color: #f0f7ff;
+    border-radius: 10rpx;
 }
 
 .picker-text {
     font-size: 24rpx;
     color: #409eff;
-    padding: 8rpx 16rpx;
-    background-color: #e6f4ff;
-    border-radius: 8rpx;
+    font-weight: 500;
 }
 
 .refresh-time {
     font-size: 22rpx;
-    color: #8392a5;
+    color: #909399;
 }
 
 /* 刷新按钮旋转动画 */
@@ -1087,24 +1162,25 @@ export default {
     }
 }
 
-/* ==================== 状态指示器 ==================== */
+/* ==================== 状态指示器（移动端纵向排布） ==================== */
 .status-content {
     display: flex;
-    align-items: center;
-    margin-bottom: 40rpx;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 32rpx;
+    gap: 28rpx;
 }
 
 .status-indicator {
     display: flex;
     align-items: center;
-    margin-right: 40rpx;
-    margin-bottom: 30rpx;
+    width: 100%;
+    justify-content: flex-start;
 }
 
 .indicator-dot {
-    width: 28rpx;
-    height: 28rpx;
+    width: 32rpx;
+    height: 32rpx;
     border-radius: 50%;
     margin-right: 16rpx;
     transition: all 0.3s ease;
@@ -1112,43 +1188,56 @@ export default {
 
 .indicator-dot.running {
     background-color: #52c41a;
-    box-shadow: 0 0 16rpx rgba(82, 196, 26, 0.4);
+    box-shadow: 0 0 20rpx rgba(82, 196, 26, 0.4);
 }
 
 .indicator-dot.stopped {
     background-color: #f5222d;
-    box-shadow: 0 0 16rpx rgba(245, 34, 45, 0.4);
+    box-shadow: 0 0 20rpx rgba(245, 34, 45, 0.4);
 }
 
 .indicator-dot.unknown {
     background-color: #909399;
-    box-shadow: 0 0 16rpx rgba(144, 147, 153, 0.4);
+    box-shadow: 0 0 20rpx rgba(144, 147, 153, 0.4);
 }
 
 .status-text {
-    font-size: 44rpx;
-    font-weight: 500;
+    font-size: 40rpx;
+    font-weight: 600;
     color: #1f2d3d;
 }
 
+/* 服务信息网格布局 */
 .service-info {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-    margin-left: 40rpx;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20rpx;
 }
 
 .info-item {
-    font-size: 26rpx;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+    padding: 20rpx;
+    background-color: #f8f9fa;
+    border-radius: 12rpx;
+}
+
+.info-item-full {
+    grid-column: span 2;
 }
 
 .info-label {
-    color: #8392a5;
+    font-size: 24rpx;
+    color: #909399;
 }
 
 .info-value {
+    font-size: 28rpx;
     color: #1f2d3d;
     font-weight: 500;
+    word-break: break-all;
 }
 
 .text-success {
@@ -1159,98 +1248,112 @@ export default {
     color: #f5222d !important;
 }
 
-/* ==================== 统计卡片网格 ==================== */
+/* ==================== 统计卡片网格（移动端2列） ==================== */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24rpx;
-    margin-top: 40rpx;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20rpx;
+    margin-top: 8rpx;
+}
+
+.stat-card-full {
+    grid-column: span 2;
 }
 
 .stat-card {
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
     border-radius: 16rpx;
-    padding: 30rpx 20rpx;
+    padding: 28rpx 20rpx;
     text-align: center;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:active {
+    transform: scale(0.98);
 }
 
 .stat-value {
-    font-size: 56rpx;
+    font-size: 52rpx;
     font-weight: 700;
     color: #409eff;
-    margin-bottom: 10rpx;
-    margin-right: 4rpx;
+    margin-bottom: 8rpx;
+    line-height: 1.2;
 }
 
 .stat-label {
     font-size: 24rpx;
-    color: #8392a5;
+    color: #909399;
 }
 
 /* ==================== 趋势统计样式 ==================== */
 .trend-stats {
+    width: 100%;
     display: flex;
-    gap: 20rpx;
+    justify-content: flex-start;
     align-items: center;
 }
 
 .trend-stats .stat-item {
-    font-size: 26rpx;
-    color: #303133;
+    font-size: 24rpx;
+    color: #606266;
+    font-weight: 500;
+    margin-right: 64rpx;
 }
 
-/* 攻击趋势 */
+/* 攻击趋势柱状图优化 */
 .trend-list {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
-    margin-top: 20rpx;
+    gap: 20rpx;
+    margin-top: 8rpx;
 }
 
 .trend-item {
     display: flex;
     align-items: center;
-    padding: 16rpx 0;
+    padding: 8rpx 0;
 }
 
 .trend-hour {
-    width: 160rpx;
-    font-size: 24rpx;
-    color: #8392a5;
+    width: 170rpx;
+    font-size: 22rpx;
+    color: #909399;
+    flex-shrink: 0;
 }
 
 .trend-bar {
     flex: 1;
-    height: 24rpx;
-    background-color: #e6e6e6;
-    border-radius: 12rpx;
-    margin: 0 20rpx;
+    height: 28rpx;
+    background-color: #f0f2f5;
+    border-radius: 14rpx;
+    margin: 0 16rpx;
     overflow: hidden;
 }
 
 .trend-fill {
     height: 100%;
-    border-radius: 12rpx;
+    border-radius: 14rpx;
     transition: width 0.3s ease;
 }
 
 .fill-primary {
-    background: linear-gradient(0deg, #66b1ff, #409eff);
+    background: linear-gradient(90deg, #66b1ff, #409eff);
 }
 
 .fill-danger {
-    background: linear-gradient(0deg, #f78989, #f56c6c);
+    background: linear-gradient(90deg, #f78989, #f56c6c);
 }
 
 .trend-count {
-    width: 120rpx;
+    width: 110rpx;
     text-align: right;
     font-size: 24rpx;
     font-weight: 500;
-    color: #1f2d3d;
+    color: #303133;
+    flex-shrink: 0;
 }
 
-/* 监狱列表 */
+/* ==================== 监狱列表优化 ==================== */
 .jail-list {
     display: flex;
     flex-direction: column;
@@ -1260,56 +1363,83 @@ export default {
 .jail-item {
     display: flex;
     align-items: center;
-    padding: 24rpx;
+    padding: 28rpx 24rpx;
     background-color: #f8f9fa;
     border-radius: 16rpx;
-    transition: all 0.3s;
+    transition: all 0.2s ease;
 }
 
 .jail-item:active {
-    background-color: #e9ecef;
+    background-color: #eef0f3;
+    transform: scale(0.99);
 }
 
 .jail-main {
     flex: 1;
+    min-width: 0;
+}
+
+.jail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20rpx;
 }
 
 .jail-name {
-    font-size: 32rpx;
-    font-weight: 500;
+    font-size: 30rpx;
+    font-weight: 600;
     color: #1f2d3d;
-    margin-bottom: 12rpx;
 }
 
 .jail-status-tag {
-    margin-bottom: 12rpx;
+    flex-shrink: 0;
 }
 
 .tag-success {
     font-size: 22rpx;
-    padding: 4rpx 12rpx;
+    padding: 6rpx 14rpx;
     background-color: #f0f9eb;
     color: #67c23a;
-    border-radius: 6rpx;
+    border-radius: 8rpx;
+    font-weight: 500;
 }
 
 .tag-info {
     font-size: 22rpx;
-    padding: 4rpx 12rpx;
+    padding: 6rpx 14rpx;
     background-color: #ecf5ff;
     color: #409eff;
-    border-radius: 6rpx;
+    border-radius: 8rpx;
+    font-weight: 500;
 }
 
+/* 监狱统计2列网格 */
 .jail-stats {
-    display: flex;
-    gap: 30rpx;
-    font-size: 24rpx;
-    color: #8392a5;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12rpx;
 }
 
-/* 监狱详情弹窗样式 */
+.jail-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4rpx;
+}
+
+.stat-num {
+    font-size: 28rpx;
+    font-weight: 600;
+    color: #303133;
+}
+
+.jail-stat-item .stat-label {
+    font-size: 20rpx;
+    color: #909399;
+}
+
+/* ==================== 监狱详情弹窗优化 ==================== */
 .jail-detail-mask {
     position: fixed;
     top: 0;
@@ -1334,7 +1464,7 @@ export default {
     background-color: #fff;
     border-top-left-radius: 32rpx;
     border-top-right-radius: 32rpx;
-    height: 80vh;
+    height: 85vh;
     display: flex;
     flex-direction: column;
     z-index: 1000;
@@ -1346,17 +1476,27 @@ export default {
     transform: translateY(0);
 }
 
+/* 移动端弹窗顶部拖拽条，符合原生交互习惯 */
+.popup-drag-bar {
+    width: 80rpx;
+    height: 8rpx;
+    background-color: #e4e7ed;
+    border-radius: 4rpx;
+    margin: 20rpx auto 0;
+    flex-shrink: 0;
+}
+
 .popup-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 32rpx 40rpx;
-    border-bottom: 1rpx solid #f5f5f5;
+    padding: 24rpx 32rpx 32rpx;
+    border-bottom: 1rpx solid #f0f2f5;
     flex-shrink: 0;
 }
 
 .popup-title {
-    font-size: 34rpx;
+    font-size: 32rpx;
     font-weight: 600;
     color: #1f2d3d;
 }
@@ -1364,9 +1504,10 @@ export default {
 .popup-content {
     flex: 1;
     overflow-y: auto;
-    padding: 40rpx;
+    padding: 32rpx 28rpx;
     -webkit-overflow-scrolling: touch;
     position: relative;
+    box-sizing: border-box;
 }
 
 .popup-content .loading-text {
@@ -1384,12 +1525,12 @@ export default {
 }
 
 .detail-section {
-    margin-bottom: 50rpx;
+    margin-bottom: 48rpx;
 }
 
 .section-title {
-    font-size: 30rpx;
-    font-weight: 500;
+    font-size: 28rpx;
+    font-weight: 600;
     color: #1f2d3d;
     margin-bottom: 24rpx;
     padding-left: 16rpx;
@@ -1399,7 +1540,7 @@ export default {
 .detail-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 24rpx;
+    gap: 20rpx;
 }
 
 .detail-item {
@@ -1408,12 +1549,12 @@ export default {
     gap: 8rpx;
     padding: 20rpx;
     background-color: #f8f9fa;
-    border-radius: 16rpx;
+    border-radius: 12rpx;
 }
 
 .detail-label {
     font-size: 24rpx;
-    color: #8392a5;
+    color: #909399;
 }
 
 .detail-value {
@@ -1428,6 +1569,8 @@ export default {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24rpx;
+    flex-wrap: wrap;
+    gap: 16rpx;
 }
 
 .ip-actions {
@@ -1435,12 +1578,14 @@ export default {
     gap: 16rpx;
 }
 
+/* 按钮样式优化，加大触控区域适配移动端点击 */
 .btn {
-    padding: 8rpx 24rpx;
-    border-radius: 8rpx;
+    padding: 12rpx 24rpx;
+    border-radius: 10rpx;
     font-size: 24rpx;
     border: none;
     line-height: 1.2;
+    font-weight: 500;
 }
 
 .btn-primary {
@@ -1449,14 +1594,14 @@ export default {
 }
 
 .btn-small {
-    padding: 4rpx 16rpx;
+    padding: 8rpx 20rpx;
     font-size: 22rpx;
 }
 
 .ip-tag-wrap {
     display: flex;
     flex-wrap: wrap;
-    gap: 8rpx;
+    gap: 12rpx;
     margin-top: 8rpx;
 }
 
@@ -1464,8 +1609,8 @@ export default {
     display: inline-flex;
     align-items: center;
     gap: 12rpx;
-    padding: 8rpx 16rpx;
-    border-radius: 8rpx;
+    padding: 10rpx 18rpx;
+    border-radius: 10rpx;
     font-size: 24rpx;
     color: #fff;
 }
@@ -1477,12 +1622,13 @@ export default {
 .info-tag {
     background-color: #ecf5ff;
     color: #409eff;
-    padding: 4rpx 12rpx;
+    padding: 6rpx 14rpx;
     font-size: 22rpx;
+    border-radius: 8rpx;
 }
 
 .ip-text {
-    max-width: 240rpx;
+    max-width: 220rpx;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1497,12 +1643,12 @@ export default {
 .loading-text {
     text-align: center;
     padding: 80rpx;
-    color: #8392a5;
+    color: #909399;
     font-size: 28rpx;
     white-space: pre-line;
 }
 
-/* 攻击来源列表 */
+/* ==================== 攻击来源列表移动端优化 ==================== */
 .ip-list {
     display: flex;
     flex-direction: column;
@@ -1512,61 +1658,76 @@ export default {
 .ip-item {
     display: flex;
     align-items: center;
-    padding: 20rpx;
+    padding: 24rpx;
     background-color: #f8f9fa;
     border-radius: 16rpx;
+    position: relative;
 }
 
 .ip-rank {
-    width: 48rpx;
-    height: 48rpx;
-    line-height: 48rpx;
+    width: 52rpx;
+    height: 52rpx;
+    line-height: 52rpx;
     text-align: center;
-    background-color: #409eff;
+    background-color: #c0c4cc;
     color: #fff;
     border-radius: 50%;
     font-size: 24rpx;
-    font-weight: 500;
+    font-weight: 600;
     margin-right: 20rpx;
     flex-shrink: 0;
+}
+
+/* 前三名排名高亮 */
+.ip-rank.rank-top {
+    background: linear-gradient(135deg, #ff9a44 0%, #fc6076 100%);
+    box-shadow: 0 4rpx 12rpx rgba(252, 96, 118, 0.3);
 }
 
 .ip-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 10rpx;
     min-width: 0;
+}
+
+.ip-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16rpx;
 }
 
 .ip-address {
     font-size: 28rpx;
-    font-weight: 500;
+    font-weight: 600;
     color: #1f2d3d;
+    word-break: break-all;
 }
 
 .jail-tag-wrap {
     display: flex;
     flex-wrap: wrap;
-    gap: 6rpx;
+    gap: 8rpx;
 }
 
 .ip-jail-tag {
     font-size: 20rpx;
-    padding: 2rpx 8rpx;
-    border-radius: 4rpx;
+    padding: 4rpx 10rpx;
+    border-radius: 6rpx;
 }
 
 .ip-count {
     font-size: 24rpx;
-    color: #8392a5;
+    color: #909399;
 }
 
 .ip-threat {
-    padding: 4rpx 12rpx;
+    padding: 6rpx 14rpx;
     border-radius: 8rpx;
     font-size: 22rpx;
-    margin-right: 20rpx;
+    font-weight: 500;
     flex-shrink: 0;
 }
 
@@ -1590,25 +1751,31 @@ export default {
     color: #409eff;
 }
 
-/* 全量封禁IP */
+.ip-copy-btn {
+    margin-left: 16rpx;
+    flex-shrink: 0;
+    padding: 8rpx;
+}
+
+/* ==================== 全量封禁IP ==================== */
 .all-banned-ips {
     display: flex;
     flex-wrap: wrap;
     gap: 16rpx;
-    margin-bottom: 30rpx;
+    margin-bottom: 24rpx;
 }
 
-/* 日志容器 */
+/* ==================== 日志容器移动端优化 ==================== */
 .log-container {
     background-color: #1f2d3d;
     border-radius: 16rpx;
     padding: 24rpx;
-    margin-bottom: 30rpx;
+    margin-bottom: 24rpx;
 }
 
 .log-item {
-    margin-bottom: 20rpx;
-    padding-bottom: 20rpx;
+    margin-bottom: 24rpx;
+    padding-bottom: 24rpx;
     border-bottom: 1rpx solid #304156;
 }
 
@@ -1620,7 +1787,8 @@ export default {
 
 .log-header {
     display: flex;
-    gap: 20rpx;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 12rpx;
 }
 
@@ -1631,12 +1799,12 @@ export default {
 
 .log-level {
     font-size: 22rpx;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .log-message {
     font-size: 24rpx;
-    line-height: 1.5;
+    line-height: 1.6;
     word-break: break-all;
 }
 
@@ -1646,97 +1814,108 @@ export default {
 }
 
 .log-error .log-message {
-    color: #ff4d4f;
+    color: #ff7875;
 }
 
 .log-error .log-level {
-    color: #ff4d4f;
+    color: #ff7875;
 }
 
 .log-warn .log-message {
-    color: #faad14;
+    color: #ffc53d;
 }
 
 .log-warn .log-level {
-    color: #faad14;
+    color: #ffc53d;
 }
 
 .log-info .log-message {
-    color: #52c41a;
+    color: #73d13d;
 }
 
 .log-info .log-level {
-    color: #52c41a;
+    color: #73d13d;
 }
 
 .log-debug .log-message {
-    color: #8392a5;
+    color: #8c8c8c;
 }
 
 .log-debug .log-level {
-    color: #8392a5;
+    color: #8c8c8c;
 }
 
-/* 加载更多 */
+/* ==================== 加载更多与空状态 ==================== */
 .load-more {
     text-align: center;
-    padding: 24rpx;
+    padding: 28rpx;
     color: #409eff;
     font-size: 26rpx;
-    background-color: #e6f4ff;
-    border-radius: 16rpx;
+    background-color: #f0f7ff;
+    border-radius: 12rpx;
+    font-weight: 500;
 }
 
 .no-more {
     text-align: center;
-    padding: 24rpx;
-    color: #8392a5;
-    font-size: 26rpx;
+    padding: 28rpx;
+    color: #c0c4cc;
+    font-size: 24rpx;
 }
 
 .empty-text {
     text-align: center;
-    padding: 40rpx;
-    color: #8392a5;
+    padding: 60rpx 40rpx;
+    color: #909399;
     font-size: 26rpx;
 }
 
-/* 响应式适配 */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
+/* ==================== 响应式适配（平板/横屏保持舒适布局） ==================== */
+@media (min-width: 768px) {
+    .app-container {
+        padding: 32rpx;
     }
 
-    .status-content {
-        flex-direction: column;
-        align-items: flex-start;
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stat-card-full {
+        grid-column: span 1;
     }
 
     .service-info {
-        flex-direction: column;
-        gap: 10rpx;
-        margin-left: 0;
-        margin-top: 15rpx;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .info-item-full {
+        grid-column: span 1;
+    }
+
+    /* 大屏下标题和操作区恢复左右布局 */
+    .status-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-actions {
+        width: auto;
+        justify-content: flex-end;
     }
 
     .filter-container {
-        flex-wrap: wrap;
-        margin-top: 10rpx;
+        width: auto;
+        justify-content: flex-end;
     }
 
-    .section-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10rpx;
-    }
-
-    .ip-actions {
-        width: 100%;
-        justify-content: flex-start;
+    .search-input {
+        width: 360rpx;
     }
 
     .trend-stats {
-        margin-top: 10rpx;
+        width: auto;
+        gap: 24rpx;
     }
 }
 </style>
