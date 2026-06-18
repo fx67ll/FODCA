@@ -5,7 +5,7 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
-## 0.7.1.20260616
+## 0.7.1.20260617
 * 优化`Fail2Ban`相关功能  
 * 修复`Tomcat`&`Fail2Ban`页面未做移动端适配的问题  
 
