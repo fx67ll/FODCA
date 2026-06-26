@@ -59,6 +59,14 @@
 
             <view v-if="displayList.length === 0" class="empty-text">暂无攻击来源数据</view>
         </view>
+
+        <!-- 非 Top3 时显示：点击回到默认 Top3（与攻击趋势展开/收起功能相似，但独立样式） -->
+        <view class="reset-top-wrap" v-if="topIpLimit !== 3 && displayList.length > 0">
+            <view class="reset-top-btn" @click="resetToDefaultTop">
+                <uni-icons type="arrowup" size="26rpx" color="#fff"></uni-icons>
+                <text class="reset-top-text">重置为默认 Top3</text>
+            </view>
+        </view>
     </view>
 </template>
 
@@ -135,6 +143,16 @@ export default {
             this.topIpLimit = this.topIpOptions[e.detail.value].value;
             this.$emit('stats-change', {
                 topIpLimit: this.topIpLimit,
+                statsLogLines: this.currentStatsLogLine.value
+            });
+        },
+
+        // 回到默认 Top3 状态（与切换 Top 选择器效果一致，仅重置数量并通知父组件重新加载）
+        resetToDefaultTop() {
+            if (this.topIpLimit === 3) return;
+            this.topIpLimit = 3;
+            this.$emit('stats-change', {
+                topIpLimit: 3,
                 statsLogLines: this.currentStatsLogLine.value
             });
         },
@@ -482,5 +500,35 @@ export default {
     padding: 60rpx 40rpx;
     color: #909399;
     font-size: 26rpx;
+}
+
+/* ==================== 回到默认 Top3 按钮（清新薄荷渐变，区别于趋势展开/收起） ==================== */
+.reset-top-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 32rpx;
+}
+
+.reset-top-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 18rpx 44rpx;
+    background: linear-gradient(135deg, #5fe4c8 0%, #2bc4a3 100%);
+    border-radius: 40rpx;
+    box-shadow: 0 6rpx 18rpx rgba(43, 196, 163, 0.35);
+    transition: all 0.2s ease;
+}
+
+.reset-top-btn:active {
+    transform: scale(0.95);
+    opacity: 0.9;
+}
+
+.reset-top-text {
+    font-size: 26rpx;
+    color: #fff;
+    font-weight: 600;
+    line-height: 1;
 }
 </style>
