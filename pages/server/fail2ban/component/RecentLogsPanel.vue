@@ -46,7 +46,7 @@
         <!-- 回到本卡片标题处：加载更多后列表变长，提供一键返回日志顶部的入口 -->
         <view class="back-to-top" v-if="filteredLogs.length > pageSize" @click="scrollToLogsTop">
             <!-- <uni-icons type="arrowup" size="24rpx" color="#409eff"></uni-icons> -->
-            <text class="back-to-top-text">点击返回日志顶部</text>
+            <text class="back-to-top-text">返回日志顶部</text>
         </view>
 
         <view class="load-more" @click="loadMore" v-if="hasMore">
@@ -195,7 +195,7 @@ export default {
             this.loadLogs(true);
         },
 
-        // 重置筛选条件为初始状态（参考 Web 端 RecentLogsPanel.handleResetFilters）
+        // 重置筛选条件：静默刷新，不闪动页面
         handleResetFilters() {
             this.currentLogLevel = this.logLevelOptions[0];
             this.logLevelFilter = this.currentLogLevel.value;
@@ -203,7 +203,7 @@ export default {
             this.logJailFilter = this.currentLogJail.value;
             this.currentLogLimit = this.logLimitOptions[0];
             this.logLimit = this.currentLogLimit.value;
-            this.loadLogs(true, true);
+            this.loadLogs(false, true);
         },
 
         getLogClass(level) {
@@ -399,24 +399,23 @@ export default {
     margin-top: 20rpx;
 }
 
-/* 回到日志顶部按钮（轻量描边款，区别于「加载更多」的浅蓝填充） */
+/* 回到日志顶部按钮（药丸款，与加载更多圆角色块呼应但更紧凑） */
 .back-to-top {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    margin-top: 16rpx;
-    padding: 18rpx;
-    background-color: #fff;
-    border: 1rpx solid #d6e4ff;
-    border-radius: 12rpx;
-    box-shadow: 0 2rpx 8rpx rgba(64, 158, 255, 0.08);
+    margin: 20rpx auto 0;
+    padding: 16rpx 36rpx;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f3ff 100%);
+    border-radius: 32rpx;
+    box-shadow: 0 2rpx 8rpx rgba(64, 158, 255, 0.1);
     transition: all 0.2s ease;
 }
 
 .back-to-top:active {
-    opacity: 0.45;
-    transform: scale(0.99);
+    opacity: 0.7;
+    transform: scale(0.96);
 }
 
 .back-to-top-text {

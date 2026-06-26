@@ -1,5 +1,5 @@
 <template>
-    <view class="status-card">
+    <view class="status-card stats-card">
         <view class="status-header">
             <text class="title">攻击来源统计 (Top {{ topIpLimit }})</text>
             <view class="filter-container">
@@ -16,7 +16,7 @@
             </view>
         </view>
 
-        <view class="ip-list">
+        <view class="ip-list" :class="'ip-limit-' + topIpLimit">
             <view class="ip-item" :class="item.threatClass" v-for="(item, index) in displayList" :key="index">
                 <!-- 左侧排名徽章（前三名奖牌，其余圆形序号） -->
                 <view class="rank-badge" :class="getRankBadgeClass(item.rank)">
@@ -58,10 +58,16 @@
             </view>
 
             <view v-if="displayList.length === 0" class="empty-text">暂无攻击来源数据</view>
+
+            <!-- 切换 Top / 日志行数时的加载遮罩 -->
+            <view v-if="isStatsLoading" class="ip-list-loading-mask">
+                <view class="ip-list-spinner"></view>
+                <text class="ip-list-loading-text">加载中...</text>
+            </view>
         </view>
 
-        <!-- 非 Top3 时显示：点击回到默认 Top3（与攻击趋势展开/收起功能相似，但独立样式） -->
-        <view class="reset-top-wrap" v-if="topIpLimit !== 3 && displayList.length > 0">
+        <!-- 非 Top3 且数据加载完成后显示：点击回到默认 Top3 -->
+        <view class="reset-top-wrap" v-if="topIpLimit !== 3 && displayList.length > 0 && !isStatsLoading">
             <view class="reset-top-btn" @click="resetToDefaultTop">
                 <uni-icons type="arrowup" size="26rpx" color="#fff"></uni-icons>
                 <text class="reset-top-text">重置为默认 Top3</text>
@@ -81,6 +87,10 @@ export default {
         baselineMaxRetry: {
             type: Number,
             default: 5
+        },
+        isStatsLoading: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -132,6 +142,27 @@ export default {
         }
     },
     methods: {
+        // 滚动到本卡片标题处
+        scrollToCard() {
+            return new Promise((resolve) => {
+                const query = uni.createSelectorQuery().in(this);
+                query.select('.stats-card').boundingClientRect();
+                query.selectViewport().scrollOffset();
+                query.exec((res) => {
+                    const rect = res[0];
+                    const viewport = res[1];
+                    if (rect && viewport) {
+                        const target = viewport.scrollTop + rect.top - 16;
+                        uni.pageScrollTo({
+                            scrollTop: Math.max(target, 0),
+                            duration: 300
+                        });
+                    }
+                    setTimeout(resolve, 350);
+                });
+            });
+        },
+
         getRankBadgeClass(rank) {
             if (rank === 1) return 'badge-gold';
             if (rank === 2) return 'badge-silver';
@@ -140,20 +171,34 @@ export default {
         },
 
         onTopIpLimitChange(e) {
-            this.topIpLimit = this.topIpOptions[e.detail.value].value;
-            this.$emit('stats-change', {
-                topIpLimit: this.topIpLimit,
-                statsLogLines: this.currentStatsLogLine.value
-            });
+            const newLimit = this.topIpOptions[e.detail.value].value;
+            // 收起方向（切到更小的 Top）时先滚动到标题再执行动画
+            if (newLimit < this.topIpLimit) {
+                this.scrollToCard().then(() => {
+                    this.topIpLimit = newLimit;
+                    this.$emit('stats-change', {
+                        topIpLimit: this.topIpLimit,
+                        statsLogLines: this.currentStatsLogLine.value
+                    });
+                });
+            } else {
+                this.topIpLimit = newLimit;
+                this.$emit('stats-change', {
+                    topIpLimit: this.topIpLimit,
+                    statsLogLines: this.currentStatsLogLine.value
+                });
+            }
         },
 
-        // 回到默认 Top3 状态（与切换 Top 选择器效果一致，仅重置数量并通知父组件重新加载）
+        // 回到默认 Top3 状态：先滚动到标题，再执行收起动画
         resetToDefaultTop() {
             if (this.topIpLimit === 3) return;
-            this.topIpLimit = 3;
-            this.$emit('stats-change', {
-                topIpLimit: 3,
-                statsLogLines: this.currentStatsLogLine.value
+            this.scrollToCard().then(() => {
+                this.topIpLimit = 3;
+                this.$emit('stats-change', {
+                    topIpLimit: 3,
+                    statsLogLines: this.currentStatsLogLine.value
+                });
             });
         },
 
@@ -240,6 +285,27 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 20rpx;
+    position: relative;
+    min-height: 200rpx;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+
+/* 按 Top 数量分级 max-height，切换时平滑过渡 */
+.ip-list.ip-limit-3 {
+    max-height: 1000rpx;
+}
+
+.ip-list.ip-limit-5 {
+    max-height: 1700rpx;
+}
+
+.ip-list.ip-limit-10 {
+    max-height: 3500rpx;
+}
+
+.ip-list.ip-limit-20 {
+    max-height: 7000rpx;
 }
 
 /* ==================== 单条 IP 卡片（威胁染色柔色底） ==================== */
@@ -530,5 +596,46 @@ export default {
     color: #fff;
     font-weight: 600;
     line-height: 1;
+}
+
+/* ==================== IP 列表加载遮罩 ==================== */
+.ip-list-loading-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 12rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    z-index: 5;
+}
+
+.ip-list-spinner {
+    width: 40rpx;
+    height: 40rpx;
+    border: 4rpx solid #e4e7ed;
+    border-top-color: #409eff;
+    border-radius: 50%;
+    animation: rotate 0.8s linear infinite;
+}
+
+.ip-list-loading-text {
+    font-size: 24rpx;
+    color: #606266;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 </style>

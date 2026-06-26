@@ -1,5 +1,5 @@
 <template>
-    <view class="status-card">
+    <view class="status-card banned-card">
         <view class="status-header">
             <text class="title">全量封禁IP列表</text>
             <view class="header-actions">
@@ -7,7 +7,7 @@
             </view>
         </view>
 
-        <view class="all-banned-ips">
+        <view class="all-banned-ips" :class="expanded ? 'list-expanded' : 'list-collapsed'">
             <view class="ip-tag ip-tag-danger" v-for="ip in displayedIps" :key="ip">
                 <text class="ip-text">{{ ip }}</text>
             </view>
@@ -54,8 +54,36 @@ export default {
         }
     },
     methods: {
+        // 滚动到本卡片标题处
+        scrollToCard() {
+            return new Promise((resolve) => {
+                const query = uni.createSelectorQuery().in(this);
+                query.select('.banned-card').boundingClientRect();
+                query.selectViewport().scrollOffset();
+                query.exec((res) => {
+                    const rect = res[0];
+                    const viewport = res[1];
+                    if (rect && viewport) {
+                        const target = viewport.scrollTop + rect.top - 16;
+                        uni.pageScrollTo({
+                            scrollTop: Math.max(target, 0),
+                            duration: 300
+                        });
+                    }
+                    setTimeout(resolve, 350);
+                });
+            });
+        },
+
         toggleExpand() {
-            this.expanded = !this.expanded;
+            if (this.expanded) {
+                // 收起时先滚动到标题再收起
+                this.scrollToCard().then(() => {
+                    this.expanded = false;
+                });
+            } else {
+                this.expanded = true;
+            }
         }
     }
 };
@@ -104,6 +132,16 @@ export default {
     flex-wrap: wrap;
     gap: 16rpx;
     margin-bottom: 24rpx;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+
+.all-banned-ips.list-collapsed {
+    max-height: 600rpx;
+}
+
+.all-banned-ips.list-expanded {
+    max-height: 6000rpx;
 }
 
 .ip-tag {

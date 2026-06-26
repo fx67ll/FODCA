@@ -1,7 +1,7 @@
 <template>
     <view>
         <!-- 最近攻击趋势卡片 -->
-        <view class="status-card">
+        <view class="status-card trend-card">
             <view class="status-header">
                 <text class="title">{{ cardTitle }}</text>
                 <view class="trend-stats">
@@ -13,7 +13,7 @@
                 <uni-icons type="info" size="24rpx" color="#909399"></uni-icons>
                 <text class="trend-tip-text">点击时段查看Top攻击IP</text>
             </view> -->
-            <view class="trend-list">
+            <view class="trend-list" :class="expanded ? 'list-expanded' : 'list-collapsed'">
                 <view class="trend-item" v-for="(item, index) in displayedData" :key="index"
                     @click="openHourlyDetail(item)">
                     <text class="trend-hour">{{ item.dateTime }}</text>
@@ -158,7 +158,35 @@ export default {
     },
     methods: {
         toggleExpand() {
-            this.expanded = !this.expanded;
+            if (this.expanded) {
+                // 收起时先滚动到卡片标题处，再执行收起动画
+                this.scrollToCard().then(() => {
+                    this.expanded = false;
+                });
+            } else {
+                this.expanded = true;
+            }
+        },
+
+        scrollToCard() {
+            return new Promise((resolve) => {
+                const query = uni.createSelectorQuery().in(this);
+                query.select('.trend-card').boundingClientRect();
+                query.selectViewport().scrollOffset();
+                query.exec((res) => {
+                    const rect = res[0];
+                    const viewport = res[1];
+                    if (rect && viewport) {
+                        const target = viewport.scrollTop + rect.top - 16;
+                        uni.pageScrollTo({
+                            scrollTop: Math.max(target, 0),
+                            duration: 300
+                        });
+                    }
+                    // 等滚动动画完成后再收起
+                    setTimeout(resolve, 350);
+                });
+            });
         },
 
         getRankBadgeClass(rank) {
@@ -267,6 +295,16 @@ export default {
     flex-direction: column;
     gap: 20rpx;
     margin-top: 8rpx;
+    overflow: hidden;
+    transition: max-height 0.5s ease-in-out;
+}
+
+.trend-list.list-collapsed {
+    max-height: 800rpx;
+}
+
+.trend-list.list-expanded {
+    max-height: 3500rpx;
 }
 
 .trend-item {
