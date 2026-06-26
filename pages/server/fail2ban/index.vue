@@ -87,7 +87,7 @@
                 :total-trend-attacks="totalTrendAttacks" :baseline-max-retry="baselineMaxRetry" />
 
             <attack-stats-panel :top-attack-ips="topAttackIps" :baseline-max-retry="baselineMaxRetry"
-                @stats-change="onStatsChange" />
+                :is-stats-loading="isStatsLoading" @stats-change="onStatsChange" />
 
             <banned-ip-list :all-banned-ips="allBannedIps" />
 
@@ -98,7 +98,8 @@
         <view class="fab-refresh" :class="[fabClass, { 'show': fabVisible }]" @click="handleRefresh">
             <view class="fab-content">
                 <view v-if="fabState === 'loading'" class="fab-spinner"></view>
-                <uni-icons v-else-if="fabState === 'success'" type="checkmarkempty" size="40rpx" color="#fff"></uni-icons>
+                <uni-icons v-else-if="fabState === 'success'" type="checkmarkempty" size="40rpx"
+                    color="#fff"></uni-icons>
                 <uni-icons v-else-if="fabState === 'error'" type="close" size="40rpx" color="#fff"></uni-icons>
                 <uni-icons v-else-if="fabState === 'time'" type="calendar" size="40rpx" color="#fff"></uni-icons>
                 <uni-icons v-else type="refresh" size="44rpx" color="#fff"></uni-icons>
@@ -166,6 +167,7 @@ export default {
 
             // ==================== 加载状态 ====================
             isRefreshing: false,
+            isStatsLoading: false,
 
             // ==================== 其他 ====================
             lastRefreshTime: "",
@@ -268,13 +270,13 @@ export default {
                     this.fabTimer = setTimeout(() => {
                         if (this.fabState === "time") this.setFabState("idle");
                         this.fabTimer = null;
-                    // }, 2000);
+                        // }, 2000);
                     }, 888);
                 } else if (this.fabState === "error") {
                     this.setFabState("idle");
                     this.fabTimer = null;
                 }
-            // }, 1000);
+                // }, 1000);
             }, 888);
         },
 
@@ -367,7 +369,10 @@ export default {
         onStatsChange({ topIpLimit, statsLogLines }) {
             this.topIpLimit = topIpLimit;
             this.statsLogLines = statsLogLines;
-            this.loadAttackStats();
+            this.isStatsLoading = true;
+            this.loadAttackStats().finally(() => {
+                this.isStatsLoading = false;
+            });
         },
 
         formatDateTime(date) {
