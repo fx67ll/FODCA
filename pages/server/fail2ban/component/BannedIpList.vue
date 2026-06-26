@@ -8,7 +8,7 @@
         </view>
 
         <view class="all-banned-ips">
-            <view class="ip-tag ip-tag-danger" v-for="ip in paginatedIps" :key="ip">
+            <view class="ip-tag ip-tag-danger" v-for="ip in displayedIps" :key="ip">
                 <text class="ip-text">{{ ip }}</text>
             </view>
             <view v-if="allBannedIps.length === 0" class="empty-text">
@@ -16,11 +16,14 @@
             </view>
         </view>
 
-        <view class="load-more" @click="loadMore" v-if="hasMore">
-            <text>加载更多</text>
-        </view>
-        <view class="no-more" v-else-if="allBannedIps.length > pageSize">
-            <text>没有更多了</text>
+        <!-- 展开/收起按钮：默认只展示20个，超过时可展开全部。封禁IP红色主题，区别于趋势面板 -->
+        <view class="banned-toggle" v-if="hasMore" @click="toggleExpand">
+            <view class="toggle-text-wrap">
+                <text class="toggle-text">{{ expanded ? '收起，只看前20个封禁IP' : '展开，查看全部封禁IP' }}</text>
+                <view class="toggle-count">{{ expanded ? `总计${allBannedIps.length}个` : `还有${allBannedIps.length -
+                    pageSize}个` }}</view>
+            </view>
+            <uni-icons :type="expanded ? 'arrowup' : 'arrowdown'" size="26rpx" color="#f56c6c"></uni-icons>
         </view>
     </view>
 </template>
@@ -36,28 +39,22 @@ export default {
     },
     data() {
         return {
-            currentPage: 1,
-            pageSize: 100
+            // 默认折叠只展示前20个，避免长列表撑高页面
+            pageSize: 20,
+            expanded: false
         };
     },
     computed: {
-        paginatedIps() {
-            return this.allBannedIps.slice(0, this.currentPage * this.pageSize);
+        displayedIps() {
+            return this.expanded ? this.allBannedIps : this.allBannedIps.slice(0, this.pageSize);
         },
         hasMore() {
-            return this.currentPage * this.pageSize < this.allBannedIps.length;
-        }
-    },
-    watch: {
-        // 数据刷新时尽量保持浏览位置：仅当当前页已超出数据范围时才回退
-        allBannedIps(newList) {
-            const maxPage = Math.max(1, Math.ceil(newList.length / this.pageSize));
-            if (this.currentPage > maxPage) this.currentPage = maxPage;
+            return this.allBannedIps.length > this.pageSize;
         }
     },
     methods: {
-        loadMore() {
-            this.currentPage++;
+        toggleExpand() {
+            this.expanded = !this.expanded;
         }
     }
 };
@@ -116,7 +113,9 @@ export default {
     color: #fff;
 }
 
-.ip-tag-danger { background-color: #f56c6c; }
+.ip-tag-danger {
+    background-color: #f56c6c;
+}
 
 .ip-text {
     max-width: 220rpx;
@@ -133,23 +132,44 @@ export default {
     width: 100%;
 }
 
-.load-more {
-    text-align: center;
-    padding: 28rpx;
-    color: #409eff;
-    font-size: 26rpx;
-    background-color: #f0f7ff;
-    border-radius: 12rpx;
-    font-weight: 500;
-    margin-top: 20rpx;
+/* 展开/收起按钮：封禁IP红色主题药丸，区别于趋势面板的蓝色文字链接 */
+.banned-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18rpx 24rpx;
+    border: 2rpx solid #fbc4c4;
+    border-radius: 32rpx;
+    background-color: #fef0f0;
+    transition: all 0.2s ease;
 }
 
-.no-more {
-    text-align: center;
-    padding: 28rpx;
-    color: #c0c4cc;
-    font-size: 24rpx;
-    margin-top: 20rpx;
+.banned-toggle:active {
+    transform: scale(0.99);
+    background-color: #fde7e7;
+}
+
+.toggle-text-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    min-width: 0;
+}
+
+.toggle-text {
+    font-size: 26rpx;
+    color: #f56c6c;
+    font-weight: 500;
+}
+
+.toggle-count {
+    font-size: 22rpx;
+    color: #fff;
+    background-color: #f56c6c;
+    padding: 4rpx 14rpx;
+    border-radius: 20rpx;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 @media (min-width: 768px) {
@@ -158,6 +178,9 @@ export default {
         justify-content: space-between;
         align-items: center;
     }
-    .header-actions { width: auto; }
+
+    .header-actions {
+        width: auto;
+    }
 }
 </style>
