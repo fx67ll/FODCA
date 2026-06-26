@@ -16,14 +16,15 @@
             </view>
         </view>
 
-        <!-- 展开/收起按钮：默认只展示20个，超过时可展开全部。封禁IP红色主题，区别于趋势面板 -->
-        <view class="banned-toggle" v-if="hasMore" @click="toggleExpand">
+        <!-- 展开/收起按钮：默认只展示20个，超过时可展开全部。折叠态红色封禁警示，展开态清新蓝色 -->
+        <view class="banned-toggle" :class="{ 'is-expanded': expanded }" v-if="hasMore" @click="toggleExpand">
             <view class="toggle-text-wrap">
-                <text class="toggle-text">{{ expanded ? '收起，只看前20个封禁IP' : '展开，查看全部封禁IP' }}</text>
+                <text class="toggle-text">{{ expanded ? `收起，只看Top${pageSize}即可` : '展开，查看全部封禁IP' }}</text>
                 <view class="toggle-count">{{ expanded ? `总计${allBannedIps.length}个` : `还有${allBannedIps.length -
                     pageSize}个` }}</view>
             </view>
-            <uni-icons :type="expanded ? 'arrowup' : 'arrowdown'" size="26rpx" color="#f56c6c"></uni-icons>
+            <uni-icons :type="expanded ? 'arrowup' : 'arrowdown'" size="26rpx"
+                :color="expanded ? '#409eff' : '#f56c6c'"></uni-icons>
         </view>
     </view>
 </template>
@@ -39,8 +40,8 @@ export default {
     },
     data() {
         return {
-            // 默认折叠只展示前20个，避免长列表撑高页面
-            pageSize: 20,
+            // 默认折叠只展示前10个，避免长列表撑高页面
+            pageSize: 10,
             expanded: false
         };
     },
@@ -71,7 +72,9 @@ export default {
 
 .status-header {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 32rpx;
     padding-bottom: 24rpx;
     border-bottom: 1rpx solid #f0f2f5;
@@ -85,7 +88,7 @@ export default {
 }
 
 .header-actions {
-    width: 100%;
+    width: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -172,15 +175,21 @@ export default {
     flex-shrink: 0;
 }
 
-@media (min-width: 768px) {
-    .status-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
+/* 展开态：清新蓝色主题（已展示全部，视觉从警示转平和） */
+.banned-toggle.is-expanded {
+    border-color: #c6e2ff;
+    background-color: #ecf5ff;
+}
 
-    .header-actions {
-        width: auto;
-    }
+.banned-toggle.is-expanded:active {
+    background-color: #d9ecff;
+}
+
+.banned-toggle.is-expanded .toggle-text {
+    color: #409eff;
+}
+
+.banned-toggle.is-expanded .toggle-count {
+    background-color: #409eff;
 }
 </style>

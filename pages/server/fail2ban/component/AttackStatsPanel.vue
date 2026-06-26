@@ -17,8 +17,7 @@
         </view>
 
         <view class="ip-list">
-            <view class="ip-item" :class="item.threatClass"
-                v-for="(item, index) in displayList" :key="index">
+            <view class="ip-item" :class="item.threatClass" v-for="(item, index) in displayList" :key="index">
                 <!-- 左侧排名徽章（前三名奖牌，其余圆形序号） -->
                 <view class="rank-badge" :class="getRankBadgeClass(item.rank)">
                     <template v-if="item.rank <= 3">
@@ -180,7 +179,10 @@ export default {
 /* ==================== 头部 ==================== */
 .status-header {
     display: flex;
-    flex-direction: column;
+    // flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 32rpx;
     padding-bottom: 24rpx;
     border-bottom: 1rpx solid #f0f2f5;
@@ -194,8 +196,10 @@ export default {
 }
 
 .filter-container {
-    width: 100%;
+    // width: 100%;
+    width: auto;
     display: flex;
+    justify-content: flex-end;
     align-items: center;
     gap: 16rpx;
     flex-wrap: wrap;
@@ -478,19 +482,5 @@ export default {
     padding: 60rpx 40rpx;
     color: #909399;
     font-size: 26rpx;
-}
-
-/* ==================== 响应式 ==================== */
-@media (min-width: 768px) {
-    .status-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .filter-container {
-        width: auto;
-        justify-content: flex-end;
-    }
 }
 </style>

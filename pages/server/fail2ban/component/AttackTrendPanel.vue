@@ -78,7 +78,8 @@
                             <view class="intensity-row">
                                 <view class="intensity-bar">
                                     <view class="intensity-fill" :class="getThreatClass(item.count)"
-                                        :style="{ width: item.intensity + '%' }"></view>
+                                        :style="{ width: item.intensity + '%' }">
+                                    </view>
                                 </view>
                                 <text class="intensity-pct">{{ item.intensity }}%</text>
                             </view>
@@ -654,18 +655,5 @@ export default {
     padding: 60rpx 40rpx;
     color: #909399;
     font-size: 26rpx;
-}
-
-@media (min-width: 768px) {
-    .status-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .trend-stats {
-        width: auto;
-        gap: 24rpx;
-    }
 }
 </style>
