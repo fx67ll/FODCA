@@ -14,7 +14,7 @@
                             <view class="jail-name">{{ jail.name }}</view>
                             <view class="jail-status-tag">
                                 <text :class="jail.status === '运行中' ? 'tag-success' : 'tag-info'">{{ jail.status
-                                    }}</text>
+                                }}</text>
                             </view>
                         </view>
                         <view class="jail-stats">
@@ -579,6 +579,7 @@ export default {
     display: flex;
     flex-wrap: wrap;
     gap: 16rpx;
+    margin-top: 40rpx;
 }
 
 .loading-text {

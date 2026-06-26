@@ -17,15 +17,13 @@
         </view>
 
         <view class="ip-list">
-            <view class="ip-item" :class="[`item-rank-${item.rank}`, item.threatClass]"
+            <view class="ip-item" :class="item.threatClass"
                 v-for="(item, index) in displayList" :key="index">
-                <!-- 左侧排名徽章 -->
+                <!-- 左侧排名徽章（前三名奖牌，其余圆形序号） -->
                 <view class="rank-badge" :class="getRankBadgeClass(item.rank)">
-                    <!-- 前三名：勋章图标（允许并列，名次按攻击次数计算） -->
                     <template v-if="item.rank <= 3">
                         <text class="rank-medal">{{ medalEmoji[item.rank - 1] }}</text>
                     </template>
-                    <!-- 其余：纯数字（并列时名次顺延） -->
                     <text v-else class="rank-num">{{ item.rank }}</text>
                 </view>
 
@@ -37,16 +35,25 @@
                         <view class="ip-threat" :class="item.threatClass">{{ item.threatText }}</view>
                     </view>
 
-                    <!-- 第二行：攻击次数（突出显示） + 监狱标签 -->
+                    <!-- 第二行：攻击次数 + 监狱标签 -->
                     <view class="ip-meta-row">
                         <view class="count-badge">
-                            <text class="count-num">{{ item.count }}</text>
+                            <text class="count-num" :class="item.threatClass">{{ item.count }}</text>
                             <text class="count-unit">次攻击</text>
                         </view>
                         <view class="jail-tag-wrap">
                             <text class="ip-jail-tag" v-for="jail in item.jailList" :key="jail">{{ jail }}</text>
                             <text v-if="!item.jailList.length" class="jail-unknown">未知监狱</text>
                         </view>
+                    </view>
+
+                    <!-- 第三行：攻击强度条（相对当前列表峰值占比） -->
+                    <view class="intensity-row">
+                        <view class="intensity-bar">
+                            <view class="intensity-fill" :class="item.threatClass"
+                                :style="{ width: item.intensity + '%' }"></view>
+                        </view>
+                        <text class="intensity-pct">{{ item.intensity }}%</text>
                     </view>
                 </view>
             </view>
@@ -95,6 +102,8 @@ export default {
             const sorted = [...this.topAttackIps]
                 .slice(0, this.topIpLimit)
                 .sort((a, b) => (b.count || 0) - (a.count || 0));
+            // 峰值作为强度条基准（避免除零）
+            const maxCount = sorted.length ? Math.max(...sorted.map(i => i.count || 0), 1) : 1;
             let lastCount = null;
             let lastRank = 0;
             return sorted.map((item, index) => {
@@ -109,7 +118,8 @@ export default {
                     jailList,
                     threatClass: this.getThreatClass(count),
                     threatText: this.getThreatLevelText(count),
-                    rank
+                    rank,
+                    intensity: Math.round((count / maxCount) * 100)
                 };
             });
         }
@@ -210,123 +220,74 @@ export default {
     gap: 20rpx;
 }
 
-/* ==================== 单条 IP 卡片 ==================== */
+/* ==================== 单条 IP 卡片（威胁染色柔色底） ==================== */
 .ip-item {
     display: flex;
     align-items: center;
-    padding: 28rpx 24rpx;
+    padding: 24rpx 24rpx 22rpx 20rpx;
     border-radius: 18rpx;
     background-color: #f8f9fa;
-    border-left: 8rpx solid #e4e7ed;
+    border-left: 8rpx solid #c0c4cc;
     position: relative;
     transition: all 0.2s ease;
+    box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.03);
 }
 
 .ip-item:active {
     transform: scale(0.99);
-    opacity: 0.9;
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
-/* 前三名卡片背景微调 */
-.ip-item.item-rank-1 {
-    background: linear-gradient(135deg, #fffbf0 0%, #fff8e6 100%);
-    border-left-color: #f5a623;
-}
-
-.ip-item.item-rank-2 {
-    background: linear-gradient(135deg, #f8f9fb 0%, #f2f4f7 100%);
-    border-left-color: #a0aab8;
-}
-
-.ip-item.item-rank-3 {
-    background: linear-gradient(135deg, #fdf8f5 0%, #faf3ee 100%);
-    border-left-color: #c8845a;
-}
-
-/* 威胁等级左边框颜色（4名以后用威胁色） */
+/* 威胁等级染色：浅色底 + 左侧色条（业务含义一目了然） */
 .ip-item.threat-high {
+    background-color: #fef3f3;
     border-left-color: #f56c6c;
 }
 
 .ip-item.threat-medium {
+    background-color: #fef7ed;
     border-left-color: #e6a23c;
 }
 
 .ip-item.threat-normal {
+    background-color: #f4f4f5;
     border-left-color: #909399;
 }
 
 .ip-item.threat-low {
+    background-color: #eef6ff;
     border-left-color: #409eff;
-}
-
-/* 前三名的边框优先级高于威胁色，通过顺序已覆盖，无需额外处理 */
-.ip-item.item-rank-1,
-.ip-item.item-rank-2,
-.ip-item.item-rank-3 {
-    /* 确保前三名边框不被威胁色覆盖 */
 }
 
 /* ==================== 排名徽章 ==================== */
 .rank-badge {
     width: 64rpx;
+    height: 64rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     margin-right: 20rpx;
     flex-shrink: 0;
-    gap: 2rpx;
 }
 
-/* 金牌 */
-.badge-gold {
-    .rank-medal {
-        font-size: 40rpx;
-        line-height: 1;
-    }
-
-    .medal-num {
-        font-size: 20rpx;
-        font-weight: 700;
-        color: #d48806;
-    }
-}
-
-/* 银牌 */
-.badge-silver {
-    .rank-medal {
-        font-size: 40rpx;
-        line-height: 1;
-    }
-
-    .medal-num {
-        font-size: 20rpx;
-        font-weight: 700;
-        color: #7a8a9a;
-    }
-}
-
-/* 铜牌 */
+/* 前三名：奖牌放大居中 */
+.badge-gold,
+.badge-silver,
 .badge-bronze {
     .rank-medal {
-        font-size: 40rpx;
+        font-size: 48rpx;
         line-height: 1;
-    }
-
-    .medal-num {
-        font-size: 20rpx;
-        font-weight: 700;
-        color: #9d6035;
     }
 }
 
-/* 普通排名 */
+/* 普通排名：白底圆圈，在染色卡片上更清爽 */
 .badge-normal {
     width: 52rpx;
     height: 52rpx;
     border-radius: 50%;
-    background-color: #e8eaed;
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 2rpx solid #e4e7ed;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -334,7 +295,7 @@ export default {
     .rank-num {
         font-size: 24rpx;
         font-weight: 600;
-        color: #606266;
+        color: #909399;
     }
 }
 
@@ -351,7 +312,7 @@ export default {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
+    gap: 12rpx;
     min-width: 0;
 }
 
@@ -373,31 +334,31 @@ export default {
 }
 
 .ip-threat {
-    padding: 6rpx 16rpx;
-    border-radius: 20rpx;
-    font-size: 22rpx;
+    padding: 4rpx 16rpx;
+    border-radius: 16rpx;
+    font-size: 20rpx;
     font-weight: 600;
     flex-shrink: 0;
     white-space: nowrap;
 }
 
-.threat-high {
-    background-color: #fef0f0;
+.ip-threat.threat-high {
+    background-color: #fde2e2;
     color: #f56c6c;
 }
 
-.threat-medium {
-    background-color: #fdf6ec;
+.ip-threat.threat-medium {
+    background-color: #fbeccd;
     color: #e6a23c;
 }
 
-.threat-normal {
-    background-color: #f4f4f5;
+.ip-threat.threat-normal {
+    background-color: #e9e9eb;
     color: #909399;
 }
 
-.threat-low {
-    background-color: #e6f4ff;
+.ip-threat.threat-low {
+    background-color: #d9ecff;
     color: #409eff;
 }
 
@@ -413,17 +374,30 @@ export default {
     display: flex;
     align-items: baseline;
     gap: 4rpx;
-    background-color: rgba(0, 0, 0, 0.04);
-    padding: 6rpx 16rpx;
-    border-radius: 20rpx;
     flex-shrink: 0;
 }
 
 .count-num {
-    font-size: 30rpx;
+    font-size: 32rpx;
     font-weight: 700;
-    color: #303133;
     line-height: 1;
+}
+
+/* 攻击次数按威胁染色，突出关键数字 */
+.count-num.threat-high {
+    color: #f56c6c;
+}
+
+.count-num.threat-medium {
+    color: #e6a23c;
+}
+
+.count-num.threat-normal {
+    color: #909399;
+}
+
+.count-num.threat-low {
+    color: #409eff;
 }
 
 .count-unit {
@@ -443,13 +417,59 @@ export default {
     font-size: 20rpx;
     padding: 4rpx 12rpx;
     border-radius: 20rpx;
-    background-color: #ecf5ff;
-    color: #409eff;
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #606266;
 }
 
 .jail-unknown {
     font-size: 20rpx;
     color: #c0c4cc;
+}
+
+/* 第三行：攻击强度条 */
+.intensity-row {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin-top: 2rpx;
+}
+
+.intensity-bar {
+    flex: 1;
+    height: 10rpx;
+    background-color: rgba(0, 0, 0, 0.06);
+    border-radius: 6rpx;
+    overflow: hidden;
+}
+
+.intensity-fill {
+    height: 100%;
+    border-radius: 6rpx;
+    transition: width 0.4s ease;
+}
+
+.intensity-fill.threat-high {
+    background: linear-gradient(90deg, #f8a8a8, #f56c6c);
+}
+
+.intensity-fill.threat-medium {
+    background: linear-gradient(90deg, #f3c98a, #e6a23c);
+}
+
+.intensity-fill.threat-normal {
+    background: linear-gradient(90deg, #b8b9bb, #909399);
+}
+
+.intensity-fill.threat-low {
+    background: linear-gradient(90deg, #8ec5ff, #409eff);
+}
+
+.intensity-pct {
+    font-size: 20rpx;
+    color: #909399;
+    min-width: 56rpx;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 /* ==================== 空状态 ==================== */

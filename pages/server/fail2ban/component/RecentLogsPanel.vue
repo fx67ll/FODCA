@@ -84,7 +84,8 @@ export default {
                 { label: "5条", value: 5 },
                 { label: "10条", value: 10 },
                 { label: "20条", value: 20 },
-                { label: "50条", value: 50 }
+                { label: "50条", value: 50 },
+                { label: "100条", value: 100 }
             ],
             currentLogLimit: { label: "5条", value: 5 }
         };
@@ -255,8 +256,13 @@ export default {
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .log-container {
@@ -285,8 +291,15 @@ export default {
     margin-bottom: 12rpx;
 }
 
-.log-time { font-size: 22rpx; color: #8392a5; }
-.log-level { font-size: 22rpx; font-weight: 600; }
+.log-time {
+    font-size: 22rpx;
+    color: #8392a5;
+}
+
+.log-level {
+    font-size: 22rpx;
+    font-weight: 600;
+}
 
 .log-message {
     font-size: 24rpx;
@@ -317,10 +330,25 @@ export default {
     color: #8392a5;
 }
 
-.log-error .log-message, .log-error .log-level { color: #ff7875; }
-.log-warn .log-message, .log-warn .log-level { color: #ffc53d; }
-.log-info .log-message, .log-info .log-level { color: #73d13d; }
-.log-debug .log-message, .log-debug .log-level { color: #8c8c8c; }
+.log-error .log-message,
+.log-error .log-level {
+    color: #ff7875;
+}
+
+.log-warn .log-message,
+.log-warn .log-level {
+    color: #ffc53d;
+}
+
+.log-info .log-message,
+.log-info .log-level {
+    color: #73d13d;
+}
+
+.log-debug .log-message,
+.log-debug .log-level {
+    color: #8c8c8c;
+}
 
 .empty-text {
     text-align: center;
@@ -354,6 +382,10 @@ export default {
         justify-content: space-between;
         align-items: center;
     }
-    .filter-container { width: auto; justify-content: flex-end; }
+
+    .filter-container {
+        width: auto;
+        justify-content: flex-end;
+    }
 }
 </style>
