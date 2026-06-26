@@ -1,5 +1,5 @@
 <template>
-    <view class="status-card">
+    <view class="status-card recent-logs-card">
         <view class="status-header">
             <text class="title">最近攻击日志</text>
             <view class="filter-container">
@@ -41,6 +41,12 @@
                 </view>
             </template>
             <view v-else class="empty-text">暂无符合条件的日志</view>
+        </view>
+
+        <!-- 回到本卡片标题处：加载更多后列表变长，提供一键返回日志顶部的入口 -->
+        <view class="back-to-top" v-if="filteredLogs.length > pageSize" @click="scrollToLogsTop">
+            <!-- <uni-icons type="arrowup" size="24rpx" color="#409eff"></uni-icons> -->
+            <text class="back-to-top-text">点击返回日志顶部</text>
         </view>
 
         <view class="load-more" @click="loadMore" v-if="hasMore">
@@ -152,6 +158,23 @@ export default {
 
         loadMore() {
             this.currentPage++;
+        },
+
+        // 平滑滚动到「最近攻击日志」标题处（卡片顶部留一点呼吸距离）
+        scrollToLogsTop() {
+            const query = uni.createSelectorQuery().in(this);
+            query.select('.recent-logs-card').boundingClientRect();
+            query.selectViewport().scrollOffset();
+            query.exec((res) => {
+                const rect = res[0];
+                const viewport = res[1];
+                if (!rect || !viewport) return;
+                const target = viewport.scrollTop + rect.top - 16;
+                uni.pageScrollTo({
+                    scrollTop: Math.max(target, 0),
+                    duration: 300
+                });
+            });
         },
 
         onLogLevelChange(e) {
@@ -374,6 +397,33 @@ export default {
     color: #c0c4cc;
     font-size: 24rpx;
     margin-top: 20rpx;
+}
+
+/* 回到日志顶部按钮（轻量描边款，区别于「加载更多」的浅蓝填充） */
+.back-to-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    margin-top: 16rpx;
+    padding: 18rpx;
+    background-color: #fff;
+    border: 1rpx solid #d6e4ff;
+    border-radius: 12rpx;
+    box-shadow: 0 2rpx 8rpx rgba(64, 158, 255, 0.08);
+    transition: all 0.2s ease;
+}
+
+.back-to-top:active {
+    opacity: 0.45;
+    transform: scale(0.99);
+}
+
+.back-to-top-text {
+    font-size: 24rpx;
+    color: #409eff;
+    font-weight: 500;
+    line-height: 1;
 }
 
 @media (min-width: 768px) {
