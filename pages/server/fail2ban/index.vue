@@ -94,10 +94,16 @@
             <recent-logs-panel :jail-list="jailList" ref="recentLogsPanel" />
         </template>
 
-        <!-- 悬浮刷新按钮：向下滚动后出现，刷新当前数据但不改变浏览位置 -->
-        <view class="fab-refresh" :class="{ 'show': showFab, 'is-loading': isRefreshing }" @click="handleRefresh">
-            <view v-if="isRefreshing" class="fab-spinner"></view>
-            <uni-icons v-else type="refresh" size="44rpx" color="#fff"></uni-icons>
+        <!-- 悬浮刷新按钮：向下滚动后出现；刷新时向左展开为长条椭圆显示查询进度，完成后缩回圆形 -->
+        <view class="fab-refresh" :class="[fabClass, { 'show': fabVisible }]" @click="handleRefresh">
+            <view class="fab-content">
+                <view v-if="fabState === 'loading'" class="fab-spinner"></view>
+                <uni-icons v-else-if="fabState === 'success'" type="checkmarkempty" size="40rpx" color="#fff"></uni-icons>
+                <uni-icons v-else-if="fabState === 'error'" type="close" size="40rpx" color="#fff"></uni-icons>
+                <uni-icons v-else-if="fabState === 'time'" type="calendar" size="40rpx" color="#fff"></uni-icons>
+                <uni-icons v-else type="refresh" size="44rpx" color="#fff"></uni-icons>
+                <text v-if="fabState !== 'idle'" class="fab-text">{{ fabText }}</text>
+            </view>
         </view>
     </view>
 </template>
@@ -163,13 +169,34 @@ export default {
 
             // ==================== 其他 ====================
             lastRefreshTime: "",
-            showFab: false
+            showFab: false,
+
+            // ==================== 悬浮刷新按钮动效状态 ====================
+            // idle：圆形；loading：展开椭圆「数据查询中」；success：「查询成功」；time：「已刷新 HH:mm」；error：「查询失败」
+            fabState: "idle",
+            fabTimer: null
         };
     },
     computed: {
         lockIconClass() {
             if (this.serviceStatus === "系统不匹配") return "warning-icon";
             if (this.serviceStatus === "未安装") return "info-icon";
+            return "";
+        },
+        // 仅在页面向下滚动后显示悬浮按钮（不因刷新动效而强制召唤）
+        fabVisible() {
+            return this.showFab;
+        },
+        fabClass() {
+            return "is-" + this.fabState;
+        },
+        fabText() {
+            if (this.fabState === "loading") return "数据查询中";
+            if (this.fabState === "success") return "查询成功";
+            if (this.fabState === "error") return "查询失败";
+            if (this.fabState === "time") {
+                return "已刷新 " + (this.lastRefreshTime ? this.lastRefreshTime.slice(11, 16) : "");
+            }
             return "";
         }
     },
@@ -180,6 +207,9 @@ export default {
         // 仅在跨越阈值时切换，避免每次滚动都触发响应式更新
         const shouldShow = e.scrollTop > 400;
         if (shouldShow !== this.showFab) this.showFab = shouldShow;
+    },
+    beforeDestroy() {
+        this.clearFabTimer();
     },
     methods: {
         async loadAllData() {
@@ -198,16 +228,54 @@ export default {
                     });
                 }
                 this.lastRefreshTime = this.formatDateTime(new Date());
+                return true;
             } catch (error) {
                 console.error("加载数据失败：", error);
                 uni.showToast({ title: "加载数据失败", icon: "none", duration: 2000 });
+                return false;
             }
         },
 
         handleRefresh() {
             if (this.isRefreshing) return;
             this.isRefreshing = true;
-            this.loadAllData().finally(() => { this.isRefreshing = false; });
+            this.setFabState("loading");
+            this.loadAllData().then((ok) => {
+                this.onRefreshDone(ok);
+            }).finally(() => {
+                this.isRefreshing = false;
+            });
+        },
+
+        // 悬浮按钮状态机：loading → success/error → time → idle
+        setFabState(state) {
+            this.clearFabTimer();
+            this.fabState = state;
+        },
+
+        clearFabTimer() {
+            if (this.fabTimer) {
+                clearTimeout(this.fabTimer);
+                this.fabTimer = null;
+            }
+        },
+
+        onRefreshDone(ok) {
+            this.setFabState(ok ? "success" : "error");
+            this.fabTimer = setTimeout(() => {
+                if (ok && this.fabState === "success") {
+                    this.setFabState("time");
+                    this.fabTimer = setTimeout(() => {
+                        if (this.fabState === "time") this.setFabState("idle");
+                        this.fabTimer = null;
+                    // }, 2000);
+                    }, 888);
+                } else if (this.fabState === "error") {
+                    this.setFabState("idle");
+                    this.fabTimer = null;
+                }
+            // }, 1000);
+            }, 888);
         },
 
         async loadServiceStatus() {
