@@ -17,10 +17,11 @@
             <view class="status-header">
                 <text class="title">Fail2ban 防护状态</text>
                 <view class="header-actions">
-                    <view class="refresh-container">
-                        <text class="refresh-time" v-if="lastRefreshTime">最后刷新: {{ lastRefreshTime }}</text>
-                        <uni-icons type="refresh" size="36rpx" color="#409eff" @click="handleRefresh"
-                            :class="{ 'rotate': isRefreshing }"></uni-icons>
+                    <text class="refresh-time" v-if="lastRefreshTime">最后刷新: {{ lastRefreshTime }}</text>
+                    <view class="refresh-pill" :class="{ 'is-loading': isRefreshing }" @click="handleRefresh">
+                        <view v-if="isRefreshing" class="pill-spinner"></view>
+                        <uni-icons v-else type="refresh" size="26rpx" color="#409eff"></uni-icons>
+                        <text class="refresh-pill-text">{{ isRefreshing ? '刷新中' : '刷新' }}</text>
                     </view>
                 </view>
             </view>
@@ -28,53 +29,53 @@
             <!-- 状态内容区 + 统计卡片（刷新时显示加载遮罩） -->
             <view class="status-body">
                 <view class="status-content">
-                <view class="status-indicator">
-                    <view class="indicator-dot"
-                        :class="serviceStatus === '运行中' ? 'running' : serviceStatus === '系统不匹配' ? 'unknown' : serviceStatus === '未安装' ? 'unknown' : 'stopped'">
+                    <view class="status-indicator">
+                        <view class="indicator-dot"
+                            :class="serviceStatus === '运行中' ? 'running' : serviceStatus === '系统不匹配' ? 'unknown' : serviceStatus === '未安装' ? 'unknown' : 'stopped'">
+                        </view>
+                        <text class="status-text">{{ serviceStatus }}</text>
                     </view>
-                    <text class="status-text">{{ serviceStatus }}</text>
+
+                    <view class="service-info">
+                        <view class="info-item">
+                            <text class="info-label">版本号</text>
+                            <text class="info-value">{{ serviceInfo.version }}</text>
+                        </view>
+                        <view class="info-item">
+                            <text class="info-label">防火墙状态</text>
+                            <text class="info-value"
+                                :class="serviceInfo.firewallStatus.startsWith('运行中') ? 'text-success' : 'text-danger'">
+                                {{ serviceInfo.firewallStatus }}
+                            </text>
+                        </view>
+                        <view class="info-item info-item-full">
+                            <text class="info-label">运行时间</text>
+                            <text class="info-value">{{ serviceInfo.uptime }}</text>
+                        </view>
+                    </view>
                 </view>
 
-                <view class="service-info">
-                    <view class="info-item">
-                        <text class="info-label">版本号</text>
-                        <text class="info-value">{{ serviceInfo.version }}</text>
+                <!-- 统计卡片 -->
+                <view class="stats-grid">
+                    <view class="stat-card">
+                        <view class="stat-value">{{ serviceInfo.totalJails }}</view>
+                        <view class="stat-label">防护监狱</view>
                     </view>
-                    <view class="info-item">
-                        <text class="info-label">防火墙状态</text>
-                        <text class="info-value"
-                            :class="serviceInfo.firewallStatus.startsWith('运行中') ? 'text-success' : 'text-danger'">
-                            {{ serviceInfo.firewallStatus }}
-                        </text>
+                    <view class="stat-card">
+                        <view class="stat-value">{{ serviceInfo.totalBannedIps }}</view>
+                        <view class="stat-label">当前封禁IP</view>
                     </view>
-                    <view class="info-item info-item-full">
-                        <text class="info-label">运行时间</text>
-                        <text class="info-value">{{ serviceInfo.uptime }}</text>
+                    <view class="stat-card stat-card-full">
+                        <view class="stat-value">{{ serviceInfo.totalFailedAttempts }}</view>
+                        <view class="stat-label">总攻击次数</view>
                     </view>
                 </view>
-            </view>
 
-            <!-- 统计卡片 -->
-            <view class="stats-grid">
-                <view class="stat-card">
-                    <view class="stat-value">{{ serviceInfo.totalJails }}</view>
-                    <view class="stat-label">防护监狱</view>
+                <!-- 刷新加载遮罩 -->
+                <view v-if="isRefreshing" class="refresh-loading-mask">
+                    <view class="loading-spinner"></view>
+                    <text class="loading-text">刷新中...</text>
                 </view>
-                <view class="stat-card">
-                    <view class="stat-value">{{ serviceInfo.totalBannedIps }}</view>
-                    <view class="stat-label">当前封禁IP</view>
-                </view>
-                <view class="stat-card stat-card-full">
-                    <view class="stat-value">{{ serviceInfo.totalFailedAttempts }}</view>
-                    <view class="stat-label">总攻击次数</view>
-                </view>
-            </view>
-
-            <!-- 刷新加载遮罩 -->
-            <view v-if="isRefreshing" class="refresh-loading-mask">
-                <view class="loading-spinner"></view>
-                <text class="loading-text">刷新中...</text>
-            </view>
             </view>
         </view>
 
@@ -82,15 +83,10 @@
         <template v-if="!isSystemLocked">
             <jail-status-panel :jail-list="jailList" />
 
-            <attack-trend-panel
-                :trend-data="trendData"
-                :max-trend-count="maxTrendCount"
-                :total-trend-attacks="totalTrendAttacks"
-                :baseline-max-retry="baselineMaxRetry" />
+            <attack-trend-panel :trend-data="trendData" :max-trend-count="maxTrendCount"
+                :total-trend-attacks="totalTrendAttacks" :baseline-max-retry="baselineMaxRetry" />
 
-            <attack-stats-panel
-                :top-attack-ips="topAttackIps"
-                :baseline-max-retry="baselineMaxRetry"
+            <attack-stats-panel :top-attack-ips="topAttackIps" :baseline-max-retry="baselineMaxRetry"
                 @stats-change="onStatsChange" />
 
             <banned-ip-list :all-banned-ips="allBannedIps" />
@@ -99,9 +95,9 @@
         </template>
 
         <!-- 悬浮刷新按钮：向下滚动后出现，刷新当前数据但不改变浏览位置 -->
-        <view class="fab-refresh" v-if="showFab" @click="handleRefresh">
-            <uni-icons type="refresh" size="44rpx" color="#fff"
-                :class="{ 'rotate': isRefreshing }"></uni-icons>
+        <view class="fab-refresh" :class="{ 'show': showFab, 'is-loading': isRefreshing }" @click="handleRefresh">
+            <view v-if="isRefreshing" class="fab-spinner"></view>
+            <uni-icons v-else type="refresh" size="44rpx" color="#fff"></uni-icons>
         </view>
     </view>
 </template>
@@ -349,7 +345,10 @@ export default {
 
 .lock-overlay {
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: rgba(255, 255, 255, 0.9);
     border-radius: 20rpx;
     display: flex;
@@ -364,8 +363,13 @@ export default {
     margin-bottom: 32rpx;
 }
 
-.lock-icon.warning-icon { color: #e6a23c; }
-.lock-icon.info-icon { color: #409eff; }
+.lock-icon.warning-icon {
+    color: #e6a23c;
+}
+
+.lock-icon.info-icon {
+    color: #409eff;
+}
 
 .lock-text {
     text-align: center;
@@ -399,8 +403,9 @@ export default {
 .header-actions {
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 16rpx;
 }
 
 .title {
@@ -409,24 +414,59 @@ export default {
     color: #1f2d3d;
 }
 
-.refresh-container {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-}
-
 .refresh-time {
     font-size: 22rpx;
     color: #909399;
 }
 
-.rotate {
-    animation: rotate 1s linear infinite;
+/* 药丸刷新按钮 */
+.refresh-pill {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 10rpx 22rpx;
+    background-color: #ecf5ff;
+    border-radius: 32rpx;
+    transition: all 0.2s ease;
+}
+
+.refresh-pill:active {
+    transform: scale(0.96);
+    opacity: 0.85;
+}
+
+.refresh-pill.is-loading {
+    background-color: #f4f4f5;
+}
+
+.refresh-pill-text {
+    font-size: 24rpx;
+    color: #409eff;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.refresh-pill.is-loading .refresh-pill-text {
+    color: #909399;
+}
+
+.pill-spinner {
+    width: 24rpx;
+    height: 24rpx;
+    border: 3rpx solid #dcdfe6;
+    border-top-color: #409eff;
+    border-radius: 50%;
+    animation: rotate 0.8s linear infinite;
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .status-body {
@@ -522,9 +562,14 @@ export default {
     border-radius: 12rpx;
 }
 
-.info-item-full { grid-column: span 2; }
+.info-item-full {
+    grid-column: span 2;
+}
 
-.info-label { font-size: 24rpx; color: #909399; }
+.info-label {
+    font-size: 24rpx;
+    color: #909399;
+}
 
 .info-value {
     font-size: 28rpx;
@@ -533,8 +578,13 @@ export default {
     word-break: break-all;
 }
 
-.text-success { color: #52c41a !important; }
-.text-danger { color: #f5222d !important; }
+.text-success {
+    color: #52c41a !important;
+}
+
+.text-danger {
+    color: #f5222d !important;
+}
 
 .stats-grid {
     display: grid;
@@ -543,7 +593,9 @@ export default {
     margin-top: 8rpx;
 }
 
-.stat-card-full { grid-column: span 2; }
+.stat-card-full {
+    grid-column: span 2;
+}
 
 .stat-card {
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f5 100%);
@@ -566,17 +618,36 @@ export default {
 }
 
 @media (min-width: 768px) {
-    .app-container { padding: 32rpx; }
-    .stats-grid { grid-template-columns: repeat(3, 1fr); }
-    .stat-card-full { grid-column: span 1; }
-    .service-info { grid-template-columns: repeat(3, 1fr); }
-    .info-item-full { grid-column: span 1; }
+    .app-container {
+        padding: 32rpx;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stat-card-full {
+        grid-column: span 1;
+    }
+
+    .service-info {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .info-item-full {
+        grid-column: span 1;
+    }
+
     .status-header {
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
     }
-    .header-actions { width: auto; justify-content: flex-end; }
+
+    .header-actions {
+        width: auto;
+        justify-content: flex-start;
+    }
 }
 
 /* 悬浮刷新按钮（类似一键回顶，位于右下角，仅刷新数据不改变浏览位置） */
@@ -593,10 +664,34 @@ export default {
     align-items: center;
     justify-content: center;
     z-index: 99;
+    opacity: 0;
+    transform: scale(0.6) translateY(20rpx);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.fab-refresh.show {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
 }
 
 .fab-refresh:active {
     transform: scale(0.92);
-    opacity: 0.9;
+}
+
+.fab-refresh.is-loading {
+    background: linear-gradient(135deg, #7ab8ff 0%, #5a9eef 100%);
+    box-shadow: 0 8rpx 24rpx rgba(64, 158, 255, 0.3);
+    pointer-events: none;
+}
+
+.fab-spinner {
+    width: 44rpx;
+    height: 44rpx;
+    border: 5rpx solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: rotate 0.8s linear infinite;
 }
 </style>
