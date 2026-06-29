@@ -6,8 +6,7 @@
     <meta name="renderer" content="webkit" />
     <title><%= htmlWebpackPlugin.options.title %></title>
     <link rel="shortcut icon" type="image/x-icon" href="<%= BASE_URL %>static/favicon.ico" />
-    <script src="/static/js/quill.min.js"></script>
-    <script src="/static/js/image-resize.min.js"></script>
+    <!-- quill.min.js 和 image-resize.min.js 已从 static/js 移除，H5 构建由 npm 依赖通过 webpack 自动打包 -->
     <script>
       var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') || CSS
       	.supports('top: constant(a)'))
