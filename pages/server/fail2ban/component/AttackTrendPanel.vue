@@ -42,6 +42,8 @@
             </view>
             <view class="popup-content">
                 <view v-if="currentHourTopIps.length > 0">
+                    <!-- 微信小程序模板不支持调用带参方法，H5 用方法调用，MP-WEIXIN 用预计算字段 -->
+                    <!-- #ifdef H5 -->
                     <view class="hourly-ip-item" :class="getThreatClass(item.count)"
                         v-for="(item, index) in currentHourTopIpsRanked" :key="index">
                         <!-- 排名徽章（允许并列，名次按攻击次数计算） -->
@@ -85,6 +87,52 @@
                             </view>
                         </view>
                     </view>
+                    <!-- #endif -->
+                    <!-- #ifdef MP-WEIXIN -->
+                    <view class="hourly-ip-item" :class="item.threatClass"
+                        v-for="(item, index) in currentHourTopIpsRanked" :key="index">
+                        <!-- 排名徽章（允许并列，名次按攻击次数计算） -->
+                        <view class="rank-badge" :class="item.rankBadgeClass">
+                            <template v-if="item.rank <= 3">
+                                <text class="rank-medal">{{ medalEmoji[item.rank - 1] }}</text>
+                            </template>
+                            <text v-else class="rank-num">{{ item.rank }}</text>
+                        </view>
+
+                        <!-- IP 信息 -->
+                        <view class="ip-info">
+                            <!-- IP 地址 + 威胁等级 -->
+                            <view class="ip-main-row">
+                                <text class="ip-address">{{ item.ip }}</text>
+                                <view class="ip-threat" :class="item.threatClass">
+                                    {{ item.threatText }}
+                                </view>
+                            </view>
+                            <!-- 攻击次数 + 监狱标签 -->
+                            <view class="ip-meta-row">
+                                <view class="count-badge">
+                                    <text class="count-num" :class="item.threatClass">{{ item.count }}</text>
+                                    <text class="count-unit">次攻击</text>
+                                </view>
+                                <view class="jail-tag-wrap">
+                                    <text class="ip-jail-tag" v-for="jail in item.jailList" :key="jail">
+                                        {{ jail }}
+                                    </text>
+                                    <text v-if="!item.jailList.length" class="jail-unknown">未知监狱</text>
+                                </view>
+                            </view>
+                            <!-- 攻击强度条（相对当前时段峰值占比） -->
+                            <view class="intensity-row">
+                                <view class="intensity-bar">
+                                    <view class="intensity-fill" :class="item.threatClass"
+                                        :style="{ width: item.intensity + '%' }">
+                                    </view>
+                                </view>
+                                <text class="intensity-pct">{{ item.intensity }}%</text>
+                            </view>
+                        </view>
+                    </view>
+                    <!-- #endif -->
                 </view>
                 <view v-else class="empty-text">该时段暂无攻击IP记录</view>
             </view>
@@ -152,7 +200,16 @@ export default {
                 const rank = (lastCount === null || count !== lastCount) ? index + 1 : lastRank;
                 lastCount = count;
                 lastRank = rank;
-                return { ...item, rank, intensity: Math.round((count / maxCount) * 100) };
+                return {
+                    ...item,
+                    rank,
+                    intensity: Math.round((count / maxCount) * 100),
+                    // 微信小程序模板不支持调用带参方法，预计算以下字段供 MP-WEIXIN 分支使用
+                    threatClass: this.getThreatClass(count),
+                    threatText: this.getThreatLevelText(count),
+                    rankBadgeClass: this.getRankBadgeClass(rank),
+                    jailList: this.splitJails(item.jails)
+                };
             });
         }
     },

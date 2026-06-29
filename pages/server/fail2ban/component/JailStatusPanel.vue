@@ -7,6 +7,8 @@
             </view>
 
             <view class="jail-list">
+                <!-- 微信小程序模板不支持调用带参方法，H5 用方法调用，MP-WEIXIN 用预计算字段 -->
+                <!-- #ifdef H5 -->
                 <view class="jail-item" v-for="jail in paginatedJailList" :key="jail.name"
                     @click="openJailDetail(jail)">
                     <view class="jail-main">
@@ -42,6 +44,44 @@
                     </view>
                     <uni-icons type="arrowright" size="32rpx" color="#c0c4cc"></uni-icons>
                 </view>
+                <!-- #endif -->
+                <!-- #ifdef MP-WEIXIN -->
+                <view class="jail-item" v-for="jail in paginatedJailListWithClass" :key="jail.name"
+                    @click="openJailDetail(jail)">
+                    <view class="jail-main">
+                        <view class="jail-header">
+                            <view class="jail-name">{{ jail.name }}</view>
+                            <view class="jail-status-tag">
+                                <text :class="jail.status === '运行中' ? 'tag-success' : 'tag-info'">{{ jail.status
+                                }}</text>
+                            </view>
+                        </view>
+                        <view class="jail-stats">
+                            <view class="jail-stat-item">
+                                <text class="stat-num" :class="jail.currentlyFailedClass">{{
+                                    jail.currentlyFailed || 0 }}</text>
+                                <text class="stat-label">当前失败</text>
+                            </view>
+                            <view class="jail-stat-item">
+                                <text class="stat-num" :class="jail.totalFailedClass">{{
+                                    jail.totalFailed || 0 }}</text>
+                                <text class="stat-label">总失败尝试</text>
+                            </view>
+                            <view class="jail-stat-item">
+                                <text class="stat-num" :class="jail.currentlyBannedClass">{{
+                                    jail.currentlyBanned || 0 }}</text>
+                                <text class="stat-label">当前封禁</text>
+                            </view>
+                            <view class="jail-stat-item">
+                                <text class="stat-num" :class="jail.totalBannedClass">{{
+                                    jail.totalBanned || 0 }}</text>
+                                <text class="stat-label">累计封禁</text>
+                            </view>
+                        </view>
+                    </view>
+                    <uni-icons type="arrowright" size="32rpx" color="#c0c4cc"></uni-icons>
+                </view>
+                <!-- #endif -->
             </view>
 
             <view class="load-more" @click="loadMore" v-if="hasMore">
@@ -71,6 +111,7 @@
                                     {{ detailData.status }}
                                 </text>
                             </view>
+                            <!-- #ifdef H5 -->
                             <view class="detail-item">
                                 <text class="detail-label">当前失败</text>
                                 <text class="detail-value" :class="statNumClass(detailData.currentlyFailed, 'fail')">{{
@@ -91,6 +132,29 @@
                                 <text class="detail-value" :class="statNumClass(detailData.totalBanned, 'ban')">{{
                                     detailData.totalBanned || '0' }}</text>
                             </view>
+                            <!-- #endif -->
+                            <!-- #ifdef MP-WEIXIN -->
+                            <view class="detail-item">
+                                <text class="detail-label">当前失败</text>
+                                <text class="detail-value" :class="detailCurrentlyFailedClass">{{
+                                    detailData.currentlyFailed || '0' }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">总失败尝试</text>
+                                <text class="detail-value" :class="detailTotalFailedClass">{{
+                                    detailData.totalFailed || '0' }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">当前封禁</text>
+                                <text class="detail-value" :class="detailCurrentlyBannedClass">{{
+                                    detailData.currentlyBanned || '0' }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-label">累计封禁</text>
+                                <text class="detail-value" :class="detailTotalBannedClass">{{
+                                    detailData.totalBanned || '0' }}</text>
+                            </view>
+                            <!-- #endif -->
                             <view class="detail-item" style="grid-column: span 2;">
                                 <text class="detail-label">日志路径</text>
                                 <text class="detail-value">{{ detailData.logPath || '未知' }}</text>
@@ -191,6 +255,28 @@ export default {
         },
         paginatedJailList() {
             return this.sortedJailList.slice(0, this.currentPage * this.pageSize);
+        },
+        // 微信小程序模板不支持调用带参方法，预计算以下字段供 MP-WEIXIN 分支使用
+        paginatedJailListWithClass() {
+            return this.paginatedJailList.map(jail => ({
+                ...jail,
+                currentlyFailedClass: this.statNumClass(jail.currentlyFailed, 'fail'),
+                totalFailedClass: this.statNumClass(jail.totalFailed, 'fail'),
+                currentlyBannedClass: this.statNumClass(jail.currentlyBanned, 'ban'),
+                totalBannedClass: this.statNumClass(jail.totalBanned, 'ban'),
+            }));
+        },
+        detailCurrentlyFailedClass() {
+            return this.statNumClass(this.detailData.currentlyFailed, 'fail');
+        },
+        detailTotalFailedClass() {
+            return this.statNumClass(this.detailData.totalFailed, 'fail');
+        },
+        detailCurrentlyBannedClass() {
+            return this.statNumClass(this.detailData.currentlyBanned, 'ban');
+        },
+        detailTotalBannedClass() {
+            return this.statNumClass(this.detailData.totalBanned, 'ban');
         },
         hasMore() {
             return this.currentPage * this.pageSize < this.sortedJailList.length;

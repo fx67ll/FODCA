@@ -19,12 +19,23 @@
         <view class="ip-list" :class="'ip-limit-' + topIpLimit">
             <view class="ip-item" :class="item.threatClass" v-for="(item, index) in displayList" :key="index">
                 <!-- 左侧排名徽章（前三名奖牌，其余圆形序号） -->
+                <!-- 微信小程序模板不支持调用带参方法，H5 用方法调用，MP-WEIXIN 用预计算字段 -->
+                <!-- #ifdef H5 -->
                 <view class="rank-badge" :class="getRankBadgeClass(item.rank)">
                     <template v-if="item.rank <= 3">
                         <text class="rank-medal">{{ medalEmoji[item.rank - 1] }}</text>
                     </template>
                     <text v-else class="rank-num">{{ item.rank }}</text>
                 </view>
+                <!-- #endif -->
+                <!-- #ifdef MP-WEIXIN -->
+                <view class="rank-badge" :class="item.rankBadgeClass">
+                    <template v-if="item.rank <= 3">
+                        <text class="rank-medal">{{ medalEmoji[item.rank - 1] }}</text>
+                    </template>
+                    <text v-else class="rank-num">{{ item.rank }}</text>
+                </view>
+                <!-- #endif -->
 
                 <!-- 主体信息 -->
                 <view class="ip-info">
@@ -136,6 +147,7 @@ export default {
                     threatClass: this.getThreatClass(count),
                     threatText: this.getThreatLevelText(count),
                     rank,
+                    rankBadgeClass: this.getRankBadgeClass(rank),
                     intensity: Math.round((count / maxCount) * 100)
                 };
             });
