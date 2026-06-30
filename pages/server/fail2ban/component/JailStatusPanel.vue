@@ -167,7 +167,7 @@
                         <view class="detail-grid">
                             <view class="detail-item">
                                 <text class="detail-label">封禁时长</text>
-                                <text class="detail-value">{{ detailData.config.bantime || '未知' }}</text>
+                                <text class="detail-value">{{ detailData.config.bantime === '-1秒' ? '永久' : (detailData.config.bantime || '未知') }}</text>
                             </view>
                             <view class="detail-item">
                                 <text class="detail-label">检测窗口</text>
