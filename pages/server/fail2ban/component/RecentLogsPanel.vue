@@ -50,7 +50,7 @@
         </view>
 
         <view class="load-more" @click="loadMore" v-if="hasMore">
-            <text>加载更多</text>
+            <text>加载更多日志</text>
         </view>
         <view class="no-more" v-else-if="filteredLogs.length > pageSize">
             <text>没有更多了</text>
