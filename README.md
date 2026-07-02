@@ -5,6 +5,10 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.7.6.20260702
+* 优化`Tomcat`界面按钮动效  
+* 优化`Fail2Ban`监狱列表查看交互  
+
 ## 0.7.5.20260630
 * 新增对接`Fail2Ban`监狱永久封禁数据  
 
