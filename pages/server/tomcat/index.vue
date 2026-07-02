@@ -18,8 +18,10 @@
                 <text class="title">Tomcat 服务管理</text>
                 <!-- 刷新区域 -->
                 <view class="refresh-container">
-                    <uni-icons type="refresh" size="32rpx" color="#409eff" @click="handleRefresh"
-                        :disabled="isSystemLocked"></uni-icons>
+                    <view class="icon-tap" @click="handleRefresh">
+                        <uni-icons class="refresh-icon" :class="{ 'is-spinning': isRefreshing }" type="refresh"
+                            size="32rpx" color="#409eff"></uni-icons>
+                    </view>
                     <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
                 </view>
             </view>
@@ -67,7 +69,10 @@
                     <text class="title">系统内存信息</text>
                     <!-- 刷新区域 -->
                     <view class="refresh-container">
-                        <uni-icons type="refresh" size="32rpx" color="#409eff" @click="queryStatus"></uni-icons>
+                        <view class="icon-tap" @click="handleRefresh">
+                            <uni-icons class="refresh-icon" :class="{ 'is-spinning': isRefreshing }" type="refresh"
+                                size="32rpx" color="#409eff"></uni-icons>
+                        </view>
                         <text class="refresh-time" v-if="lastRefreshTime">{{ lastRefreshTime }}</text>
                     </view>
                 </view>
@@ -133,10 +138,12 @@
                 <!-- 头部区域 -->
                 <view class="status-header">
                     <text class="title">GitHub 连通性检测</text>
-                    <!-- 刷新区域 -->
+                    <!-- 重置区域 -->
                     <view class="refresh-container">
-                        <uni-icons type="map-pin-ellipse" size="32rpx" color="#409eff"
-                            @click="handleRefreshGithub"></uni-icons>
+                        <view class="icon-tap" @click="handleRefreshGithub">
+                            <uni-icons class="reset-icon" :class="{ 'is-bouncing': isResetBouncing }"
+                                type="map-pin-ellipse" size="32rpx" color="#409eff"></uni-icons>
+                        </view>
                         <text class="refresh-time" v-if="lastGithubTestTime">{{ lastGithubTestTime }}</text>
                     </view>
                 </view>
@@ -241,7 +248,11 @@ export default {
             isRefreshingGithub: false,
 
             // 清理缓存状态
-            clearingCache: false
+            clearingCache: false,
+
+            // GitHub 重置按钮弹跳动效
+            isResetBouncing: false,
+            resetBounceTimer: null
         };
     },
     // 新增计算属性，替代原有的 getStatusClass 方法（解决微信小程序不支持模板内方法调用）
@@ -296,23 +307,39 @@ export default {
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
         }
+        if (this.resetBounceTimer) {
+            clearTimeout(this.resetBounceTimer);
+        }
     },
     methods: {
         /**
-         * 手动刷新状态
+         * 手动刷新状态（保证图标至少旋转一圈）
          */
         handleRefresh() {
+            if (this.isRefreshing || this.isSystemLocked) return;
             this.isRefreshing = true;
+            const startAt = Date.now();
             this.queryStatus().finally(() => {
-                this.isRefreshing = false;
+                const elapsed = Date.now() - startAt;
+                const minSpin = 800; // 至少旋转一圈
+                const remain = Math.max(0, minSpin - elapsed);
+                setTimeout(() => {
+                    this.isRefreshing = false;
+                }, remain);
             });
         },
 
         /**
-         * 手动刷新GitHub检测状态
+         * 手动刷新GitHub检测状态（重置）
          */
         handleRefreshGithub() {
             this.isRefreshingGithub = true;
+            // 弹跳动效
+            this.isResetBouncing = true;
+            if (this.resetBounceTimer) clearTimeout(this.resetBounceTimer);
+            this.resetBounceTimer = setTimeout(() => {
+                this.isResetBouncing = false;
+            }, 600);
             // 重置状态
             this.tcpStatus = "waiting";
             this.httpStatus = "waiting";
@@ -734,6 +761,61 @@ export default {
     gap: 16rpx;
 }
 
+/* 点击包裹层：承担缩放反馈，与图标自身的旋转/弹跳分离避免 transform 冲突 */
+.icon-tap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.icon-tap:active {
+    transform: scale(0.85);
+    opacity: 0.85;
+}
+
+/* 刷新中：图标持续旋转（保证至少一圈，动画明显） */
+.refresh-icon.is-spinning {
+    display: inline-block;
+    animation: tomcat-spin 1s linear infinite;
+}
+
+/* 重置按钮：点击弹跳 */
+.reset-icon.is-bouncing {
+    display: inline-block;
+    animation: tomcat-bounce 0.6s cubic-bezier(0.36, 0, 0.66, 1);
+}
+
+@keyframes tomcat-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes tomcat-bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    25% {
+        transform: translateY(-30%);
+    }
+
+    50% {
+        transform: translateY(0);
+    }
+
+    75% {
+        transform: translateY(-15%);
+    }
+}
+
 /* 刷新按钮 */
 .refresh-btn {
     display: flex;
@@ -821,6 +903,12 @@ export default {
     justify-content: center;
     border: none;
     font-size: 28rpx;
+    /* 修复移动端 button 默认 ::after 伪元素边框：圆角会裁切边框导致线条不完整 */
+    position: relative;
+}
+
+.btn::after {
+    border: none;
 }
 
 /* 启动按钮 */
