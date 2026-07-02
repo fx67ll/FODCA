@@ -4,6 +4,11 @@
         <view class="status-card">
             <view class="status-header">
                 <text class="title">监狱防护状态</text>
+                <!-- 第一页：加载更多收纳到标题行右侧，不占用主区域 -->
+                <view class="load-more-inline" v-if="currentPage === 1 && hasMore" @click="loadMore">
+                    <text>查看更多</text>
+                    <!-- <uni-icons type="paperplane-filled" size="22rpx" color="#409eff"></uni-icons> -->
+                </view>
             </view>
 
             <view class="jail-list">
@@ -84,11 +89,16 @@
                 <!-- #endif -->
             </view>
 
-            <view class="load-more" @click="loadMore" v-if="hasMore">
+            <!-- 回到监狱顶部：加载更多后列表变长，一键回顶并将分页还原为初始状态 -->
+            <view class="back-to-top" v-if="currentPage > 1" @click="backToJailTop">
+                <text class="back-to-top-text">回到监狱顶部</text>
+            </view>
+
+            <view class="load-more" @click="loadMore" v-if="currentPage > 1 && hasMore">
                 <text>加载更多监狱</text>
             </view>
-            <view class="no-more" v-else-if="sortedJailList.length > pageSize">
-                <text>没有更多监狱</text>
+            <view class="no-more" v-else-if="currentPage > 1 && !hasMore && sortedJailList.length > pageSize">
+                <text>没有更多了</text>
             </view>
         </view>
 
@@ -167,7 +177,8 @@
                         <view class="detail-grid">
                             <view class="detail-item">
                                 <text class="detail-label">封禁时长</text>
-                                <text class="detail-value">{{ detailData.config.bantime === '-1秒' ? '永久' : (detailData.config.bantime || '未知') }}</text>
+                                <text class="detail-value">{{ detailData.config.bantime === '-1秒' ? '永久' :
+                                    (detailData.config.bantime || '未知') }}</text>
                             </view>
                             <view class="detail-item">
                                 <text class="detail-label">检测窗口</text>
@@ -232,7 +243,9 @@ export default {
     data() {
         return {
             currentPage: 1,
-            pageSize: 5,
+            pageSize: 3,
+            // 优先展示的监狱名称（存在则排前，按此顺序）
+            priorityJails: ['recidive', 'ssl-protect', 'sshd'],
             showDetail: false,
             isLoading: false,
             loadingText: "加载中...",
@@ -248,6 +261,13 @@ export default {
     computed: {
         sortedJailList() {
             return [...this.jailList].sort((a, b) => {
+                // 优先展示指定监狱（recidive / ssl-protect / sshd），按预设顺序排列
+                const ai = this.priorityJails.indexOf(a.name);
+                const bi = this.priorityJails.indexOf(b.name);
+                const aPriority = ai === -1 ? Infinity : ai;
+                const bPriority = bi === -1 ? Infinity : bi;
+                if (aPriority !== bPriority) return aPriority - bPriority;
+                // 同优先级内，运行中的排前
                 if (a.status === '运行中' && b.status !== '运行中') return -1;
                 if (a.status !== '运行中' && b.status === '运行中') return 1;
                 return 0;
@@ -292,6 +312,24 @@ export default {
     methods: {
         loadMore() {
             this.currentPage++;
+        },
+
+        // 回到监狱顶部：还原分页为初始状态并滚动到卡片标题处
+        backToJailTop() {
+            this.currentPage = 1;
+            const query = uni.createSelectorQuery().in(this);
+            query.select('.status-card').boundingClientRect();
+            query.selectViewport().scrollOffset();
+            query.exec((res) => {
+                const rect = res[0];
+                const viewport = res[1];
+                if (!rect || !viewport) return;
+                const target = viewport.scrollTop + rect.top - 16;
+                uni.pageScrollTo({
+                    scrollTop: Math.max(target, 0),
+                    duration: 300
+                });
+            });
         },
 
         // 数字业务含义着色：封禁类(红) / 失败类(橙) / 零值(灰)，参考 Web 端 JailStatusPanel
@@ -376,7 +414,9 @@ export default {
 
 .status-header {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 32rpx;
     padding-bottom: 24rpx;
     border-bottom: 1rpx solid #f0f2f5;
@@ -386,6 +426,26 @@ export default {
     font-size: 34rpx;
     font-weight: 600;
     color: #1f2d3d;
+}
+
+/* 标题行内的加载更多：紧凑次要样式，不占主区域 */
+.load-more-inline {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 8rpx 18rpx;
+    background-color: #f0f7ff;
+    border-radius: 24rpx;
+    color: #409eff;
+    font-size: 22rpx;
+    font-weight: 500;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.load-more-inline:active {
+    opacity: 0.7;
+    transform: scale(0.96);
 }
 
 .jail-list {
@@ -488,6 +548,32 @@ export default {
     color: #c0c4cc;
     font-size: 24rpx;
     margin-top: 20rpx;
+}
+
+/* 回到监狱顶部按钮（药丸款，与日志页返回顶部风格一致） */
+.back-to-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    margin: 20rpx auto 0;
+    padding: 16rpx 36rpx;
+    background: linear-gradient(135deg, #f0f7ff 0%, #e8f3ff 100%);
+    border-radius: 32rpx;
+    box-shadow: 0 2rpx 8rpx rgba(64, 158, 255, 0.1);
+    transition: all 0.2s ease;
+}
+
+.back-to-top:active {
+    opacity: 0.7;
+    transform: scale(0.96);
+}
+
+.back-to-top-text {
+    font-size: 24rpx;
+    color: #409eff;
+    font-weight: 500;
+    line-height: 1;
 }
 
 /* 弹窗 */
