@@ -5,6 +5,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.8.1.2026074
+* 新增`系统公告`相关功能  
+
 ## 0.7.6.20260702
 * 优化`Tomcat`界面按钮动效  
 * 优化`Fail2Ban`监狱列表查看交互  
