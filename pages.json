@@ -171,6 +171,18 @@
       "style": {
         "navigationBarTitleText": "fail2ban监控"
       }
+    },
+    {
+      "path": "pages/notice/log/index/index",
+      "style": {
+        "navigationBarTitleText": "系统公告"
+      }
+    },
+    {
+      "path": "pages/notice/log/edit/edit",
+      "style": {
+        "navigationBarTitleText": "编辑公告"
+      }
     }
   ],
   "tabBar": {

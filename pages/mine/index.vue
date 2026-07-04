@@ -107,6 +107,12 @@
       </view>
 
       <view class="menu-list menu-list-last">
+        <view class="list-cell list-cell-arrow" @click="handleToNotice">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="chat" size="20"></uni-icons></view>
+            <view>系统公告</view>
+          </view>
+        </view>
         <view class="list-cell list-cell-arrow" @click="handleAbout">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="paperclip" size="20"></uni-icons></view>
@@ -121,16 +127,25 @@
         </view>
       </view>
     </view>
+
+    <!-- 最新公告弹窗 -->
+    <noticePopup :isShow="isShowNoticePopup" :noticeInfo="latestNoticeInfo" @close="closeNoticePopup"
+      @viewAll="handleViewAllNotice" />
   </view>
 </template>
 
 <script>
+import noticePopup from "@/pages/notice/component/noticePopup.vue";
+
 // 获取加密配置
 import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
+import { latestNoticeLog } from "@/api/fx67ll/notice/log.js";
 import { decryptString } from "@/utils/index";
 import { getCryptoSaltKey } from "@/neverUploadToGithub";
+import { getToken } from "@/utils/auth";
 
 export default {
+  components: { noticePopup },
   data() {
     return {
       // 当前登录用户信息
@@ -139,6 +154,9 @@ export default {
       globalConfig: getApp().globalData.config,
       // 是否需要外快的配置项
       isNeedWaiKuai: uni.getStorageSync("isNeedWaiKuai") || false,
+      // 最新公告弹窗
+      isShowNoticePopup: false,
+      latestNoticeInfo: {},
     };
   },
   computed: {
@@ -158,8 +176,50 @@ export default {
       uni.getStorageSync("isNeedWaiKuai")
     );
     this.isNeedWaiKuai = uni.getStorageSync("isNeedWaiKuai");
+    // 登录后首次打开检查最新公告（按公告ID记已读）
+    this.checkLatestNotice();
   },
   methods: {
+    // 检查最新公告：有新公告（ID变化）则弹出，与本地记录的 lastNoticeId 对比
+    checkLatestNotice() {
+      const self = this;
+      // 未登录不弹
+      if (!getToken()) {
+        return;
+      }
+      // 超级管理员 fx67ll 不弹公告通知
+      if (this.userName && this.userName === 'fx67ll') {
+        return;
+      }
+      latestNoticeLog()
+        .then((res) => {
+          if (res?.code === 200 && res?.data && res?.data?.noticeId) {
+            const noticeId = res.data.noticeId;
+            const lastId = uni.getStorageSync("lastNoticeId");
+            // 与上次弹出的公告ID不同才弹（有新公告才提示）
+            if (String(lastId) !== String(noticeId)) {
+              self.latestNoticeInfo = res.data;
+              self.isShowNoticePopup = true;
+            }
+          }
+        })
+        .catch(() => { });
+    },
+    // 关闭公告弹窗并记录已弹公告ID
+    closeNoticePopup() {
+      this.isShowNoticePopup = false;
+      if (this.latestNoticeInfo?.noticeId) {
+        uni.setStorageSync("lastNoticeId", this.latestNoticeInfo.noticeId);
+      }
+    },
+    // 查看全部公告
+    handleViewAllNotice() {
+      this.isShowNoticePopup = false;
+      if (this.latestNoticeInfo?.noticeId) {
+        uni.setStorageSync("lastNoticeId", this.latestNoticeInfo.noticeId);
+      }
+      this.$tab.navigateTo("/pages/notice/log/index/index");
+    },
     handleToInfo() {
       this.$tab.navigateTo("/pages/mine/info/index");
     },
@@ -177,6 +237,9 @@ export default {
     },
     handleToNoteLog() {
       this.$tab.navigateTo("/pages/note/log/index/index");
+    },
+    handleToNotice() {
+      this.$tab.navigateTo("/pages/notice/log/index/index");
     },
     handleToCubeGame() {
       this.openBrowserNewTab("https://three.fx67ll.com/cube", "魔方小游戏");
