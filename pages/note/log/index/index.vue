@@ -105,7 +105,7 @@ export default {
         vertical: "bottom",
         direction: "horizontal",
         pattern: {
-          icon: "gear",
+          icon: "folder-add",
           color: "#7A7E83",
           backgroundColor: "#ffffff",
           selectedColor: "#7A7E83",

@@ -23,12 +23,12 @@
                         'fx67ll-extra-badge-normal':
                           !item.punchType || item.punchType === '3',
                       }">{{
-                          item.punchType === "1"
-                            ? "上班打卡"
-                            : item.punchType === "2"
-                              ? "下班打卡"
-                              : "异常记录，请联系管理员"
-                        }}
+                        item.punchType === "1"
+                          ? "上班打卡"
+                          : item.punchType === "2"
+                            ? "下班打卡"
+                            : "异常记录，请联系管理员"
+                      }}
                       </text>
                     </view>
                   </template>
@@ -105,7 +105,7 @@ export default {
         vertical: "bottom",
         direction: "horizontal",
         pattern: {
-          icon: "gear",
+          icon: "calendar",
           color: "#7A7E83",
           backgroundColor: "#ffffff",
           selectedColor: "#7A7E83",
