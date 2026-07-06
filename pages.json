@@ -181,7 +181,7 @@
     {
       "path": "pages/notice/log/edit/edit",
       "style": {
-        "navigationBarTitleText": "编辑公告"
+        "navigationBarTitleText": "公告详情"
       }
     }
   ],

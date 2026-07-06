@@ -23,8 +23,8 @@
       <view class="form-item form-item-column">
         <text class="form-label">公告内容<text class="required">*</text></text>
         <view class="editor-wrapper">
-          <editor id="notice-editor" class="editor-class"
-            placeholder="请输入公告内容，支持富文本" @ready="onEditorReady" @input="onEditorInput"></editor>
+          <editor id="notice-editor" class="editor-class" placeholder="请输入公告内容，支持富文本" @ready="onEditorReady"
+            @input="onEditorInput"></editor>
         </view>
       </view>
     </view>

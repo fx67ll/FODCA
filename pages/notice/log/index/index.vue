@@ -3,33 +3,44 @@
     <z-paging-mini ref="paging" back-to-top-bottom="166rpx" :auto-show-back-to-top="true" v-model="noticeList"
       @query="queryNoticeList">
       <!-- 筛选栏：点快速筛选后显示，初始化隐藏 -->
-      <view slot="top" class="filter-bar" v-if="isShowFilter">
-        <view class="filter-item">
-          <uni-data-select v-model="typeFilter" :localdata="typeFilterOptions" :clear="false"
-            @change="handleFilterChange"></uni-data-select>
-        </view>
-        <view class="filter-item" v-if="isAdmin">
-          <uni-data-select v-model="statusFilter" :localdata="statusFilterOptions" :clear="false"
-            @change="handleFilterChange"></uni-data-select>
-        </view>
-        <view class="filter-reset" @click="handleReset">
-          <text class="reset-icon">↻</text>
-          <text class="reset-text">重置</text>
-        </view>
-        <view class="filter-close" @click="handleCloseFilter">
-          <uni-icons type="close" size="32rpx" color="#909399"></uni-icons>
+      <!-- 外层 slot 容器始终保留，保证 z-paging 顶部布局稳定；内层用 v-if 控制显隐 -->
+      <view slot="top">
+        <view class="filter-bar" v-if="isShowFilter">
+          <view class="filter-search" @click="openTitleSearch">
+            <uni-icons type="search" size="28rpx" color="#909399"></uni-icons>
+            <text class="filter-search-text">{{ queryParams.noticeTitle || '搜索公告标题' }}</text>
+          </view>
+          <view class="filter-item">
+            <picker mode="selector" :range="typeFilterOptions" range-key="text" :value="typeFilterIndex"
+              @change="handleTypeFilterChange">
+              <view class="filter-picker">
+                <text class="filter-picker-text">{{ currentTypeFilterText }}</text>
+                <uni-icons type="bottom" size="24rpx" color="#909399"></uni-icons>
+              </view>
+            </picker>
+          </view>
+          <view class="filter-reset" @click="handleReset">
+            <text class="reset-icon">↻</text>
+            <text class="reset-text">重置</text>
+          </view>
+          <view class="filter-close" @click="handleCloseFilter">
+            <!-- <uni-icons type="close" size="32rpx" color="#909399"></uni-icons> -->
+            <uni-icons type="close" size="32rpx" color="#ff4d4f"></uni-icons>
+          </view>
         </view>
       </view>
       <view class="notice-list" v-if="noticeList.length > 0">
         <uni-swipe-action>
           <view class="notice-item-wrap" v-for="item in noticeList" :key="item.noticeId">
-            <uni-swipe-action-item :left-options="viewActionOptions" :right-options="isAdmin ? adminActionOptions : []"
+            <uni-swipe-action-item :right-options="isAdmin ? adminActionOptions : []"
               @click="(e) => handleActionClick(e, item)">
               <view class="notice-item" @click="openNoticeDetail(item)">
                 <view class="notice-item-header">
-                  <view class="notice-type-tag" :class="'type-' + item.noticeType">{{ typeText(item.noticeType) }}</view>
+                  <view class="notice-type-tag" :class="'type-' + item.noticeType">{{ typeText(item.noticeType) }}
+                  </view>
                   <view class="notice-item-title">{{ item.noticeTitle }}</view>
-                  <view v-if="isAdmin" class="notice-status-tag" :class="'status-' + item.status">{{ statusText(item.status) }}</view>
+                  <view v-if="isAdmin" class="notice-status-tag" :class="'status-' + item.status">{{
+                    statusText(item.status) }}</view>
                 </view>
                 <view class="notice-item-content">{{ stripContent(item.noticeContent) }}</view>
                 <view class="notice-item-footer">
@@ -62,7 +73,8 @@
         <view v-if="!isLoading" class="notice-detail">
           <!-- 标题区 -->
           <view class="notice-detail-title-wrap">
-            <view class="notice-type-tag" :class="'type-' + detailData.noticeType">{{ typeText(detailData.noticeType) }}</view>
+            <view class="notice-type-tag" :class="'type-' + detailData.noticeType">{{ typeText(detailData.noticeType) }}
+            </view>
             <text class="notice-detail-title">{{ detailData.noticeTitle }}</text>
           </view>
           <!-- 信息区：纵向列表 -->
@@ -77,7 +89,8 @@
             </view>
             <view class="info-row" v-if="isAdmin">
               <text class="info-label">状态</text>
-              <text class="info-value" :class="'status-text-' + detailData.status">{{ statusText(detailData.status) }}</text>
+              <text class="info-value" :class="'status-text-' + detailData.status">{{ statusText(detailData.status)
+                }}</text>
             </view>
           </view>
           <!-- 正文 -->
@@ -102,6 +115,30 @@
         </view>
       </view>
     </view>
+
+    <!-- 公告标题搜索弹窗 -->
+    <view class="title-search-mask" v-show="showTitleSearch" @click="closeTitleSearch"></view>
+    <view class="title-search-popup" :class="{ show: showTitleSearch }">
+      <view class="title-search-header">
+        <text class="title-search-title">搜索公告标题</text>
+        <view class="title-search-close" @click="closeTitleSearch">
+          <uni-icons type="close" size="36rpx" color="#909399"></uni-icons>
+        </view>
+      </view>
+      <view class="title-search-body">
+        <view class="title-search-input-wrap">
+          <input v-if="showTitleSearch" class="title-search-input" v-model="titleSearchInput" type="text"
+            placeholder="请输入公告标题" :maxlength="50" confirm-type="search" @confirm="confirmTitleSearch" />
+          <view v-if="titleSearchInput" class="title-search-input-clear" @click="clearTitleInput">
+            <uni-icons type="clear" size="32rpx" color="#c0c4cc"></uni-icons>
+          </view>
+        </view>
+      </view>
+      <view class="title-search-footer">
+        <view class="title-search-btn title-search-btn-close" @click="closeTitleSearch">关闭</view>
+        <view class="title-search-btn title-search-btn-confirm" @click="confirmTitleSearch">搜索</view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -118,7 +155,6 @@ export default {
         pageSize: 10,
         noticeTitle: undefined,
         noticeType: undefined,
-        status: undefined,
       },
       // 当前登录用户
       userName: this.$store.state.user.name,
@@ -139,22 +175,15 @@ export default {
         { value: '1', text: '通知' },
         { value: '2', text: '公告' },
       ],
-      // 筛选：状态（仅管理员）
-      statusFilter: '',
-      statusFilterOptions: [
-        { value: '', text: '全部状态' },
-        { value: '0', text: '正常' },
-        { value: '1', text: '停用' },
-      ],
+      // 公告标题搜索弹窗
+      showTitleSearch: false,
+      titleSearchInput: '',
       // 是否显示筛选区域（初始化隐藏，点快速筛选后显示）
       isShowFilter: false,
-      // 侧滑菜单：左侧查看（所有人），颜色与备忘录"预览"一致
-      viewActionOptions: [
-        { text: '查看', style: { backgroundColor: '#ffa940' } },
-      ],
-      // 侧滑菜单：右侧编辑/删除（仅管理员）
+      // 侧滑菜单：右侧取消/修改/删除（仅管理员），文案与颜色与备忘录一致
       adminActionOptions: [
-        { text: '编辑', style: { backgroundColor: '#2ecc71' } },
+        { text: '取消', style: { backgroundColor: '#4096ff' } },
+        { text: '修改', style: { backgroundColor: '#2ecc71' } },
         { text: '删除', style: { backgroundColor: '#ff4d4f' } },
       ],
       // FAB 配置
@@ -163,7 +192,7 @@ export default {
         vertical: 'bottom',
         direction: 'horizontal',
         pattern: {
-          icon: 'gear',
+          icon: 'color',
           color: '#7A7E83',
           backgroundColor: '#ffffff',
           selectedColor: '#7A7E83',
@@ -197,6 +226,16 @@ export default {
     // 是否为超级管理员 fx67ll
     isAdmin() {
       return this.userName && this.userName === 'fx67ll';
+    },
+    // 类型筛选当前选中项在选项数组中的索引
+    typeFilterIndex() {
+      const idx = this.typeFilterOptions.findIndex((d) => d.value === this.typeFilter);
+      return idx > -1 ? idx : 0;
+    },
+    // 类型筛选当前展示文字
+    currentTypeFilterText() {
+      const cur = this.typeFilterOptions.find((d) => d.value === this.typeFilter);
+      return cur ? cur.text : '全部类型';
     },
   },
   onShow() {
@@ -232,24 +271,52 @@ export default {
           self.$refs.paging.complete(false);
         });
     },
-    // 筛选变化
-    handleFilterChange() {
+    // 类型筛选变化（picker 弹出选择）
+    handleTypeFilterChange(e) {
+      const idx = e?.detail?.value;
+      const picked = this.typeFilterOptions[idx];
+      this.typeFilter = picked ? picked.value : '';
       this.queryParams.noticeType = this.typeFilter || undefined;
-      this.queryParams.status = this.statusFilter || undefined;
       this.refreshList();
+    },
+    // 打开公告标题搜索弹窗，回填当前关键词
+    openTitleSearch() {
+      this.titleSearchInput = this.queryParams.noticeTitle || '';
+      this.showTitleSearch = true;
+    },
+    // 关闭公告标题搜索弹窗
+    closeTitleSearch() {
+      this.showTitleSearch = false;
+    },
+    // 确认搜索公告标题
+    confirmTitleSearch() {
+      const keyword = (this.titleSearchInput || '').trim();
+      this.queryParams.noticeTitle = keyword || undefined;
+      this.showTitleSearch = false;
+      this.refreshList();
+    },
+    // 清空输入框内容（不关闭弹窗、不清已生效的搜索条件）
+    clearTitleInput() {
+      this.titleSearchInput = '';
     },
     // 重置筛选
     handleReset() {
       this.typeFilter = '';
-      this.statusFilter = '';
+      this.titleSearchInput = '';
       this.queryParams.noticeType = undefined;
-      this.queryParams.status = undefined;
+      this.queryParams.noticeTitle = undefined;
       this.refreshList();
     },
-    // 关闭筛选区域
+    // 关闭筛选区域：重置所有搜索条件并隐藏，回到全部数据
     handleCloseFilter() {
       this.isShowFilter = false;
       this.$refs.fab && this.$refs.fab.close();
+      // 清空条件并刷新列表（复用重置逻辑）
+      this.typeFilter = '';
+      this.titleSearchInput = '';
+      this.queryParams.noticeType = undefined;
+      this.queryParams.noticeTitle = undefined;
+      this.refreshList();
     },
     // 刷新列表
     refreshList() {
@@ -266,15 +333,12 @@ export default {
       }
       this.$refs.fab && this.$refs.fab.close();
     },
-    // 侧滑菜单点击：左侧0=查看，右侧0=编辑 1=删除
+    // 侧滑菜单点击：右侧0=取消(收起) 1=修改 2=删除
     handleActionClick(e, record) {
-      if (e?.position === 'left' && e?.index === 0) {
-        this.openNoticeDetail(record);
-      }
-      if (e?.position === 'right' && e?.index === 0) {
+      if (e?.position === 'right' && e?.index === 1) {
         this.$tab.navigateTo('/pages/notice/log/edit/edit?noticeId=' + (record?.noticeId || ''));
       }
-      if (e?.position === 'right' && e?.index === 1) {
+      if (e?.position === 'right' && e?.index === 2) {
         this.handleDeleteRecord(record);
       }
     },
@@ -307,24 +371,27 @@ export default {
     // 删除公告
     handleDelete() {
       const self = this;
-      const record = this.detailData;
+      const record = { ...this.detailData };
       if (!record?.noticeId) return;
-      showConfirm(
-        `删除后数据无法恢复，请确认是否删除公告：${record?.noticeTitle}？`,
-        '警告'
-      ).then((res) => {
-        if (res?.confirm && record?.noticeId) {
-          delNoticeLogForApp(record.noticeId).then((res) => {
-            if (res?.code === 200) {
-              self.closeDetail();
-              uni.showToast({ title: '删除成功！', icon: 'none', duration: 1998 });
-              self.refreshList();
-            } else {
-              uni.showToast({ title: '删除失败，请联系管理员！', icon: 'none', duration: 1998 });
-            }
-          });
-        }
-      });
+      // 先关闭详情弹窗，避免遮挡确认框
+      this.closeDetail();
+      setTimeout(() => {
+        showConfirm(
+          `删除后数据无法恢复，请确认是否删除公告：${record?.noticeTitle}？`,
+          '警告'
+        ).then((res) => {
+          if (res?.confirm && record?.noticeId) {
+            delNoticeLogForApp(record.noticeId).then((res) => {
+              if (res?.code === 200) {
+                uni.showToast({ title: '删除成功！', icon: 'none', duration: 1998 });
+                self.refreshList();
+              } else {
+                uni.showToast({ title: '删除失败，请联系管理员！', icon: 'none', duration: 1998 });
+              }
+            });
+          }
+        });
+      }, 50);
     },
     // 打开公告详情弹窗
     async openNoticeDetail(row) {
@@ -411,10 +478,61 @@ export default {
     padding: 16rpx 24rpx;
     border-bottom: 1rpx solid #f0f2f5;
 
+    // 公告标题搜索触发按钮
+    .filter-search {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      height: 64rpx;
+      padding: 0 20rpx;
+      margin-right: 16rpx;
+      border-radius: 8rpx;
+      background-color: #f5f6f7;
+      box-sizing: border-box;
+
+      .filter-search-text {
+        flex: 1;
+        min-width: 0;
+        margin-left: 10rpx;
+        font-size: 26rpx;
+        color: #909399;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      &:active {
+        background-color: #eef0f2;
+      }
+    }
+
     .filter-item {
       flex: 1;
       min-width: 0;
       margin-right: 16rpx;
+
+      .filter-picker {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64rpx;
+        padding: 0 20rpx;
+        border-radius: 8rpx;
+        background-color: #f5f6f7;
+        box-sizing: border-box;
+
+        .filter-picker-text {
+          flex: 1;
+          min-width: 0;
+          font-size: 26rpx;
+          color: #303133;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          margin-right: 8rpx;
+        }
+      }
     }
 
     .filter-reset {
@@ -539,6 +657,7 @@ export default {
       overflow: hidden;
       text-overflow: ellipsis;
       display: -webkit-box;
+      line-clamp: 2;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
@@ -727,12 +846,26 @@ export default {
   background-color: #ffffff;
   border-radius: 16rpx;
   padding: 32rpx;
+  // 防止内容（长串/图片）撑破容器宽度
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .notice-detail-content {
   font-size: 28rpx;
   color: #303133;
   line-height: 1.8;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+
+  // rich-text 内的图片宽度自适应，避免横向溢出
+  /deep/ img,
+  /deep/ image {
+    max-width: 100% !important;
+    height: auto !important;
+  }
 }
 
 // 管理员操作按钮
@@ -777,6 +910,124 @@ export default {
 
     &:active {
       background-color: rgba(255, 77, 79, 0.2);
+    }
+  }
+}
+
+// 公告标题搜索弹窗
+.title-search-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+}
+
+.title-search-popup {
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  width: 600rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  z-index: 1002;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+
+  &.show {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .title-search-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32rpx 24rpx 16rpx;
+
+    .title-search-title {
+      font-size: 30rpx;
+      font-weight: 600;
+      color: #303133;
+    }
+
+    .title-search-close {
+      position: absolute;
+      right: 16rpx;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 8rpx;
+
+      &:active {
+        opacity: 0.6;
+      }
+    }
+  }
+
+  .title-search-body {
+    padding: 8rpx 32rpx 24rpx;
+
+    .title-search-input-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .title-search-input {
+      width: 100%;
+      height: 80rpx;
+      padding: 0 64rpx 0 24rpx;
+      font-size: 28rpx;
+      color: #303133;
+      background-color: #f5f6f7;
+      border-radius: 12rpx;
+      box-sizing: border-box;
+    }
+
+    .title-search-input-clear {
+      position: absolute;
+      right: 16rpx;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40rpx;
+      height: 40rpx;
+
+      &:active {
+        opacity: 0.6;
+      }
+    }
+  }
+
+  .title-search-footer {
+    display: flex;
+    border-top: 1rpx solid #f0f2f5;
+
+    .title-search-btn {
+      flex: 1;
+      text-align: center;
+      font-size: 30rpx;
+      padding: 24rpx 0;
+
+      &:active {
+        background-color: #f5f6f7;
+      }
+    }
+
+    .title-search-btn-close {
+      color: #909399;
+      border-right: 1rpx solid #f0f2f5;
+    }
+
+    .title-search-btn-confirm {
+      color: #2ecc71;
+      font-weight: 600;
     }
   }
 }

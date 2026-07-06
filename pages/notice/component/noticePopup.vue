@@ -11,7 +11,8 @@
 
       <!-- 类型 + 时间 -->
       <view class="notice-popup-meta">
-        <view class="notice-type-tag" :class="'type-' + noticeInfo.noticeType">{{ typeText(noticeInfo.noticeType) }}</view>
+        <view class="notice-type-tag" :class="'type-' + noticeInfo.noticeType">{{ typeText(noticeInfo.noticeType) }}
+        </view>
         <text class="notice-popup-time">{{ formatTime(noticeInfo.createTime) }}</text>
       </view>
 
