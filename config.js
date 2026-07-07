@@ -3,13 +3,13 @@ module.exports = {
   baseUrl: 'https://vip.fx67ll.com/vip-api',
   // baseUrl: 'http://localhost:9897/vip-api',
   // 不校验登录信息的api
-  white_api: ['/captchaImage', '/login', '/secret/key/getSecretKeyConfigForApp'],
+  white_api: ['/captchaImage', '/login', '/secret/key/getSecretKeyConfigForApp', '/public/status/overview'],
   // 应用信息
   appInfo: {
     // 应用名称
     name: 'fx67ll-app',
     // 应用版本
-    version: '0.8.2',
+    version: '0.8.3',
     // 应用logo
     logo: 'https://test.fx67ll.com/fx67ll-img-collection/fx67ll.jpg',
     // 个人主页
