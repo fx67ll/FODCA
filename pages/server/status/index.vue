@@ -62,7 +62,7 @@
           <text class="resource-value">{{ cpuUsage }}%</text>
         </view>
         <view class="bar">
-          <view class="bar-inner" :class="barLevel(cpuUsage)" :style="{ width: barWidth(cpuUsage) }"></view>
+          <view class="bar-inner" :class="cpuBarClass" :style="{ width: cpuBarWidth }"></view>
         </view>
       </view>
 
@@ -73,7 +73,7 @@
           <text class="resource-value">{{ memoryUsage }}%</text>
         </view>
         <view class="bar">
-          <view class="bar-inner" :class="barLevel(memoryUsage)" :style="{ width: barWidth(memoryUsage) }"></view>
+          <view class="bar-inner" :class="memoryBarClass" :style="{ width: memoryBarWidth }"></view>
         </view>
         <text class="resource-sub">{{ memoryUsedGB }} / {{ memoryTotalGB }} GB</text>
       </view>
@@ -85,7 +85,7 @@
           <text class="resource-value">{{ diskUsage }}%</text>
         </view>
         <view class="bar">
-          <view class="bar-inner" :class="barLevel(diskUsage)" :style="{ width: barWidth(diskUsage) }"></view>
+          <view class="bar-inner" :class="diskBarClass" :style="{ width: diskBarWidth }"></view>
         </view>
       </view>
     </view>
@@ -120,6 +120,21 @@
 
 <script>
 import { getPublicStatusOverview } from '@/api/fx67ll/server/status';
+
+// 进度条宽度：百分比转宽度字符串（0-100%）
+// 抽到模块级纯函数，供 computed 调用，避免在模板 :style 里直接调方法（微信小程序不兼容）
+function barWidth(percent) {
+  const p = Math.max(0, Math.min(100, Number(percent) || 0));
+  return `${p}%`;
+}
+// 进度条档位：低于 60% 正常(normal)，60-85% 警告(warn)，85%+ 危险(danger)
+// 同样抽到模块级，供 computed 调用，避免模板 :class 调方法（微信小程序不兼容）
+function barLevel(percent) {
+  const p = Number(percent) || 0;
+  if (p >= 85) return 'danger';
+  if (p >= 60) return 'warn';
+  return 'normal';
+}
 
 export default {
   data() {
@@ -172,6 +187,15 @@ export default {
       if (min < 1) return '刚刚';
       return `${min}min 前`;
     },
+    // 进度条档位 class（computed，供模板 :class 直接引用，兼容微信小程序）
+    // 微信模板不支持 :class="barLevel(cpuUsage)" 这种方法调用写法，故改为预计算属性
+    cpuBarClass() { return barLevel(this.cpuUsage); },
+    memoryBarClass() { return barLevel(this.memoryUsage); },
+    diskBarClass() { return barLevel(this.diskUsage); },
+    // 进度条宽度（computed，供模板 :style 直接引用，同样为兼容微信小程序）
+    cpuBarWidth() { return barWidth(this.cpuUsage); },
+    memoryBarWidth() { return barWidth(this.memoryUsage); },
+    diskBarWidth() { return barWidth(this.diskUsage); },
   },
   onLoad() {
     this.fetchStatus();
@@ -233,18 +257,6 @@ export default {
         }
       };
       step();
-    },
-    // 进度条宽度：百分比转 px 宽度（最高 100%）
-    barWidth(percent) {
-      const p = Math.max(0, Math.min(100, Number(percent) || 0));
-      return `${p}%`;
-    },
-    // 进度条档位：低于 60% 正常(brand)，60-85% 警告(warn)，85%+ 危险(danger)
-    barLevel(percent) {
-      const p = Number(percent) || 0;
-      if (p >= 85) return 'danger';
-      if (p >= 60) return 'warn';
-      return 'normal';
     },
   },
 };
