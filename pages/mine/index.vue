@@ -86,6 +86,12 @@
             <view>魔方小游戏</view>
           </view>
         </view>
+        <view class="list-cell list-cell-arrow" @click="handleToServerStatus">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="headphones" size="20"></uni-icons></view>
+            <view>Status 面板</view>
+          </view>
+        </view>
         <view class="list-cell list-cell-arrow" @click="handleTomcatServer" v-if="userName && userName === 'fx67ll'">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="paperplane" size="20"></uni-icons></view>
@@ -243,6 +249,10 @@ export default {
     },
     handleToCubeGame() {
       this.openBrowserNewTab("https://three.fx67ll.com/cube", "魔方小游戏");
+    },
+    // 跳转服务状态大盘（公开页，免登录，新页面打开）
+    handleToServerStatus() {
+      this.$tab.navigateTo("/pages/server/status/index");
     },
     // handleToEditInfo() {
     //   this.$tab.navigateTo("/pages/mine/info/edit");

@@ -163,13 +163,13 @@
     {
       "path": "pages/server/tomcat/index",
       "style": {
-        "navigationBarTitleText": "Tomcat服务"
+        "navigationBarTitleText": "Tomcat 服务"
       }
     },
     {
       "path": "pages/server/fail2ban/index",
       "style": {
-        "navigationBarTitleText": "fail2ban监控"
+        "navigationBarTitleText": "fail2ban 监控"
       }
     },
     {
@@ -182,6 +182,12 @@
       "path": "pages/notice/log/edit/edit",
       "style": {
         "navigationBarTitleText": "公告详情"
+      }
+    },
+    {
+      "path": "pages/server/status/index",
+      "style": {
+        "navigationBarTitleText": "Status 面板"
       }
     }
   ],

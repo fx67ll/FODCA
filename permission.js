@@ -4,7 +4,7 @@ import { getToken } from '@/utils/auth';
 const loginPage = '/pages/login';
 
 // 页面白名单
-const whiteList = ['/pages/login', '/pages/register', '/pages/common/webview/index'];
+const whiteList = ['/pages/login', '/pages/register', '/pages/common/webview/index', '/pages/server/status/index'];
 
 // 检查地址白名单
 function checkWhite(url) {
