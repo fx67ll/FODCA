@@ -6,26 +6,40 @@
         <view class="logo-dot"></view>
         <text class="header-title">fx67ll's 系统服务状态总览</text>
       </view>
-      <text class="update-time">更新于 {{ updateTimeText }}</text>
+      <!-- 更新时间 + 倒计时圆环：同一排，时间在前圆环在后，更符合移动端适配 -->
+      <view class="header-right" :class="{ refreshing: refreshing }">
+        <view class="update-time">
+          <text class="update-label">数据更新于</text>
+          <text class="update-value">{{ updateTimeText }}</text>
+        </view>
+        <view class="countdown-ring">
+          <!-- 圆环用 conic-gradient 实现，兼容 H5 与微信小程序（不用 svg，小程序不支持原生 svg 标签） -->
+          <view class="ring-progress" :style="ringStyle"></view>
+          <view class="ring-inner"></view>
+          <text class="ring-text">{{ countdownSeconds }}s</text>
+        </view>
+      </view>
     </view>
 
-    <!-- 概览卡片区 -->
+    <!-- 概览卡片区：前两张并排，累计拦截攻击单独占满一行 -->
     <view class="overview-cards">
-      <view class="overview-card">
-        <text class="card-label">在线服务</text>
-        <view class="card-value">
-          <text class="card-num">{{ onlineServiceCount }}</text>
-          <text class="card-unit">/ {{ totalServiceCount }}</text>
+      <view class="overview-row">
+        <view class="overview-card">
+          <text class="card-label">在线服务</text>
+          <view class="card-value">
+            <text class="card-num">{{ onlineServiceCount }}</text>
+            <text class="card-unit">/ {{ totalServiceCount }}</text>
+          </view>
+          <text class="card-sub">在线率 {{ onlineRate }}%</text>
         </view>
-        <text class="card-sub">在线率 {{ onlineRate }}%</text>
-      </view>
-      <view class="overview-card">
-        <text class="card-label">稳定运行</text>
-        <view class="card-value">
-          <text class="card-num">{{ uptimeDays }}</text>
-          <text class="card-unit">天</text>
+        <view class="overview-card">
+          <text class="card-label">稳定运行</text>
+          <view class="card-value">
+            <text class="card-num">{{ uptimeDays }}</text>
+            <text class="card-unit">天</text>
+          </view>
+          <text class="card-sub">系统持续平稳运行</text>
         </view>
-        <text class="card-sub">系统持续平稳运行</text>
       </view>
       <view class="overview-card highlight">
         <text class="card-label">累计拦截攻击</text>
@@ -90,25 +104,25 @@
       </view>
     </view>
 
-    <!-- 服务器负载与运行时长（脱敏，负载仅小数，不暴露核数） -->
+    <!-- 服务器负载与运行时长（脱敏，负载定性展示不暴露核数） -->
     <view class="load-section">
       <view class="load-item">
         <text class="load-value">{{ osUptimeDays }}</text>
         <text class="load-label">开机天数</text>
       </view>
       <view class="load-item">
-        <text class="load-value">{{ load1 }}</text>
-        <text class="load-label">1min 负载</text>
+        <text class="load-value" :class="load1Level">{{ load1Display }}</text>
+        <text class="load-label">1min · {{ load1Text }}</text>
       </view>
       <view class="load-item">
-        <text class="load-value">{{ load15 }}</text>
-        <text class="load-label">15min 负载</text>
+        <text class="load-value" :class="load15Level">{{ load15Display }}</text>
+        <text class="load-label">15min · {{ load15Text }}</text>
       </view>
     </view>
 
     <!-- 能力摘要文案 -->
     <view class="summary-text">
-      本站由 fx67ll 管理系统提供运维与安全防护，已累计抵御
+      本站由 fx67ll.com 提供运维与安全防护，已累计抵御
       <text class="summary-num">{{ totalBlockedAttempts }}</text>
       次恶意访问，数据均已脱敏处理，仅展示状态信息。
     </view>
@@ -135,6 +149,21 @@ function barLevel(percent) {
   if (p >= 60) return 'warn';
   return 'normal';
 }
+// 负载档位（基于绝对值定性，不依赖核数）：<0.5 空闲，<1.0 正常，<2.0 偏高，≥2.0 繁忙
+function loadLevel(value) {
+  const v = Number(value) || 0;
+  if (v >= 2) return 'danger';
+  if (v >= 1) return 'warn';
+  return 'normal';
+}
+// 负载定性文案：让游客无需理解负载比也能看懂当前系统忙闲程度
+function loadLevelText(value) {
+  const v = Number(value) || 0;
+  if (v >= 2) return '繁忙';
+  if (v >= 1) return '偏高';
+  if (v >= 0.5) return '正常';
+  return '空闲';
+}
 
 export default {
   data() {
@@ -149,6 +178,13 @@ export default {
       lastUpdateTime: 0,
       initializing: true,
       refreshTimer: null,
+      // 倒计时进度：基于前端拉取时刻计算，30 秒走满 100%，到顶触发刷新脉冲后归零
+      countdownPercent: 0,
+      // 是否处于"到顶刷新"动效中（进度条闪动 + 数据淡入）
+      refreshing: false,
+      // 拉取周期基准时刻（前端自己的 Date.now()，不依赖后端时间戳，避免时钟偏差导致瞬间走满）
+      cycleStartTime: 0,
+      countdownTimer: null,
       // 服务器运行指标（全部脱敏，不含 IP/路径/版本/阈值）
       osUptimeDays: 0,      // 操作系统开机时长（天）
       cpuUsage: 0,          // CPU 使用率（0-100）
@@ -179,14 +215,30 @@ export default {
       if (!this.totalServiceCount) return 0;
       return Math.round((this.onlineServiceCount / this.totalServiceCount) * 100);
     },
-    // "更新于 Xmin 前" 文案
+    // 距下次刷新的剩余秒数（圆环中心展示）
+    countdownSeconds() {
+      return Math.max(0, Math.ceil((100 - this.countdownPercent) / 100 * 60));
+    },
+    // 圆环进度：用 conic-gradient 表达百分比（computed，兼容微信小程序 :style，不用 svg）
+    // 圆环进度：conic-gradient 按百分比填充品牌绿（#2ecc71 为 $brand 色值，JS 中无法用 scss 变量）
+    ringStyle() {
+      return `background: conic-gradient(#2ecc71 ${this.countdownPercent}%, rgba(255,255,255,0.08) 0);`;
+    },
+    // 更新时间点文案：完整中文日期 YYYY年M月D日 HH:mm:ss
     updateTimeText() {
       if (!this.lastUpdateTime) return '初始化中';
-      const diff = Date.now() - this.lastUpdateTime;
-      const min = Math.floor(diff / 60000);
-      if (min < 1) return '刚刚';
-      return `${min}min 前`;
+      const d = new Date(this.lastUpdateTime);
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     },
+    // 负载档位 class 与定性文案（computed，供模板 :class / 文案直接引用，兼容微信小程序）
+    load1Level() { return loadLevel(this.load1); },
+    load15Level() { return loadLevel(this.load15); },
+    load1Text() { return loadLevelText(this.load1); },
+    load15Text() { return loadLevelText(this.load15); },
+    // 负载展示文案：固定 2 位小数，避免空闲时显示 0 显得异常
+    load1Display() { return Number(this.load1 || 0).toFixed(2); },
+    load15Display() { return Number(this.load15 || 0).toFixed(2); },
     // 进度条档位 class（computed，供模板 :class 直接引用，兼容微信小程序）
     // 微信模板不支持 :class="barLevel(cpuUsage)" 这种方法调用写法，故改为预计算属性
     cpuBarClass() { return barLevel(this.cpuUsage); },
@@ -199,11 +251,14 @@ export default {
   },
   onLoad() {
     this.fetchStatus();
-    // 每 30 秒拉取一次缓存（后端 60 秒刷新一次，前端 30 秒轮询能尽快命中新缓存，开销极低）
-    this.refreshTimer = setInterval(this.fetchStatus, 30000);
+    // 每 60 秒拉取一次缓存，与后端 60 秒采集周期对齐：圆环到顶 = 后端刚采集 = 数据必然更新
+    this.refreshTimer = setInterval(this.fetchStatus, 60000);
+    // 倒计时圆环：每秒推进，60 秒走满一圈，到顶触发刷新脉冲
+    this.countdownTimer = setInterval(this.tickCountdown, 1000);
   },
   onUnload() {
     clearInterval(this.refreshTimer);
+    clearInterval(this.countdownTimer);
   },
   methods: {
     fetchStatus() {
@@ -214,7 +269,13 @@ export default {
           this.totalServiceCount = Number(data.totalServiceCount) || 0;
           this.fail2banEnabled = !!data.fail2banEnabled;
           this.services = data.services || {};
+          // 拉到新数据：更新展示时间戳，并以本次拉取时刻重置倒计时周期基准
           this.lastUpdateTime = Number(data.lastUpdateTime) || Date.now();
+          this.cycleStartTime = Date.now();
+          this.countdownPercent = 0;
+          this.refreshing = true;
+          // 刷新脉冲动效：短暂闪动后恢复，配合进度条归零重新走满
+          setTimeout(() => { this.refreshing = false; }, 600);
           // 服务器运行指标（保留 1 位小数的百分比直接赋值）
           this.osUptimeDays = Number(data.osUptimeDays) || 0;
           this.memoryUsedGB = Number(data.memoryUsedGB) || 0;
@@ -258,6 +319,20 @@ export default {
       };
       step();
     },
+    // 倒计时进度：基于本次拉取时刻（前端 Date.now()）真实计算，60 秒走满 100%。
+    // 与后端 60 秒采集周期对齐：到顶 = 后端刚采集 = 数据必然更新。
+    // 不用后端 lastUpdateTime 作为基准，避免服务器/客户端时钟偏差导致一加载就瞬间走满
+    tickCountdown() {
+      if (!this.cycleStartTime || this.refreshing) return;
+      const elapsed = Date.now() - this.cycleStartTime;
+      const percent = Math.min(100, (elapsed / 60000) * 100);
+      this.countdownPercent = percent;
+      // 走到 100% 主动触发一次拉取（圆环到顶 = 刷新，语义清晰），并启动刷新脉冲
+      if (percent >= 100 && !this.refreshing) {
+        this.refreshing = true;
+        this.fetchStatus();
+      }
+    },
   },
 };
 </script>
@@ -284,6 +359,7 @@ $offline: #f85149;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  gap: 16rpx;
   margin-bottom: 40rpx;
   animation: fade-down 0.5s ease both;
 
@@ -308,9 +384,96 @@ $offline: #f85149;
     }
   }
 
-  .update-time {
-    font-size: 24rpx;
-    color: $brand;
+  // 更新时间 + 倒计时圆环：同一排，时间在前圆环在后
+  .header-right {
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+
+    .update-time {
+      flex: 1;
+      font-size: 24rpx;
+      text-align: left;
+
+      // "数据更新于" 标签用次级灰色，时间值用品牌绿，与 FODCF 配色一致
+      .update-label {
+        color: $text-sub;
+        margin-right: 6rpx;
+      }
+
+      .update-value {
+        color: $brand;
+        font-variant-numeric: tabular-nums; // 等宽数字，秒数跳动不抖动
+      }
+    }
+
+    // 倒计时圆环：conic-gradient 外环 + 内层空心圆 + 中心秒数，60 秒走满一圈
+    .countdown-ring {
+      position: relative;
+      width: 80rpx;
+      height: 80rpx;
+      flex-shrink: 0;
+
+      // 外环：conic-gradient 按百分比填充品牌绿，剩余为底色（内联 style 注入）。
+      // 不加 transition：gradient 无法平滑过渡，每秒 countdownPercent 更新即重绘，肉眼可见圆环逐秒增长
+      .ring-progress {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+      }
+
+      // 内层空心圆：遮住外环中心，形成圆环效果（取页面渐变左上角相近色，避免色差突兀）
+      .ring-inner {
+        position: absolute;
+        inset: 8rpx;
+        border-radius: 50%;
+        background: #141a26;
+      }
+
+      // 圆环中心：距下次刷新的剩余秒数
+      .ring-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 22rpx;
+        color: $brand;
+        font-variant-numeric: tabular-nums;
+        z-index: 1;
+      }
+    }
+
+    // 到顶刷新脉冲：圆环 + 时间文字微微亮起，配合数据淡入
+    &.refreshing {
+      .ring-progress {
+        animation: refresh-flash 0.6s ease;
+      }
+
+      .ring-text {
+        animation: refresh-flash 0.6s ease;
+      }
+
+      .update-time {
+        animation: refresh-flash 0.6s ease;
+      }
+    }
+  }
+}
+
+// 刷新脉冲：闪动一下，表示数据已刷新
+@keyframes refresh-flash {
+  0% {
+    filter: brightness(1);
+  }
+
+  40% {
+    filter: brightness(1.8);
+  }
+
+  100% {
+    filter: brightness(1);
   }
 }
 
@@ -318,7 +481,19 @@ $offline: #f85149;
 .overview-cards {
   margin-bottom: 40rpx;
 
-  // 三张卡片依次淡入上浮，与 PC 端 hover 上浮呼应
+  // 前两张卡片并排容器
+  .overview-row {
+    display: flex;
+    gap: 20rpx;
+    margin-bottom: 20rpx;
+
+    .overview-card {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  }
+
+  // 卡片淡入上浮，与 PC 端 hover 上浮呼应
   .overview-card {
     padding: 32rpx 28rpx;
     background: $card-bg;
@@ -327,13 +502,18 @@ $offline: #f85149;
     margin-bottom: 20rpx;
     animation: fade-up 0.5s ease both;
 
-    &:nth-child(1) { animation-delay: 0.05s; }
-    &:nth-child(2) { animation-delay: 0.15s; }
-    &:nth-child(3) { animation-delay: 0.25s; }
+    // 前两张并排卡片依次入场，第三张整行稍后入场
+    .overview-row &.overview-card:nth-child(1) { animation-delay: 0.05s; }
+    .overview-row &.overview-card:nth-child(2) { animation-delay: 0.15s; }
+    &.highlight { animation-delay: 0.25s; }
 
     &.highlight {
       border-color: rgba(46, 204, 113, 0.15);
       background: linear-gradient(145deg, $card-bg, #13231a);
+      // 累计拦截攻击单独占满一行，强调展示，数字放大
+      .card-num {
+        font-size: 72rpx;
+      }
     }
 
     .card-label {
@@ -532,6 +712,16 @@ $offline: #f85149;
       font-weight: 700;
       color: $brand;
       margin-bottom: 10rpx;
+      font-variant-numeric: tabular-nums; // 等宽数字，负载值刷新不抖动
+
+      // 负载档位着色：空闲/正常用品牌绿，偏高用橙，繁忙用红
+      &.warn {
+        color: #e6a23c;
+      }
+
+      &.danger {
+        color: $offline;
+      }
     }
 
     .load-label {
@@ -605,3 +795,20 @@ $offline: #f85149;
   }
 }
 </style>
+
+<!-- H5 端全屏沉浸式：隐藏 uni-app 顶部导航栏，页面占满视口。
+     仅 H5 构建生效（#ifdef H5 条件编译），微信/小程序端不受影响，保留标题栏。 -->
+<!-- #ifdef H5 -->
+<style lang="scss">
+// 隐藏 H5 端 uni-app 自动生成的页面导航栏
+uni-page .uni-page-head {
+  display: none;
+}
+
+// 导航栏隐藏后，页面内容区上提占满整屏
+uni-page .uni-page-wrapper,
+uni-page .uni-page-body {
+  height: 100%;
+}
+</style>
+<!-- #endif -->
