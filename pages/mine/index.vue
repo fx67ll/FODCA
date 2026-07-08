@@ -250,9 +250,26 @@ export default {
     handleToCubeGame() {
       this.openBrowserNewTab("https://three.fx67ll.com/cube", "魔方小游戏");
     },
-    // 跳转服务状态大盘（公开页，免登录，新页面打开）
+    // 跳转服务状态大盘（公开页，免登录）
+    // H5 端：新窗口打开全屏页面（无标题栏），沉浸式展示；
+    // 微信/小程序端：走标准页面栈 navigateTo，保留标题栏
     handleToServerStatus() {
+      // #ifdef H5
+      const { origin, pathname } = window.location;
+      const url = `${origin}${pathname}#/pages/server/status/index`;
+      try {
+        const newTab = window.open(url, "_blank");
+        if (!newTab) {
+          // 拦截时降级：当前页打开
+          window.location.href = url;
+        }
+      } catch (e) {
+        uni.showToast({ title: "浏览器禁止打开新标签", icon: "none" });
+      }
+      // #endif
+      // #ifndef H5
       this.$tab.navigateTo("/pages/server/status/index");
+      // #endif
     },
     // handleToEditInfo() {
     //   this.$tab.navigateTo("/pages/mine/info/edit");
