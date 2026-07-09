@@ -963,7 +963,7 @@ export default {
         }
 
         // #ifdef H5
-        this.drawerHeight = `${310 +
+        this.drawerHeight = `${320 +
           this.luckyNumberList.length * 60 +
           100 +
           (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
