@@ -43,6 +43,15 @@ export function editLog(data) {
   });
 }
 
+// 合并同期号同类型的每日号码记录（后台事务完成合并+删除旧数据，入参为待合并主键数组）
+export function mergeLog(data) {
+  return request({
+    url: '/lottery/log/mergeLotteryLogForApp',
+    method: 'post',
+    data: data,
+  });
+}
+
 // 查询历史号码记录中奖数据统计
 export function listTotalReward(query) {
   return request({

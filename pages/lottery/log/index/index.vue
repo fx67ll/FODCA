@@ -190,7 +190,7 @@
 <script>
 import logDrawer from "@/pages/lottery/component/logDrawer/logDrawer.vue";
 
-import { getLogList, delLog, editLog, getLogInfo } from "@/api/fx67ll/lottery/log";
+import { getLogList, delLog, editLog, getLogInfo, mergeLog } from "@/api/fx67ll/lottery/log";
 import { getSetting } from "@/api/fx67ll/lottery/setting";
 import {
   diffTimeStrFromNow,
@@ -399,6 +399,8 @@ export default {
       lotteryTypeList: [1, 2, 3, 4, 5, "1", "2", "3", "4", "5"],
       // 多选合并模式
       listMergeMode: false,
+      // 合并提交中标志，防止用户重复点击提交造成并发请求
+      mergeSubmitting: false,
       // logDrawer组件相关参数
       isShowLogDrawer: false,
       // logDrawer组件操作类型：1是拷贝，2是合并
@@ -883,7 +885,7 @@ export default {
       // 处理剪切板函数
       self.setClipboardData(finalCopyContentTxt);
     },
-    // 处理合并的记录数据
+    // 处理合并的记录数据，仅做前端预校验与去重预览，实际合并写库由后台事务接口完成
     checkMergeLog(dataList) {
       // 检查输入数据
       if (!dataList || dataList.length === 0) {
@@ -895,9 +897,14 @@ export default {
         return null;
       }
 
-      // 如果只有一个对象，直接返回
-      if (dataList.length === 1) {
-        return dataList[0];
+      // 合并至少需要两条记录
+      if (dataList.length < 2) {
+        uni.showToast({
+          title: '请至少选择两条记录进行合并！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
       }
 
       // 获取第一个对象的dateCode和numberType作为基准
@@ -919,25 +926,48 @@ export default {
         return null;
       }
 
-      // 合并所有recordList
-      const mergedRecordList = dataList.reduce((acc, curr) => {
-        if (curr.recordList && Array.isArray(curr.recordList)) {
-          return acc.concat(curr.recordList);
-        }
-        return acc;
-      }, []);
+      // 收集所有记录的主键，过滤无效值，按字符串去重后转回数字，保证传给后台的是数字数组（与后台 Long[] 入参一致）
+      const lotteryIds = dataList
+        .map(item => item.logId)
+        .filter(id => id !== undefined && id !== null && id !== '');
+      const uniqueLotteryIds = Array.from(new Set(lotteryIds.map(id => String(id)))).map(id => Number(id));
+      if (uniqueLotteryIds.length < 2) {
+        uni.showToast({
+          title: '请至少选择两条不同的记录进行合并！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
+      }
+      // 单次合并数量上限校验（与后台 MERGE_MAX_INPUT_COUNT 保持一致）
+      if (uniqueLotteryIds.length > 23) {
+        uni.showToast({
+          title: '单次最多合并23条记录！',
+          icon: 'none',
+          duration: 2000
+        });
+        return null;
+      }
 
-      // 创建结果对象（深拷贝第一个对象）
-      const result = JSON.parse(JSON.stringify(firstData));
+      // 前端预览去重：固定追号与每日号码跨记录去重，重复的不重复添加
+      const mergedChaseSet = new Set();
+      const mergedRecordSet = new Set();
+      dataList.forEach(item => {
+        (item.chaseList || []).forEach(ita => {
+          if (ita.chaseNumber && ita.chaseNumber !== '暂无数据') {
+            mergedChaseSet.add(ita.chaseNumber);
+          }
+        });
+        (item.recordList || []).forEach(itb => {
+          if (itb.recordNumber && itb.recordNumber !== '暂无数据') {
+            mergedRecordSet.add(itb.recordNumber);
+          }
+        });
+      });
 
-      // 替换recordList为合并后的数组
-      result.recordList = mergedRecordList;
-
-      // 添加合并标记和原始数据数量信息（可选）
-      result._merged = true;
-      result._originalDataCount = dataList.length;
-
-      if ((result?.recordList?.length + result?.chaseList?.length) > 5) {
+      // 校验合并后总注数不超过5注（固定追号注数 + 每日号码注数）
+      const totalNoteCount = mergedChaseSet.size + mergedRecordSet.size;
+      if (totalNoteCount > 5) {
         uni.showToast({
           title: '合并后，单个记录数据不允许超过5组号码！',
           icon: 'none',
@@ -946,19 +976,46 @@ export default {
         return null;
       }
 
-      return result;
+      // 返回待提交给后台的主键数组（与后台 Long[] 入参对应）
+      return uniqueLotteryIds;
     },
-    // 合并同期号同类型的购彩数据
+    // 合并同期号同类型的购彩数据，调用后台事务接口完成合并+删除旧数据
     mergeLuckyNumber(mergeLogItemList) {
-      const mergeLogRes = this.checkMergeLog(mergeLogItemList);
-      if (mergeLogRes) {
-        uni.showToast({
-          title: '合并数据操作成功！调用接口开发中，敬请期待~',
-          icon: 'none',
-          duration: 2000
-        });
-        this.isShowLogDrawer = false;
+      const self = this;
+      // 防重复提交：合并进行中时直接忽略后续点击，避免并发请求造成脏数据
+      if (self.mergeSubmitting) {
+        return;
       }
+      // 前端预校验通过后，返回的是去重后的主键数组
+      const lotteryIds = this.checkMergeLog(mergeLogItemList);
+      if (!lotteryIds) {
+        return;
+      }
+      self.mergeSubmitting = true;
+      mergeLog(lotteryIds)
+        .then((res) => {
+          if (res?.code === 200) {
+            uni.showToast({
+              title: '合并成功！',
+              icon: 'none',
+              duration: 2000
+            });
+            self.isShowLogDrawer = false;
+            self.$refs.paging && self.$refs.paging.reload();
+          } else {
+            uni.showToast({
+              title: res?.msg || '合并失败，请稍后重试！',
+              icon: 'none',
+              duration: 2000
+            });
+          }
+        })
+        .catch(() => {
+          // request.js 已统一 toast 提示，此处无需重复
+        })
+        .finally(() => {
+          self.mergeSubmitting = false;
+        });
     },
     // 修改号码历史记录详情
     editLogInfo(logId) {
