@@ -353,6 +353,10 @@ import {
   getLotteryNumberByFrequency,
   buildWeightedPool,
   drawFromWeightedPool,
+  getFirstDrawDayOfYear,
+  buildFirstIssueCodeOfThisYear,
+  calcIssueCodeByOffset,
+  isDateCodeYearMatch,
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import { getToken } from "@/utils/auth";
@@ -862,6 +866,8 @@ export default {
       // #endif
     },
     // 从服务端初始化最近一条同类型记录的期号，仅限大乐透和双色球
+    // 跨年判定：若最近一条记录的 createTime 年份不等于今年，则视为跨年，
+    // 改以"今年第一期 (D1, C1)"为锚点重新计算，避免拿去年记录跨年累加导致期号错乱。
     initLastLotteryDateCode() {
       const self = this;
       self.todayDateCode = null;
@@ -877,7 +883,37 @@ export default {
             const latestDate = res?.rows[0]?.createTime || "";
             const latestDateFormat = moment(latestDate)?.format("YYYY-MM-DD") || "";
             const nowDateFormat = moment()?.format("YYYY-MM-DD") || "";
-            if (
+            const lastDateCodeRaw = res?.rows[0]?.dateCode || "";
+            // 跨年判定：最近记录的年份与今年不一致
+            const isCrossYear =
+              latestDate &&
+              moment(latestDate).year() !== moment().year();
+            if (isCrossYear) {
+              // 跨年：以今年第一期 (D1, C1) 为锚点计算
+              // C1 年份直接取今年，序号重置为 1（位数沿用最近记录 dateCode）
+              const numType = parseInt(todeyNumberType);
+              const firstIssueCode = buildFirstIssueCodeOfThisYear(lastDateCodeRaw, numType, moment().year());
+              if (firstIssueCode) {
+                const firstDrawDay = getFirstDrawDayOfYear(numType, moment().year());
+                const firstDrawDayFormat = firstDrawDay ? firstDrawDay.format("YYYY-MM-DD") : "";
+                if (firstDrawDayFormat && nowDateFormat) {
+                  // 用 calculateCurrentDateCode 传 lastNumber=0 仅算间隔期数，再拼回带前缀的 C1
+                  const offset = calculateCurrentDateCode(numType, nowDateFormat, firstDrawDayFormat, 0);
+                  if (offset != null) {
+                    self.todayDateCode = calcIssueCodeByOffset(firstIssueCode, offset, numType);
+                  } else {
+                    // 跨年但今天早于今年第一期 D1（今年首期尚未开奖），暂无期号
+                    console.warn(`跨年但今天(${nowDateFormat})早于今年第一期(${firstDrawDayFormat})，期号暂为 null`);
+                    self.todayDateCode = null;
+                  }
+                }
+              }
+            } else if (!isDateCodeYearMatch(lastDateCodeRaw, parseInt(todeyNumberType), moment().year())) {
+              // 同年但 dateCode 年份与今年不符（人工补录 createTime 与 dateCode 年份不一致），
+              // 无法可靠累加，降级为 null 避免算错，提示用户检查该记录
+              console.warn('最近记录 dateCode 年份与今年不符，期号计算降级为 null：', lastDateCodeRaw);
+              self.todayDateCode = null;
+            } else if (
               latestDate &&
               latestDateFormat &&
               nowDateFormat &&
@@ -2769,12 +2805,11 @@ export default {
       }
       return addParams;
     },
-    // 计算并返回今日七星彩的期号，只在同一年处理，七星彩只有每周二五日有
-    // AI优化过，能够循环向前查询，防止因为断买了的日期无法续上期号  
+    // 计算并返回今日七星彩的期号，七星彩只有每周二五日有
+    // 跨年判定：若最近一条记录的 createTime 年份不等于今年，则视为跨年，
+    // 改以"今年第一期 (D1, C1)"为锚点重新计算；否则沿用按最近记录累加的逻辑。
+    // 能够循环向前查询，防止因为断买了的日期无法续上期号
     async getLatestCodeNumberQxc(type) {
-      if (moment().subtract(1, "days").year() !== moment().year()) {
-        return null;
-      }
       if (![5].includes(parseInt(type))) {
         return null;
       }
@@ -2789,11 +2824,42 @@ export default {
             const latestDate = res?.rows[0]?.createTime || "";
             const latestDateFormat = moment(latestDate)?.format("YYYY-MM-DD") || "";
             const nowDateFormat = moment()?.format("YYYY-MM-DD") || "";
-            const lastDateCode = parseInt(res?.rows[0]?.dateCode) || null;
+            const lastDateCodeRaw = res?.rows[0]?.dateCode || "";
+            console.log('====================开始计算七星彩期号====================');
+            console.log('最后一次记录的号码期号记录：', lastDateCodeRaw, latestDateFormat);
+            // 跨年判定：最近记录的年份与今年不一致
+            const isCrossYear =
+              latestDate &&
+              moment(latestDate).year() !== moment().year();
+            if (isCrossYear) {
+              // 跨年：以今年第一期 (D1, C1) 为锚点计算
+              const firstIssueCode = buildFirstIssueCodeOfThisYear(lastDateCodeRaw, 5, moment().year());
+              if (firstIssueCode) {
+                const firstDrawDay = getFirstDrawDayOfYear(5, moment().year());
+                const firstDrawDayFormat = firstDrawDay ? firstDrawDay.format("YYYY-MM-DD") : "";
+                if (firstDrawDayFormat && nowDateFormat) {
+                  // calculateCurrentDateCode 传 type=3（开奖日 [2,5,0] 同七星彩）、lastNumber=0 仅算间隔期数
+                  const offset = calculateCurrentDateCode(3, nowDateFormat, firstDrawDayFormat, 0);
+                  if (offset == null) {
+                    // 跨年但今天早于今年第一期 D1（今年首期尚未开奖），暂无期号
+                    console.warn(`七星彩跨年但今天(${nowDateFormat})早于今年第一期(${firstDrawDayFormat})，期号暂为 null`);
+                    return null;
+                  }
+                  const nowDateCode = calcIssueCodeByOffset(firstIssueCode, offset, 5);
+                  console.log('跨年期号计算结果：', nowDateCode, nowDateFormat);
+                  return nowDateCode || null;
+                }
+              }
+              return null;
+            }
+            // 同年分支：校验 dateCode 年份与今年一致，不一致则降级 null（防止补录数据不一致算错）
+            if (!isDateCodeYearMatch(lastDateCodeRaw, 5, moment().year())) {
+              console.warn('七星彩最近记录 dateCode 年份与今年不符，期号计算降级为 null：', lastDateCodeRaw);
+              return null;
+            }
+            const lastDateCode = parseInt(lastDateCodeRaw) || null;
             if (lastDateCode) {
               const nowDateCode = calculateCurrentDateCode(3, nowDateFormat, latestDateFormat, lastDateCode);
-              console.log('====================开始计算七星彩期号====================');
-              console.log('最后一次记录的号码期号记录：', lastDateCode, latestDateFormat);
               console.log('今日号码期号计算结果：', nowDateCode, nowDateFormat);
               return nowDateCode || null;
             }
@@ -2804,33 +2870,34 @@ export default {
       });
       return nowDateCodeRecord || null;
     },
-    // 计算并返回今日排列五或排列三的期号，只在同一年处理，排列三五每天都有
-    // AI优化过，能够循环向前查询，防止因为断买了的日期无法续上期号  
-    async getLatestCodeNumberPl35(type, customeMaxSearchDays) {
-      // 1. 初始校验逻辑
-      if (moment().subtract(1, "days").year() !== moment().year()) {
-        return null;
-      }
-
+    // 计算并返回今日排列五或排列三的期号，排列三五每天都有
+    // 跨年判定：若查到的最近记录 createTime 年份不等于今年，则视为跨年，
+    // 改以"今年第一期 (D1, C1)"为锚点重新计算（排列三五 D1 为 1 月 1 日，期数差=天数差）；
+    // 否则沿用"最近记录期号 + 天数差"。
+    // 断买回查采用跳跃序列 1→3→7→15→30→90→180→360 天前，全部查不到则返回 null。
+    // 不考虑节假日停售导致的期号错位，由用户手动修复。
+    async getLatestCodeNumberPl35(type) {
       if (![3, 4].includes(parseInt(type))) {
         return null;
       }
 
       // 使用当天00:00作为基准日期
       const today = moment().startOf('day');
-      const maxSearchDays = customeMaxSearchDays || 8;
+      // 跳跃回查序列：依次查询 1/3/7/15/30/90/180/360 天前
+      const searchDaysSeq = [1, 3, 7, 15, 30, 90, 180, 360];
 
       console.log('====================开始计算排列三排列五期号====================');
-      console.log(`计算基准日期: ${today.format('YYYY-MM-DD')}, 最大查询天数: ${maxSearchDays}`);
+      console.log(`计算基准日期: ${today.format('YYYY-MM-DD')}, 跳跃序列: ${searchDaysSeq.join('→')}`);
 
-      // 2. 异步递归查询函数
-      const searchRecursively = async (daysBack) => {
-        // 终止条件：超过最大查询天数
-        if (daysBack > maxSearchDays) {
-          console.warn(`在过去${maxSearchDays}天内未找到type ${type}的彩票记录`);
+      // 异步递归查询函数：按跳跃序列逐个偏移日查询
+      const searchRecursively = async (seqIndex) => {
+        // 终止条件：序列已全部查完
+        if (seqIndex >= searchDaysSeq.length) {
+          console.warn(`跳跃序列 ${searchDaysSeq.join('→')} 天内均未找到type ${type}的彩票记录`);
           return null;
         }
 
+        const daysBack = searchDaysSeq[seqIndex];
         // 计算查询日期（标准化为00:00）
         const searchDate = moment().subtract(daysBack, "days").startOf('day');
         const beginCreateTime = searchDate.format("YYYY-MM-DD");
@@ -2845,10 +2912,10 @@ export default {
         };
 
         try {
-          console.log(`正在查询第${daysBack}天前的记录: ${beginCreateTime}`);
+          console.log(`正在查询${daysBack}天前的记录: ${beginCreateTime}`);
           const res = await getLogList(queryParams);
 
-          // 3. 找到有效记录时的处理
+          // 找到有效记录时的处理
           if (res?.code === 200 && res?.rows?.length > 0) {
             const latestRecord = res.rows[0];
             const latestDateCode = latestRecord.dateCode || "";
@@ -2864,10 +2931,30 @@ export default {
             });
 
             if (latestDateCode) {
-              // 计算日历天数差（基于标准化日期）
-              const daysDiff = today.diff(recordDate, 'days');
+              // 跨年判定：记录日期年份与今年不一致
+              const isCrossYear = recordDate.year() !== today.year();
+              if (isCrossYear) {
+                // 跨年：以今年第一期 (D1, C1) 为锚点，排列三五 D1=1月1日，期数差=天数差
+                const numType = parseInt(type);
+                const firstIssueCode = buildFirstIssueCodeOfThisYear(latestDateCode, numType, today.year());
+                if (firstIssueCode) {
+                  const firstDrawDay = getFirstDrawDayOfYear(numType, today.year());
+                  const offset = firstDrawDay ? today.diff(firstDrawDay, 'days') : null;
+                  const nowDateCode = offset != null ? calcIssueCodeByOffset(firstIssueCode, offset, numType) : null;
+                  console.log(`跨年计算完成: 今年第一期=${firstIssueCode}, ` +
+                    `天数差=${offset}, 当前期号=${nowDateCode}`);
+                  return nowDateCode;
+                }
+                return null;
+              }
 
-              // 调试日志：显示日期计算详情
+              // 同年：先校验 dateCode 年份与今年一致，不一致则降级 null（防止补录数据不一致算错）
+              if (!isDateCodeYearMatch(latestDateCode, parseInt(type), today.year())) {
+                console.warn(`排列${parseInt(type) === 3 ? '三' : '五'}最近记录 dateCode 年份与今年不符，期号计算降级为 null：`, latestDateCode);
+                return null;
+              }
+              // 天数差即期数差，直接累加
+              const daysDiff = today.diff(recordDate, 'days');
               console.log(`日期计算: 今天=${today.format('YYYY-MM-DD')}, ` +
                 `记录日期=${recordDate.format('YYYY-MM-DD')}, ` +
                 `天数差=${daysDiff}`);
@@ -2880,21 +2967,21 @@ export default {
             }
             return null;
           }
-          // 4. 未找到记录时继续递归
+          // 未找到记录时继续查序列下一项
           else {
-            console.log(`第${daysBack}天前无记录，继续查询更早日期...`);
+            console.log(`${daysBack}天前无记录，继续查询序列下一项...`);
             await new Promise(resolve => setTimeout(resolve, 233));
-            return searchRecursively(daysBack + 1);
+            return searchRecursively(seqIndex + 1);
           }
         } catch (e) {
-          console.error(`查询第${daysBack}天前的记录时出错:`, e);
+          console.error(`查询${daysBack}天前的记录时出错:`, e);
           await new Promise(resolve => setTimeout(resolve, 233));
-          return searchRecursively(daysBack + 1);
+          return searchRecursively(seqIndex + 1);
         }
       };
 
-      // 5. 开始递归查询
-      return await searchRecursively(1);
+      // 从序列第一项开始递归查询
+      return await searchRecursively(0);
     },
     // 返回当前最新生成的排列五记录
     async getLatestPL5Record(isNeedPush) {

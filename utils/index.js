@@ -1060,3 +1060,198 @@ export function drawFromWeightedPool(pool, count) {
   }
   return result.sort((a, b) => a - b);
 }
+
+// ===================== 跨年期号计算相关 =====================
+// 以下函数用于处理跨年场景下的期号（dateCode）计算。
+// 跨年判定：最近一条同类型记录的 createTime 年份不等于今年时，视为跨年。
+// 跨年时不再以"最近历史记录"为基准累加，而是以"今年第一期 (D1, C1)"为锚点重新计算，
+// 避免拿去年记录跨年累加导致期号错乱。
+//
+// dateCode 前缀位数按彩种固定（不再靠长度猜测、不做年份区间校验）：
+//   - 大乐透(type 1)：前 4 位为年份，其余为序号，如 2025156 → 跨年 2026001
+//   - 双色球(type 2)/排列三(type 3)/排列五(type 4)/七星彩(type 5)：前 2 位为年份，其余为序号，如 250156 → 跨年 260001
+// 跨年时年份部分直接取今年（currentYear），序号部分重置为 1（按原序号位数补前导 0）。
+//   这样即使断买多年、最近记录是前年或更早，C1 年份也始终对应当前今年，不会算错。
+//   lastDateCode 仅用于确定序号部分的位数。
+// 若去年/历史无记录，则无格式可参考，返回 null，由用户手动补首条。
+// 同年分支额外校验 dateCode 年份与今年一致（isDateCodeYearMatch），不一致则降级 null，
+// 防止人工补录 createTime 与 dateCode 年份不符时算错期号。
+
+/**
+ * 各彩种 dateCode 的年份前缀位数。
+ * 大乐透 4 位，其余彩种 2 位。
+ * @param {number} type - 彩种类型：1(大乐透)、2(双色球)、3(排列三)、4(排列五)、5(七星彩)
+ * @returns {number} 年份前缀位数（4 或 2），type 非法返回 0
+ */
+export function getDateCodeYearLen(type) {
+  switch (parseInt(type)) {
+    case 1: // 大乐透：4 位年份前缀
+      return 4;
+    case 2: // 双色球
+    case 3: // 排列三
+    case 4: // 排列五
+    case 5: // 七星彩：均为 2 位年份前缀
+      return 2;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * 校验 dateCode 的年份前缀部分是否与指定年份一致。
+ * 用于同年分支防止"createTime 在今年但 dateCode 是去年格式"的数据不一致导致期号算错。
+ * 例如 type=1 dateCode="2025156" year=2025 → true；year=2026 → false
+ *      type=5 dateCode="25156"   year=2025 → true（25 == 2025 后2位）
+ * @param {string|number} dateCode - 期号
+ * @param {number} type - 彩种类型（决定年份前缀位数）
+ * @param {number} year - 待比较的完整年份（如 2026）
+ * @returns {boolean} 一致返回 true；dateCode 无法拆分或年份不一致返回 false
+ */
+export function isDateCodeYearMatch(dateCode, type, year) {
+  const parts = splitDateCodeParts(dateCode, type);
+  if (!parts) {
+    return false;
+  }
+  const fullYearStr = String(parseInt(year, 10));
+  // 取完整年份的后 yearLen 位与 dateCode 年份前缀比较
+  const expectYearPart = fullYearStr.length >= parts.yearLen
+    ? fullYearStr.slice(-parts.yearLen)
+    : fullYearStr.padStart(parts.yearLen, '0');
+  return parts.yearPart === expectYearPart;
+}
+
+/**
+ * 获取某一年该彩种的第一个开奖日（D1）。
+ * 不考虑元旦休市，休市导致的期号错位由用户手动修复。
+ * @param {number} type - 彩种类型：1(大乐透 周一/三/六)、2(双色球 周二/四/日)、3或4(排列三/五 每天)、5(七星彩 周二/五/日)
+ * @param {number} year - 年份
+ * @returns {Object|null} moment 对象（该年首个开奖日 00:00），type 非法返回 null
+ */
+export function getFirstDrawDayOfYear(type, year) {
+  // 排列三/排列五每天都有，第一期即 1 月 1 日
+  if (parseInt(type) === 3 || parseInt(type) === 4) {
+    return moment({ year: parseInt(year), month: 0, day: 1 }).startOf('day');
+  }
+  // 各彩种开奖日（moment day()：0=周日, 1=周一 … 6=周六）
+  let recordDays;
+  switch (parseInt(type)) {
+    case 1: // 大乐透：周一、周三、周六
+      recordDays = [1, 3, 6];
+      break;
+    case 2: // 双色球：周二、周四、周日
+      recordDays = [2, 4, 0];
+      break;
+    case 5: // 七星彩：周二、周五、周日（与 calculateCurrentDateCode 的 case 3 一致）
+      recordDays = [2, 5, 0];
+      break;
+    default:
+      console.error(`getFirstDrawDayOfYear 无效的类型参数 "${type}"`);
+      return null;
+  }
+  // 从 1 月 1 日起向后查找第一个落在开奖日的日期
+  const firstDay = moment({ year: parseInt(year), month: 0, day: 1 }).startOf('day');
+  for (let i = 0; i < 7; i++) {
+    if (recordDays.includes(firstDay.clone().add(i, 'days').day())) {
+      return firstDay.clone().add(i, 'days');
+    }
+  }
+  // 理论上不会走到这里，一周内必有一个开奖日
+  return firstDay;
+}
+
+/**
+ * 将 dateCode 按彩种固定的年份前缀位数，拆分为「年份部分」与「序号部分」。
+ * 大乐透(type 1)前 4 位为年份，其余彩种前 2 位为年份。
+ * 例如 type=1 "2025156" → { yearPart: "2025", seqPart: "156", yearLen: 4, seqLen: 3 }
+ *      type=2 "250156"  → { yearPart: "25",   seqPart: "0156", yearLen: 2, seqLen: 4 }
+ * 为避免旧的无年份前缀纯序号（如排列三 "365"）被误切成 yearPart="3"/seqPart="65"，
+ * 要求序号部分至少 3 位（各彩种序号均为 3 位：001~365/156 等），
+ * 不足则视为格式不符返回 null，由调用方降级处理。
+ * @param {string|number} dateCode - 期号
+ * @param {number} type - 彩种类型（决定年份前缀位数）
+ * @returns {Object|null} 拆分结果，dateCode 为空、非数字、长度不足或序号位数不足返回 null
+ */
+export function splitDateCodeParts(dateCode, type) {
+  if (dateCode === null || dateCode === undefined || dateCode === '') {
+    return null;
+  }
+  const codeStr = String(dateCode);
+  // 仅允许纯数字
+  if (!/^\d+$/.test(codeStr)) {
+    return null;
+  }
+  const yearLen = getDateCodeYearLen(type);
+  // 序号部分至少 3 位（各彩种序号均为 3 位），防止旧无前缀纯序号被误切
+  const MIN_SEQ_LEN = 3;
+  if (yearLen <= 0 || codeStr.length < yearLen + MIN_SEQ_LEN) {
+    // 长度不足，无法拆出有效序号部分
+    return null;
+  }
+  const yearPart = codeStr.slice(0, yearLen);
+  const seqPart = codeStr.slice(yearLen);
+  if (!seqPart || seqPart.length < MIN_SEQ_LEN) {
+    return null;
+  }
+  return { yearPart, seqPart, yearLen, seqLen: seqPart.length };
+}
+
+/**
+ * 生成指定年份第一期的期号（C1）。
+ * 规则：年份部分直接使用传入的 currentYear（按彩种前缀位数格式化），
+ *      序号部分重置为 1，并按 lastDateCode 原序号位数补前导 0。
+ * 注意：年份取 currentYear 而非 lastDateCode 年份+1，这样即使断买多年、
+ *      最近记录是前年或更早，C1 年份也始终对应当前今年，不会算错。
+ *      lastDateCode 仅用于确定序号部分的位数。
+ * 例如 type=1 currentYear=2026 lastDateCode="2025156" → "2026001"
+ *      type=1 currentYear=2026 lastDateCode="2024156"(前年,断买) → "2026001"（年份仍正确）
+ *      type=2 currentYear=2026 lastDateCode="25154" → "26001"
+ * @param {string|number} lastDateCode - 最近一期历史记录的期号（仅用于确定序号位数）
+ * @param {number} type - 彩种类型（决定年份前缀位数）
+ * @param {number} currentYear - 当前今年年份（C1 年份直接取此值）
+ * @returns {string|null} 指定年份第一期期号；lastDateCode 无法拆分时返回 null
+ */
+export function buildFirstIssueCodeOfThisYear(lastDateCode, type, currentYear) {
+  const parts = splitDateCodeParts(lastDateCode, type);
+  if (!parts) {
+    return null;
+  }
+  // 年份部分直接使用 currentYear，截取/补齐到原前缀位数：
+  // currentYear 通常为 4 位（如 2026），大乐透(yearLen=4)直接用；
+  // 其余彩种(yearLen=2)取后 2 位（如 2026 → 26）。
+  const fullYearStr = String(parseInt(currentYear, 10));
+  let newYearPart;
+  if (fullYearStr.length >= parts.yearLen) {
+    // 取后 yearLen 位（适配 4 位年份截到 2 位前缀）
+    newYearPart = fullYearStr.slice(-parts.yearLen);
+  } else {
+    // 不足前缀位数则补前导 0
+    newYearPart = fullYearStr.padStart(parts.yearLen, '0');
+  }
+  // 序号部分重置为 1，按原序号位数补前导 0
+  const newSeqPart = '1'.padStart(parts.seqLen, '0');
+  return newYearPart + newSeqPart;
+}
+
+/**
+ * 以某基准期号为起点，按开奖期数偏移量递增期号。
+ * 用于跨年场景下"今年第一期 C1 + 偏移期数"得到本期期号。
+ * 仅对序号部分做加法，年份部分保持不变，从而正确处理带年份前缀的字符串期号
+ * （避免直接 parseInt 丢前缀导致期号错乱）。
+ * @param {string|number} baseCode - 基准期号（通常为今年第一期 C1）
+ * @param {number} offset - 偏移期数（≥0，0 表示就是基准期号本身）
+ * @param {number} type - 彩种类型（决定年份前缀位数）
+ * @returns {string|null} 递增后的期号；baseCode 无法拆分或 offset 非法返回 null
+ */
+export function calcIssueCodeByOffset(baseCode, offset, type) {
+  if (offset === null || offset === undefined || isNaN(offset) || offset < 0) {
+    return null;
+  }
+  const parts = splitDateCodeParts(baseCode, type);
+  if (!parts) {
+    return null;
+  }
+  const newSeqNum = parseInt(parts.seqPart, 10) + parseInt(offset, 10);
+  // 序号位数取原位数与实际位数中的较大值，避免序号溢出后被截断
+  const newSeqPart = String(newSeqNum).padStart(parts.seqLen, '0');
+  return parts.yearPart + newSeqPart;
+}
