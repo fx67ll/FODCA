@@ -59,7 +59,7 @@
         !settingInfo.isDoneOneClickThreeFriday
       ">
         <button class="fx67ll-btn-default" type="default" @click="fridayOneClickThree"
-          :disabled="isNetworkLoading || countLoading || isDrawLoading">
+          :disabled="isNetworkLoading || countLoading || isDrawLoading || isFridayTripleSubmitting">
           周五一键三连
         </button>
       </view>
@@ -320,7 +320,8 @@
     </zb-drawer>
 
     <!-- 配置记录弹窗 -->
-    <config-log-drawer :isShowConfigLogDrawer.sync="isShowConfigLogDrawer" :configLogList="settingInfo.lastGenerateConfigLog"
+    <config-log-drawer :isShowConfigLogDrawer.sync="isShowConfigLogDrawer"
+      :configLogList="settingInfo.lastGenerateConfigLog"
       :configLogDrawerHeight="configLogDrawerHeight"></config-log-drawer>
   </view>
 </template>
@@ -363,7 +364,7 @@ import {
   addSetting,
   getChaseNumberSetting,
 } from "@/api/fx67ll/lottery/setting";
-import { getLogList, addLog, listHistoryStatistics } from "@/api/fx67ll/lottery/log";
+import { getLogList, addLog, batchAddLog, listHistoryStatistics } from "@/api/fx67ll/lottery/log";
 
 // 获取加密配置
 import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
@@ -494,6 +495,8 @@ export default {
       drawLotteryTime: 0,
       // 调用接口的加载标识
       isNetworkLoading: false,
+      // 周五一键三连提交中标志，防止重复点击造成并发请求
+      isFridayTripleSubmitting: false,
       // 图片上传百分比
       pictureUploadNumber: 0,
       // 百度OCR分析之后的结果列表
@@ -963,7 +966,7 @@ export default {
         }
 
         // #ifdef H5
-        this.drawerHeight = `${320 +
+        this.drawerHeight = `${340 +
           this.luckyNumberList.length * 60 +
           100 +
           (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
@@ -1774,16 +1777,52 @@ export default {
       // 3. 确定最终抽屉高度：取 requiredHeight 与最大可用高度之间的较小值
       const maxAvailableHeight = windowHeight - statusBarHeight - titleBarHeight;
       const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight);
+      // 4. 限制抽屉最大高度不超过最终抽屉高度的80%，避免小屏幕上铺满整个屏幕不够美观
+      const maxEightyPercentHeight = maxAvailableHeight * 0.8;
+      const finalDrawerHeight = Math.min(bestDrawerHeight, maxEightyPercentHeight);
 
-      console.log('小程序端 - 系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', bestDrawerHeight);
-      this.drawerHeight = `${bestDrawerHeight}px`;
+      console.log('小程序端 - 系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', finalDrawerHeight);
+      this.drawerHeight = `${finalDrawerHeight}px`;
       // #endif
 
       // #ifdef H5
-      // H5端（含移动端浏览器）：直接设为100%高度，内部内容区域超出自动滚动
-      // 注意：需确保 zb-drawer 内部的内容容器样式设置了 overflow-y: auto
-      this.drawerHeight = '90%';
-      console.log('H5端 - 设置高度为90%，内部内容自动滚动');
+      // H5端（含移动端浏览器）：复用微信端的内容高度计算逻辑，按内容所需高度驱动，上限为可用高度的80%
+      // H5 无状态栏（statusBarHeight=0），标题栏沿用 zb-drawer 自带标题栏高度（44）
+      const h5SystemInfo = uni.getSystemInfoSync();
+      const h5WindowHeight = h5SystemInfo.windowHeight;
+      const h5StatusBarHeight = h5SystemInfo.statusBarHeight || 0;
+      const h5TitleBarHeight = 44;
+      const h5BottomPadding = 20;
+      const h5ItemHeight = 55;
+      const h5ButtonAreaHeight = 70;
+      const h5TipHeight = 40;
+
+      let h5ContentItemCount = 0;
+      h5ContentItemCount += 4;
+      h5ContentItemCount += 4; // 注数、是否重复、包含幸运数字、仅生成一次
+      if (this.userName === 'fx67ll') {
+        h5ContentItemCount += 5;
+      } else {
+        if (this.settingInfo.isNeedAddPastRewardNumber) {
+          h5ContentItemCount += 2;
+        } else {
+          h5ContentItemCount += 1;
+        }
+      }
+
+      const h5ContentItemTotalHeight = h5ContentItemCount * h5ItemHeight;
+      const h5HasTip = this.userName !== 'fx67ll';
+      const h5TipTotalHeight = h5HasTip ? h5TipHeight : 0;
+      const h5RequiredHeight = h5TitleBarHeight + h5ContentItemTotalHeight + h5TipTotalHeight + h5ButtonAreaHeight + h5BottomPadding;
+
+      const h5MaxAvailableHeight = h5WindowHeight - h5StatusBarHeight - h5TitleBarHeight;
+      const h5BestDrawerHeight = Math.min(h5RequiredHeight, h5MaxAvailableHeight);
+      // 限制抽屉最大高度不超过浏览器可视高度，避免小屏幕上铺满整个屏幕不够美观
+      const h5MaxEightyPercentHeight = h5WindowHeight * 1;
+      const h5FinalDrawerHeight = Math.min(h5BestDrawerHeight, h5MaxEightyPercentHeight);
+
+      this.drawerHeight = `${h5FinalDrawerHeight}px`;
+      console.log('H5端 - 系统高度:', h5WindowHeight, '内容需高:', h5RequiredHeight, '最终使用:', h5FinalDrawerHeight);
       // #endif
 
       this.drawerType += 1;
@@ -2672,7 +2711,34 @@ export default {
     // 生成其他类型的随机数并直接上传
     async uploadOtherLuckyNumber(type) {
       const self = this;
-      const dateCode = parseInt(type) === 5 ? await this.getLatestCodeNumberQxc(type) : await this.getLatestCodeNumberPl35(type);
+      const addParams = await this.buildOtherLuckyNumberData(type);
+      addLog(addParams).then((res) => {
+        self.isNetworkLoading = false;
+        if (res?.code === 200) {
+          // 如果是排列三或排列五记录，则自动追加到弹窗中显示
+          if ([1, 2].includes(parseInt(type))) {
+            self.formatPl35Record(addParams.recordNumber);
+          } else {
+            uni.showToast({
+              title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        } else {
+          uni.showToast({
+            title: "号码记录保存失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      });
+    },
+    // 仅生成其他类型的随机号码数据（计算期号 + 生成号码），不执行保存，供批量保存场景复用
+    async buildOtherLuckyNumberData(type) {
+      let dateCode = parseInt(type) === 5 ? await this.getLatestCodeNumberQxc(type) : await this.getLatestCodeNumberPl35(type);
+      // 期号计算可能返回 false/undefined 等非期号值，统一归一化为 null，避免落库 "false" 污染数据
+      dateCode = dateCode || null;
       const addParams = {
         dateCode,
         recordNumber: null,
@@ -2701,33 +2767,13 @@ export default {
         addParams.recordNumber = `${frontSix.join(",")},${lastOne}`;
         addParams.numberType = "5";
       }
-      addLog(addParams).then((res) => {
-        self.isNetworkLoading = false;
-        if (res?.code === 200) {
-          // 如果是排列三或排列五记录，则自动追加到弹窗中显示
-          if ([1, 2].includes(parseInt(type))) {
-            self.formatPl35Record(addParams.recordNumber);
-          } else {
-            uni.showToast({
-              title: `随机${self.lotteryTypeMap[type].text}：${addParams.recordNumber} 已生成并上传成功！`,
-              icon: "none",
-              duration: 1998,
-            });
-          }
-        } else {
-          uni.showToast({
-            title: "号码记录保存失败，请联系管理员！",
-            icon: "none",
-            duration: 1998,
-          });
-        }
-      });
+      return addParams;
     },
     // 计算并返回今日七星彩的期号，只在同一年处理，七星彩只有每周二五日有
     // AI优化过，能够循环向前查询，防止因为断买了的日期无法续上期号  
     async getLatestCodeNumberQxc(type) {
       if (moment().subtract(1, "days").year() !== moment().year()) {
-        return false;
+        return null;
       }
       if (![5].includes(parseInt(type))) {
         return null;
@@ -2763,7 +2809,7 @@ export default {
     async getLatestCodeNumberPl35(type, customeMaxSearchDays) {
       // 1. 初始校验逻辑
       if (moment().subtract(1, "days").year() !== moment().year()) {
-        return false;
+        return null;
       }
 
       if (![3, 4].includes(parseInt(type))) {
@@ -2904,20 +2950,57 @@ export default {
         self.saveLuckySettingLocal();
       }
     },
-    // 周五一键三连
-    fridayOneClickThree() {
+    // 周五一键三连：串行准备排列三、排列五、七星彩三条记录数据，一次请求批量保存
+    // 后台一个事务按顺序写入并保证保存顺序，替代原来三次异步调用造成的顺序不可控与原子性缺失
+    async fridayOneClickThree() {
       const self = this;
-      setTimeout(() => {
-        self.getOtherLuckyNumberDebounce(3);
-      }, 1998 * 0 + 1);
-      setTimeout(() => {
-        self.getOtherLuckyNumberDebounce(4);
-      }, 1998 * 1);
-      setTimeout(() => {
-        self.getOtherLuckyNumberDebounce(5);
-      }, 1998 * 2);
-      this.settingInfo.isDoneOneClickThreeFriday = true;
-      this.saveLuckySettingLocal();
+      // 防重复提交：生成过程中禁用按钮，避免并发请求
+      if (self.isFridayTripleSubmitting) {
+        return;
+      }
+      self.isFridayTripleSubmitting = true;
+      self.isNetworkLoading = true;
+      uni.showLoading({ title: "一键三连 ing...", mask: true });
+      try {
+        // 串行准备数据：排列三 → 排列五 → 七星彩
+        // 串行而非并行，保证期号计算（依赖历史记录）不读到未提交的中间态，且数据顺序即为保存顺序
+        const dataList = [];
+        for (const type of [3, 4, 5]) {
+          const addParams = await self.buildOtherLuckyNumberData(type);
+          dataList.push(addParams);
+        }
+        // 一次请求批量保存，后台事务保证顺序与原子性
+        const res = await batchAddLog(dataList);
+        // 请求成功后先关闭 loading，避免与后续 modal/toast 共用浮层冲突
+        uni.hideLoading();
+        if (res?.code === 200) {
+          // 成功后才标记当日已完成一键三连，避免失败时误标记导致按钮不再显示
+          self.settingInfo.isDoneOneClickThreeFriday = true;
+          self.saveLuckySettingLocal();
+          const numberText = dataList
+            .map((item) => `${self.lotteryTypeMap[parseInt(item.numberType)].text}：${item.recordNumber}`)
+            .join("\n");
+          // 用 modal 展示三行号码，避免 toast 文案超长被截断
+          uni.showModal({
+            title: "一键三连成功！！！",
+            content: numberText,
+            showCancel: false,
+          });
+        } else {
+          uni.showToast({
+            title: res?.msg || "一键三连失败，请稍后重试！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      } catch (e) {
+        console.error("周五一键三连生成异常：", e);
+        // 失败时先关闭 loading，具体错误信息已由 request.js 统一 toast 提示，此处不再重复弹窗
+        uni.hideLoading();
+      } finally {
+        self.isFridayTripleSubmitting = false;
+        self.isNetworkLoading = false;
+      }
     },
   },
 };
