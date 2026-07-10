@@ -18,6 +18,15 @@ export function addLog(data) {
   });
 }
 
+// 批量新增每日号码记录（一个事务按入参顺序写入，用于周五一键三连等场景）
+export function batchAddLog(data) {
+  return request({
+    url: '/lottery/log/batchAddLotteryLogForApp',
+    method: 'post',
+    data: data,
+  });
+}
+
 // 删除每日号码记录
 export function delLog(lotteryId) {
   return request({

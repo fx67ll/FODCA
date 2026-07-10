@@ -910,11 +910,11 @@ export default {
       // 获取第一个对象的dateCode和numberType作为基准
       const firstData = dataList[0];
       const baseDateCode = firstData.dateCode;
-      const baseNumberType = firstData.numberType;
+      const baseNumberType = parseInt(firstData.numberType);
 
       // 检查所有对象的dateCode和numberType是否一致
       const isAllSame = dataList.every(item =>
-        item.dateCode === baseDateCode && item.numberType === baseNumberType
+        item.dateCode === baseDateCode && item.numberType && parseInt(item.numberType) === baseNumberType
       );
 
       if (!isAllSame) {
