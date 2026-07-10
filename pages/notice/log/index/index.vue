@@ -90,7 +90,7 @@
             <view class="info-row" v-if="isAdmin">
               <text class="info-label">状态</text>
               <text class="info-value" :class="'status-text-' + detailData.status">{{ statusText(detailData.status)
-                }}</text>
+              }}</text>
             </view>
           </view>
           <!-- 正文 -->
@@ -412,12 +412,11 @@ export default {
           this.detailData = res.data;
         } else {
           this.loadingText = '加载失败，请重试';
-          uni.showToast({ title: '获取详情失败', icon: 'none', duration: 2000 });
+          uni.showToast({ title: '获取公告详情失败！', icon: 'none', duration: 2000 });
         }
       } catch (err) {
-        console.error('获取公告详情失败：', err);
         this.loadingText = '加载失败，请重试';
-        uni.showToast({ title: '获取详情失败', icon: 'none', duration: 2000 });
+        uni.showToast({ title: '获取公告详情失败！', icon: 'none', duration: 2000 });
       } finally {
         if (this.detailTimeout) {
           clearTimeout(this.detailTimeout);

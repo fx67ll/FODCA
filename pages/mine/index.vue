@@ -179,10 +179,6 @@ export default {
     this.getWKConfig();
   },
   onShow() {
-    console.log(
-      'uni.getStorageSync("isNeedWaiKuai")',
-      uni.getStorageSync("isNeedWaiKuai")
-    );
     this.isNeedWaiKuai = uni.getStorageSync("isNeedWaiKuai");
     // 登录后首次打开检查最新公告（按公告ID记已读）
     this.checkLatestNotice();

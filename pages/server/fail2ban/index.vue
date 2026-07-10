@@ -233,7 +233,7 @@ export default {
                 return true;
             } catch (error) {
                 console.error("加载数据失败：", error);
-                uni.showToast({ title: "加载数据失败", icon: "none", duration: 2000 });
+                uni.showToast({ title: "Fail2Ban数据加载失败，请联系管理员！", icon: "none", duration: 2000 });
                 return false;
             }
         },

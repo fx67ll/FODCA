@@ -115,8 +115,7 @@ export default {
       self.isEditorReady = false;
       function tryGetContext(retryCount = 0) {
         if (retryCount > 10) {
-          console.error('编辑器上下文获取失败，超过最大重试次数！');
-          uni.showToast({ title: '编辑器初始化失败，请联系管理员！', icon: 'none', duration: 1998 });
+          uni.showToast({ title: '编辑器初始化失败，超过最大重试次数，请联系管理员！', icon: 'none', duration: 1998 });
           return;
         }
         uni.createSelectorQuery()
