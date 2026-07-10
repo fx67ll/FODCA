@@ -50,7 +50,9 @@
             <view>历史号码记录</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToLogStatistics">
+        <!-- 中奖金额统计接口仅限 fx67ll 本人使用，仅对 fx67ll 显示入口避免撞 403 -->
+        <view class="list-cell list-cell-arrow" @click="handleToLogStatistics"
+          v-if="userName && userName === 'fx67ll'">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="flag" size="22"></uni-icons></view>
             <view>中奖金额统计</view>
