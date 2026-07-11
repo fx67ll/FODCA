@@ -908,11 +908,6 @@ export default {
                   }
                 }
               }
-            } else if (!isDateCodeYearMatch(lastDateCodeRaw, parseInt(todeyNumberType), moment().year())) {
-              // 同年但 dateCode 年份与今年不符（人工补录 createTime 与 dateCode 年份不一致），
-              // 无法可靠累加，降级为 null 避免算错，提示用户检查该记录
-              console.warn('最近记录 dateCode 年份与今年不符，期号计算降级为 null：', lastDateCodeRaw);
-              self.todayDateCode = null;
             } else if (
               latestDate &&
               latestDateFormat &&
@@ -1811,10 +1806,14 @@ export default {
       const requiredHeight = titleBarHeight + contentItemTotalHeight + tipTotalHeight + extraButtonHeight + bottomPadding;
 
       // 3. 确定最终抽屉高度：取 requiredHeight 与最大可用高度之间的较小值
-      const maxAvailableHeight = windowHeight - statusBarHeight - titleBarHeight;
-      const bestDrawerHeight = Math.min(requiredHeight, maxAvailableHeight);
-      // 4. 限制抽屉最大高度不超过最终抽屉高度的80%，避免小屏幕上铺满整个屏幕不够美观
-      const maxEightyPercentHeight = maxAvailableHeight * 0.8;
+      // 微信 windowHeight（自定义导航栏下）已扣除状态栏与 tabBar，是页面内容实际可用高度，
+      // 抽屉总高直接以此作为可用上限即可，无需再减 statusBarHeight/titleBarHeight（否则双重扣减）
+      const maxAvailableHeight = windowHeight;
+      // 折叠状态下算出的内容高度偏低，补一段留白让抽屉更舒展、展开分组时不至于太挤
+      const settingBlankHeight = 66;
+      const bestDrawerHeight = Math.min(requiredHeight + settingBlankHeight, maxAvailableHeight);
+      // 4. 限制抽屉最大高度不超过可视高度的85%，避免小屏幕上铺满整个屏幕不够美观
+      const maxEightyPercentHeight = windowHeight * 0.85;
       const finalDrawerHeight = Math.min(bestDrawerHeight, maxEightyPercentHeight);
 
       console.log('小程序端 - 系统高度:', windowHeight, '内容需高:', requiredHeight, '最终使用:', finalDrawerHeight);
@@ -1851,10 +1850,14 @@ export default {
       const h5TipTotalHeight = h5HasTip ? h5TipHeight : 0;
       const h5RequiredHeight = h5TitleBarHeight + h5ContentItemTotalHeight + h5TipTotalHeight + h5ButtonAreaHeight + h5BottomPadding;
 
-      const h5MaxAvailableHeight = h5WindowHeight - h5StatusBarHeight - h5TitleBarHeight;
-      const h5BestDrawerHeight = Math.min(h5RequiredHeight, h5MaxAvailableHeight);
-      // 限制抽屉最大高度不超过浏览器可视高度，避免小屏幕上铺满整个屏幕不够美观
-      const h5MaxEightyPercentHeight = h5WindowHeight * 1;
+      // H5 的 windowHeight 已扣除页面导航栏/tabBar，是页面内容实际可用高度，
+      // 抽屉总高直接以此作为可用上限即可，无需再减 statusBarHeight/titleBarHeight（否则双重扣减）
+      const h5MaxAvailableHeight = h5WindowHeight;
+      // 折叠状态下算出的内容高度偏低，补一段留白让抽屉更舒展、展开分组时不至于太挤
+      const h5SettingBlankHeight = 66;
+      const h5BestDrawerHeight = Math.min(h5RequiredHeight + h5SettingBlankHeight, h5MaxAvailableHeight);
+      // 限制抽屉最大高度不超过浏览器可视高度的85%，避免小屏幕上铺满整个屏幕不够美观
+      const h5MaxEightyPercentHeight = h5WindowHeight * 0.95;
       const h5FinalDrawerHeight = Math.min(h5BestDrawerHeight, h5MaxEightyPercentHeight);
 
       this.drawerHeight = `${h5FinalDrawerHeight}px`;
