@@ -5,6 +5,9 @@ fx67ll One Data Center App
 
 *Tip: 运行请先安装 `moment` & `underscore`*
 
+## 0.8.7.20260711  
+* 优化界面样式与交互，修复页面已知问题  
+
 ## 0.8.6.20260710
 * 对游客不可用的功能权限回收   
 * 优化界面样式与交互，修复页面已知问题  
@@ -365,37 +368,3 @@ fx67ll One Data Center App
 
 ## 0.1.0.20230812
 * 初始化个人 APP 代码底座  
-
----
-
-### 彩票期号（dateCode）计算逻辑梳理
-
-> 详见桌面分析文档，此处为简要说明。核心代码：`utils/index.js`、`pages/lottery/index/index.vue`
-
-#### 期号格式（按彩种固定年份前缀位数）
-
-| 彩种 | numberType | 开奖日 | 年份前缀位数 | 示例 |
-|------|:---:|------|:---:|------|
-| 大乐透 | 1 | 周一/三/六 | 4 位 | `2025156` |
-| 双色球 | 2 | 周二/四/日 | 2 位 | `25154` |
-| 排列三 | 3 | 每天 | 2 位 | `25365` |
-| 排列五 | 4 | 每天 | 2 位 | `25365` |
-| 七星彩 | 5 | 周二/五/日 | 2 位 | `25156` |
-
-#### 计算思路
-
-统一为「最近一条同类型历史记录的期号 + 间隔的开奖期数」，分同年与跨年两条路径：
-
-- **同年**（最近记录 `createTime` 年份 = 今年）：先用 `isDateCodeYearMatch` 校验 dateCode 年份与今年一致（不一致降级 null，防补录数据错乱），再维持原逻辑
-  - 大乐透/双色球：`initLastLotteryDateCode`，单周期 `+1` 或多周期 `calculateCurrentDateCode`
-  - 七星彩：`calculateCurrentDateCode(3, …)`（开奖日 `[2,5,0]` 同七星彩）
-  - 排列三/五：跳跃序列 `1→3→7→15→30→90→180→360` 天前回查最近记录，`parseInt(lastDateCode) + 天数差`
-- **跨年**（最近记录 `createTime` 年份 ≠ 今年）：以今年第一期 `(D1, C1)` 为锚点
-  - `D1 = getFirstDrawDayOfYear(type, 今年)`：今年首个开奖日（排列三/五为 1月1日）
-  - `C1 = buildFirstIssueCodeOfThisYear(最近dateCode, type, 今年)`：年份直接取今年（断买多年也正确）、序号重置为 `1`（位数沿用最近记录）
-  - 期数偏移 `offset = calculateCurrentDateCode(type, 今天, D1, 0)`（排列三/五取 `今天.diff(D1,'days')`；今天早于 D1 返回 null）
-  - 本期期号 `= calcIssueCodeByOffset(C1, offset, type)`：仅序号部分递增，前缀不动
-
-#### 无法自动计算的场景（需手动补/修复）
-
-首次购买无历史记录、最近记录 `dateCode` 缺失、今天早于最近记录日、查询接口失败、跨年且去年/历史无该彩种记录、排列三/五断买超过 360 天、节假日停售导致期号错位、人工补录 createTime 与 dateCode 年份不一致（降级 null 待修复）。
