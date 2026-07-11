@@ -9,6 +9,16 @@ export function getLogList(query) {
   });
 }
 
+// 查询指定彩种最近一条"有期号"的记录（自动跳过 dateCode 为空的脏数据，按 create_time 倒序取第一条）
+// 用于期号计算时向前回溯基准记录，适配全部彩种，由调用方传 numberType 区分
+export function getLatestLogWithDateCode(query) {
+  return request({
+    url: '/lottery/log/getLatestLogWithDateCodeForApp',
+    method: 'get',
+    params: query,
+  });
+}
+
 // 新增每日号码记录
 export function addLog(data) {
   return request({
