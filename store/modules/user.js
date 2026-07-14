@@ -57,6 +57,18 @@ const user = {
           });
       });
     },
+    // 一键登录（阶段三·4.4）：直接用 JWT 设 token，不走 /login 验证码流程
+    OneClickLogin({ commit }, token) {
+      return new Promise((resolve, reject) => {
+        try {
+          setToken(token);
+          commit('SET_TOKEN', token);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+    },
 
     // 获取用户信息
     GetInfo({ commit, state }) {

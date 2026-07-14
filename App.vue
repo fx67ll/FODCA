@@ -1,34 +1,32 @@
 <script>
-  import config from './config'
-  // import store from '@/store'
-  import { getToken } from '@/utils/auth'
+import config from './config'
+// import store from '@/store'
+import { getToken } from '@/utils/auth'
 
-  export default {
-    onLaunch: function() {
-      this.initApp()
+export default {
+  onLaunch: function () {
+    this.initApp()
+  },
+  methods: {
+    // 初始化应用
+    initApp() {
+      // 初始化应用配置
+      this.initConfig()
+      // 检查用户登录状态（两端都检查，避免小程序刷新后绕过 permission.js 直接进首页）
+      this.checkLogin()
     },
-    methods: {
-      // 初始化应用
-      initApp() {
-        // 初始化应用配置
-        this.initConfig()
-        // 检查用户登录状态
-        //#ifdef H5
-        this.checkLogin()
-        //#endif
-      },
-      initConfig() {
-        this.globalData.config = config
-      },
-      checkLogin() {
-        if (!getToken()) {
-          this.$tab.reLaunch('/pages/login') 
-        }
+    initConfig() {
+      this.globalData.config = config
+    },
+    checkLogin() {
+      if (!getToken()) {
+        this.$tab.reLaunch('/pages/login')
       }
     }
   }
+}
 </script>
 
 <style lang="scss">
-  @import '@/static/scss/index.scss'
+@import '@/static/scss/index.scss'
 </style>
