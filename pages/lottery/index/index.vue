@@ -637,6 +637,9 @@ export default {
           lotterySetting: JSON.stringify(this.settingInfo),
         };
         updateSetting(updateParams).then((res) => {
+          if (res?.code === 200) {
+            self.clearSettingInfoDirty();
+          }
           self.showSavingToast(
             res?.code,
             !isNoNeedToast,
@@ -653,6 +656,7 @@ export default {
         addSetting(addParams).then((res) => {
           self._isFetchingSettingId = false;
           if (res?.code === 200) {
+            self.clearSettingInfoDirty();
             // 优先从 add 响应直接拿 settingId，避免再发一次 getSetting
             const newId = res?.data?.settingId || res?.settingId || null;
             if (newId) {
@@ -681,7 +685,7 @@ export default {
     // 保存设置到服务端 - 防抖处理
     saveLuckySettingDebounce: _.debounce(function (isNoNeedToast) {
       this.saveLuckySetting(isNoNeedToast);
-    }, 1023), // `saveLuckySettingDebounce` 的 233ms 防抖在 `onHide` + 摇号同时触发时仍然不够，建议改为 800ms~1s。
+    }, 233), // 防抖 233ms，缩短后端未同步窗口（配合脏标记机制，即使被打断下次进入也会立即同步）
     // 调用新增或修改接口之后的统一处理
     showSavingToast(resCode, isNeedTip, successTip, failTip) {
       if (resCode === 200) {
@@ -707,13 +711,24 @@ export default {
       }
       this.isNetworkLoading = false;
     },
+    // 清除本地脏标记（云端同步成功后调用）
+    clearSettingInfoDirty() {
+      // #ifdef H5
+      localStorage.removeItem("settingInfoDirty");
+      // #endif
+      // #ifdef MP-WEIXIN
+      wx.removeStorage({ key: "settingInfoDirty" });
+      // #endif
+    },
     // 本地缓存摇奖设置
     saveLuckySettingLocal() {
       // 保存到服务端
       this.saveLuckySettingDebounce(true);
 
+      // 标记本地数据已修改未同步（持久化到 storage，防止页面销毁后丢失）
       // #ifdef H5
       localStorage.setItem("settingInfo", JSON.stringify(this.settingInfo));
+      localStorage.setItem("settingInfoDirty", "true");
       // #endif
 
       // 微信端不支持localStorage
@@ -721,6 +736,10 @@ export default {
       wx.setStorage({
         key: "settingInfo",
         data: JSON.stringify(this.settingInfo),
+      });
+      wx.setStorage({
+        key: "settingInfoDirty",
+        data: "true",
       });
       // #endif
     },
@@ -774,12 +793,29 @@ export default {
       this.isNetworkLoading = true;
       // 拉取期间加锁，阻止并发 addSetting
       this._isFetchingSettingId = true;
+
+      // 读取本地脏标记（持久化在 storage，防止页面销毁后丢失）
+      let isLocalDirty = false;
+      // #ifdef H5
+      isLocalDirty = localStorage.getItem("settingInfoDirty") === "true";
+      // #endif
+      // #ifdef MP-WEIXIN
+      isLocalDirty = wx.getStorageSync("settingInfoDirty") === "true";
+      // #endif
+
       getSetting().then((res) => {
         if (res?.code === 200 && res?.data) {
           self.settingInfoId = res.data.settingId;
           const settingInfo = JSON.parse(res.data.lotterySetting) || {};
           if (_.has(settingInfo, "firstRandomDate")) {
-            self.settingInfo = { ...settingInfo };
+            if (isLocalDirty) {
+              // 本地有未同步的新值 → 本地优先，后端只补缺，并立即触发同步
+              self.settingInfo = { ...settingInfo, ...self.settingInfo };
+              self.saveLuckySettingLocal();
+            } else {
+              // 本地干净 → 后端权威（多设备同步生效）
+              self.settingInfo = { ...settingInfo };
+            }
             if (
               self.settingInfo.isOnlyFirstToday &&
               self.settingInfo.firstRandomDate === moment().format("YYYY-MM-DD")
