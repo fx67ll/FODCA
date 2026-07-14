@@ -15,7 +15,9 @@ const request = config => {
 
   // 如果原来就没有token，直接跳转登录界面
   // 如果有token，说明之前登陆过，就让后端验证token是否失效
-  if (!getToken() && !whiteApi.includes(config?.url)) {
+  // 白名单匹配只取 url 的 path 部分（去掉 query 参数），避免带参接口匹配不上
+  const reqPath = (config?.url || '').split('?')[0];
+  if (!getToken() && !whiteApi.includes(reqPath)) {
     uni.reLaunch({
       url: '/pages/login',
     });
