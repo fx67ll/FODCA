@@ -35,10 +35,10 @@
         <view class="overview-card">
           <text class="card-label">稳定运行</text>
           <view class="card-value">
-            <text class="card-num">{{ uptimeDays }}</text>
-            <text class="card-unit">天</text>
+            <text class="card-num">{{ uptimeValue }}</text>
+            <text class="card-unit">{{ uptimeUnit }}</text>
           </view>
-          <text class="card-sub">系统持续平稳运行</text>
+          <text class="card-sub">应用进程持续运行</text>
         </view>
       </view>
       <view class="overview-card highlight">
@@ -171,7 +171,7 @@ export default {
       // 脱敏状态快照
       onlineServiceCount: 0,
       totalServiceCount: 0,
-      uptimeDays: 0,
+      uptimeHours: 0,
       totalBlockedAttempts: 0,
       fail2banEnabled: false,
       services: {},
@@ -214,6 +214,15 @@ export default {
     onlineRate() {
       if (!this.totalServiceCount) return 0;
       return Math.round((this.onlineServiceCount / this.totalServiceCount) * 100);
+    },
+    // 稳定运行时长：后端返回总小时数 uptimeHours，≥24 小时换算为天（保留 1 位小数），<24 小时直接显示小时（整数）。
+    // uptimeHours 经 tweenNumber 整数滚动，展示层在这里换算，滚动动画作用于原始小时数。
+    uptimeValue() {
+      const hours = Number(this.uptimeHours) || 0;
+      return hours >= 24 ? (Math.round((hours / 24) * 10) / 10).toFixed(1) : hours;
+    },
+    uptimeUnit() {
+      return (Number(this.uptimeHours) || 0) >= 24 ? '天' : '小时';
     },
     // 距下次刷新的剩余秒数（圆环中心展示）
     countdownSeconds() {
@@ -282,7 +291,7 @@ export default {
           this.memoryTotalGB = Number(data.memoryTotalGB) || 0;
           // 数值指标用滚动动画过渡到新值，与 FODCF vue-count-to 动效保持一致
           this.tweenNumber('onlineServiceCount', Number(data.onlineServiceCount) || 0);
-          this.tweenNumber('uptimeDays', Number(data.uptimeDays) || 0);
+          this.tweenNumber('uptimeHours', Number(data.uptimeHours) || 0);
           this.tweenNumber('totalBlockedAttempts', Number(data.totalBlockedAttempts) || 0);
           this.tweenNumber('cpuUsage', Number(data.cpuUsage) || 0);
           this.tweenNumber('memoryUsage', Number(data.memoryUsage) || 0);
