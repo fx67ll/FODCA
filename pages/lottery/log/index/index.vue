@@ -204,9 +204,7 @@ import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-lis
 import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
 // 获取加密配置
-import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
-import { decryptString } from "@/utils/index";
-import { getCryptoSaltKey } from "@/neverUploadToGithub";
+import { getCredential } from "@/api/fx67ll/secret/key.js";
 import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
 
@@ -1135,48 +1133,23 @@ export default {
         uni.showLoading({
           title: "查询ing...",
         });
-        getSecretConfig({ secretKey: "qryLotteryRewardAppId" })
-          .then((res) => {
-            if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-              const qryLotteryRewardAppId = decryptString(
-                res.rows[0].secretValue,
-                getCryptoSaltKey()
-              );
-              getSecretConfig({ secretKey: "qryLotteryRewardAppSecret" })
-                .then((res) => {
-                  if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-                    const qryLotteryRewardAppSecret = decryptString(
-                      res.rows[0].secretValue,
-                      getCryptoSaltKey()
-                    );
-                    self.queryLotteryRewardInfo(
-                      qryLotteryRewardAppId,
-                      qryLotteryRewardAppSecret,
-                      logDateCode,
-                      logNumType
-                    );
-                  } else {
-                    uni.showToast({
-                      title: "查询中奖信息查询接口配置项AppSecret失败！",
-                      icon: "none",
-                      duration: 1998,
-                    });
-                  }
-                })
-                .catch((error) => {
-                  console.error("查询中奖信息查询接口配置项AppSecret异常：" + error);
-                  uni.hideLoading();
-                });
-            } else {
-              uni.showToast({
-                title: "查询中奖信息查询接口配置项AppId失败！",
-                icon: "none",
-                duration: 1998,
-              });
-            }
+        // 走专用凭据接口：credentialForApp → decryptForApp 换明文（阶段三·4.14）
+        getCredential("lotteryReward")
+          .then((cred) => {
+            self.queryLotteryRewardInfo(
+              cred.appId,
+              cred.appSecret,
+              logDateCode,
+              logNumType
+            );
           })
           .catch((error) => {
-            console.error("查询中奖信息查询接口配置项AppId异常：" + error);
+            console.error("查询中奖信息查询接口凭据异常：" + (error?.msg || error));
+            uni.showToast({
+              title: "查询中奖信息查询接口配置项失败！",
+              icon: "none",
+              duration: 1998,
+            });
             uni.hideLoading();
           });
       } else {

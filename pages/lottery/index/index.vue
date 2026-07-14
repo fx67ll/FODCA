@@ -344,7 +344,6 @@ import "@/node_modules/moment/locale/zh-cn";
 // 各种工具类
 import {
   quickSort,
-  decryptString,
   mapLotteryNumberType,
   sortNumberByFrequency,
   sortNumberByAscending,
@@ -370,9 +369,8 @@ import {
 } from "@/api/fx67ll/lottery/setting";
 import { getLogList, getLatestLogWithDateCode, addLog, batchAddLog, listHistoryStatistics } from "@/api/fx67ll/lottery/log";
 
-// 获取加密配置
-import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
-import { getCryptoSaltKey } from "@/neverUploadToGithub";
+// 获取第三方凭据（阶段三·4.14，走专用接口）
+import { getCredential } from "@/api/fx67ll/secret/key.js";
 
 export default {
   components: {
@@ -2224,32 +2222,19 @@ export default {
     // 获取百度OCR分析必须的配置
     qryBaiduOcrConfig(fileCloudUrl) {
       const self = this;
-      getSecretConfig({ secretKey: "ocrPubKey" }).then((res) => {
-        if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-          const ocrPubKey = decryptString(res.rows[0].secretValue, getCryptoSaltKey());
-          getSecretConfig({ secretKey: "ocrSecKey" }).then((res) => {
-            if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-              const ocrSecKey = decryptString(
-                res.rows[0].secretValue,
-                getCryptoSaltKey()
-              );
-              self.analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl);
-            } else {
-              uni.showToast({
-                title: "查询百度OCR分析配置项SecretKey失败！",
-                icon: "none",
-                duration: 1998,
-              });
-            }
-          });
-        } else {
+      // 走专用凭据接口：credentialForApp → decryptForApp 换明文（阶段三·4.14）
+      getCredential("ocr")
+        .then((cred) => {
+          self.analysisByBaiduOcr(cred.appId, cred.appSecret, fileCloudUrl);
+        })
+        .catch((error) => {
+          console.error("查询百度OCR分析凭据异常：" + (error?.msg || error));
           uni.showToast({
-            title: "查询百度OCR分析配置项PublicKey失败！",
+            title: "查询百度OCR分析配置项失败！",
             icon: "none",
             duration: 1998,
           });
-        }
-      });
+        });
     },
     // 上传图片到uniCloud，目前是改为使用若依的上传接口
     uploadPicForBaiDuOcr(fileList) {
