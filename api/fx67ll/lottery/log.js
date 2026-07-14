@@ -85,6 +85,24 @@ export function listHistoryStatistics(query) {
   return request({
     url: '/lottery/log/getLotteryHistoryStatistics',
     method: 'get',
-    params: query
-  })
+    params: query,
+  });
+}
+
+// 中奖信息查询（后端代理 mxnzp，凭据不下发前端）
+export function queryRewardForApp(expect, numberType) {
+  return request({
+    url: '/lottery/log/queryRewardForApp',
+    method: 'get',
+    params: { expect, numberType },
+  });
+}
+
+// 百度 OCR 识别（后端代理百度 OCR，凭据不下发前端）
+export function queryOcrForApp(imageUrl) {
+  return request({
+    url: '/lottery/log/queryOcrForApp',
+    method: 'post',
+    params: { imageUrl },
+  });
 }

@@ -203,8 +203,8 @@ import { showConfirm } from "@/utils/common";
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
 import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
-// 获取加密配置
-import { getCredential } from "@/api/fx67ll/secret/key.js";
+// 中奖查询 + OCR 后端代理接口
+import { queryRewardForApp } from "@/api/fx67ll/lottery/log.js";
 import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
 import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
 
@@ -1126,25 +1126,44 @@ export default {
         }
       });
     },
-    // 查询外部网站所需要的配置
+    // 查询中奖信息（后端代理 mxnzp，凭据不下发前端）
     qryRewardQueryConfig(logDateCode, logNumType) {
       const self = this;
       if (logDateCode && logNumType) {
-        uni.showLoading({
-          title: "查询ing...",
-        });
-        // 走专用凭据接口：credentialForApp → decryptForApp 换明文（阶段三·4.14）
-        getCredential("lotteryReward")
-          .then((cred) => {
-            self.queryLotteryRewardInfo(
-              cred.appId,
-              cred.appSecret,
-              logDateCode,
-              logNumType
-            );
+        uni.showLoading({ title: "查询ing..." });
+        // 调后端代理接口查询中奖信息
+        queryRewardForApp(logDateCode, logNumType)
+          .then((res) => {
+            const mxnzp = res?.mxnzp;
+            if (mxnzp) {
+              const resCode = mxnzp.code;
+              const resMsg = mxnzp.msg || "-";
+              const resData = mxnzp.data || {};
+              if (resCode === 10027) {
+                uni.showToast({
+                  title: "暂未开奖，请晚些时候再查询！",
+                  icon: "none",
+                  duration: 1998,
+                });
+              } else if (resData?.openCode) {
+                self.formatWinningNumber(resData.openCode, logNumType);
+              } else {
+                uni.showToast({
+                  title: `查询失败！报错信息：${resMsg}`,
+                  icon: "none",
+                  duration: 1998,
+                });
+              }
+            } else {
+              uni.showToast({
+                title: "查询中奖信息失败，请联系管理员！",
+                icon: "none",
+                duration: 1998,
+              });
+            }
           })
           .catch((error) => {
-            console.error("查询中奖信息查询接口凭据异常：" + (error?.msg || error));
+            console.error("查询中奖信息异常：" + (error?.msg || error));
             uni.showToast({
               title: "查询中奖信息查询接口配置项失败！",
               icon: "none",
@@ -1160,81 +1179,53 @@ export default {
         });
       }
     },
-    // 通过第三方站点查询开奖号码
-    queryLotteryRewardInfo(appId, appSecret, dCode, nType) {
-      const self = this;
-      const lotteryCodeMap = {
-        1: "cjdlt",
-        2: "ssq",
-        3: "pl3",
-        4: "pl5",
-        5: "qxc",
-      };
-      uni
-        .request({
-          url: "https://www.mxnzp.com/api/lottery/common/aim_lottery",
-          data: {
-            app_id: appId,
-            app_secret: appSecret,
-            expect: dCode,
-            code: lotteryCodeMap[parseInt(nType)],
-          },
-          method: "GET",
-        })
-        .then((res) => {
-          // 外部接口返回示例
-          // const egObj = {
-          //   openCode: "05,26,33,35,15+09+01",
-          //   code: "cjdlt",
-          //   expect: "2024032",
-          //   name: "超级大乐透",
-          //   time: "2024-03-23 21:26:16",
-          // };
-          if (res && res?.length > 1) {
-            const resCode = res[1]?.data?.code || null;
-            const resMsg = res[1]?.data?.msg || "-";
-            const resData = res[1]?.data?.data || {};
-            if (resCode === 10027) {
-              uni.showToast({
-                title: "暂未开奖，请晚些时候再查询！",
-                icon: "none",
-                duration: 1998,
-              });
-            } else if (resData?.openCode) {
-              self.formatWinningNumber(resData.openCode, nType);
-            } else {
-              // #ifdef MP-WEIXIN
-              uni.showToast({
-                title: `查询失败！报错信息：${resMsg}`,
-                icon: "none",
-                duration: 1998,
-              });
-              // #endif
-              // #ifdef H5
-              uni.showToast({
-                title: `第三方站点开奖号码查询失败！报错信息：${resMsg}`,
-                icon: "none",
-                duration: 1998,
-              });
-              // #endif
-            }
-          } else {
-            uni.showToast({
-              title: "外部接口异常，请联系管理员！",
-              icon: "none",
-              duration: 1998,
-            });
-          }
-        })
-        .catch((error) => {
-          uni.hideLoading();
-          uni.showToast({
-            title: `开奖号码查询出现异常，请联系管理员！报错信息：${error}`,
-            icon: "none",
-            duration: 1998,
-          });
-        });
-    },
+    // ===== 以下为原前端直连 mxnzp 逻辑（已注释保留，方便后期回退） =====
+    // // 查询外部网站所需要的配置
+    // qryRewardQueryConfig_old(logDateCode, logNumType) {
+    //   const self = this;
+    //   if (logDateCode && logNumType) {
+    //     uni.showLoading({ title: "查询ing..." });
+    //     getCredential("lotteryReward")
+    //       .then((cred) => {
+    //         self.queryLotteryRewardInfo(cred.appId, cred.appSecret, logDateCode, logNumType);
+    //       })
+    //       .catch((error) => {
+    //         console.error("查询中奖信息查询接口凭据异常：" + (error?.msg || error));
+    //         uni.showToast({ title: "查询中奖信息查询接口配置项失败！", icon: "none", duration: 1998 });
+    //         uni.hideLoading();
+    //       });
+    //   } else {
+    //     uni.showToast({ title: "缺少必要查询条件，请联系管理员！", icon: "none", duration: 1998 });
+    //   }
+    // },
+    // // 通过第三方站点查询开奖号码
+    // queryLotteryRewardInfo(appId, appSecret, dCode, nType) {
+    //   const self = this;
+    //   const lotteryCodeMap = { 1: "cjdlt", 2: "ssq", 3: "pl3", 4: "pl5", 5: "qxc" };
+    //   uni.request({
+    //     url: "https://www.mxnzp.com/api/lottery/common/aim_lottery",
+    //     data: { app_id: appId, app_secret: appSecret, expect: dCode, code: lotteryCodeMap[parseInt(nType)] },
+    //     method: "GET",
+    //   }).then((res) => {
+    //     if (res && res?.length > 1) {
+    //       const resCode = res[1]?.data?.code || null;
+    //       const resMsg = res[1]?.data?.msg || "-";
+    //       const resData = res[1]?.data?.data || {};
+    //       if (resCode === 10027) {
+    //         uni.showToast({ title: "暂未开奖，请晚些时候再查询！", icon: "none", duration: 1998 });
+    //       } else if (resData?.openCode) {
+    //         self.formatWinningNumber(resData.openCode, nType);
+    //       } else {
+    //         uni.showToast({ title: `查询失败！报错信息：${resMsg}`, icon: "none", duration: 1998 });
+    //       }
+    //     } else {
+    //       uni.showToast({ title: "外部接口异常，请联系管理员！", icon: "none", duration: 1998 });
+    //     }
+    //   }).catch((error) => {
+    //     uni.hideLoading();
+    //     uni.showToast({ title: `开奖号码查询出现异常，请联系管理员！报错信息：${error}`, icon: "none", duration: 1998 });
+    //   });
+    // },
     // 格式化中奖号码，原格式为逗号+加号拼接，转换成我的逗号+横杠来拼接
     formatWinningNumber(winNum, type) {
       // 将第一个匹配的加号替换为减号，第二个匹配的加号替换为逗号

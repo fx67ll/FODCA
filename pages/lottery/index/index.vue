@@ -367,10 +367,10 @@ import {
   addSetting,
   getChaseNumberSetting,
 } from "@/api/fx67ll/lottery/setting";
-import { getLogList, getLatestLogWithDateCode, addLog, batchAddLog, listHistoryStatistics } from "@/api/fx67ll/lottery/log";
+import { getLogList, getLatestLogWithDateCode, addLog, batchAddLog, listHistoryStatistics, queryOcrForApp } from "@/api/fx67ll/lottery/log";
 
 // 获取第三方凭据（阶段三·4.14，走专用接口）
-import { getCredential } from "@/api/fx67ll/secret/key.js";
+
 
 export default {
   components: {
@@ -2152,90 +2152,85 @@ export default {
       this.afterBaiduOcrSuccess(baiduOcrFileUrl);
     },
     // 使用百度OCR分析，注意！！！百度OCR识别需要先获取鉴权信息~
-    analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl) {
+    // 获取百度OCR分析结果（后端代理百度 OCR，凭据不下发前端）
+    qryBaiduOcrConfig(fileCloudUrl) {
       const self = this;
-      uni
-        .request({
-          method: "POST",
-          timeout: 102344,
-          // #ifdef H5
-          url: "/baiduOcrAuth",
-          // #endif
-          // #ifdef MP-WEIXIN
-          url: `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${ocrPubKey}&client_secret=${ocrSecKey}`,
-          // #endif
-          dataType: "json",
-        })
-        .then((baiduOcrAuthRes) => {
-          // console.log("baiduOcrAuthRes", baiduOcrAuthRes);
-          if (
-            baiduOcrAuthRes &&
-            baiduOcrAuthRes.length > 1 &&
-            baiduOcrAuthRes[1]?.data?.access_token
-          ) {
-            uni.request({
-              method: "POST",
-              timeout: 102344,
-              // #ifdef H5
-              url: "/baiduOcr",
-              // #endif
-              // #ifdef MP-WEIXIN
-              url: `https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token=${baiduOcrAuthRes[1]?.data?.access_token}`,
-              // #endif
-              data: {
-                url: fileCloudUrl,
-              },
-              header: {
-                "Content-Type": "application/x-www-form-urlencoded",
-              },
-              dataType: "json",
-              success: function (baiduOcrRes) {
-                // console.log("baiduOcrRes", baiduOcrRes);
-                self.ocrResultCallBack(baiduOcrRes, fileCloudUrl);
-              },
-              fail: (err) => {
-                uni.showToast({
-                  title: "百度OCR识别接口调用失败，请联系管理员！",
-                  icon: "none",
-                  duration: 1998,
-                });
-                console.error("百度OCR识别接口调用失败: " + JSON.stringify(err));
-                self.afterPicUploadFinished();
-              },
-              complete: (res) => {
-                console.log("百度OCR识别接口调用完成: " + JSON.stringify(res));
-              },
-            });
+      queryOcrForApp(fileCloudUrl)
+        .then((res) => {
+          const ocrRes = res?.ocr;
+          if (ocrRes) {
+            // 后端返回的 ocr 结果结构：{ words_result: [...], words_result_num: N, log_id: xxx }
+            // 原前端直连时 uni.request 返回 [err, res]，ocrResultCallBack 取 res[1]
+            // 后端代理后直接是对象，构造兼容结构传入
+            self.ocrResultCallBack({ length: 2, 1: { data: ocrRes } }, fileCloudUrl);
           } else {
             uni.showToast({
-              title: "百度OCR鉴权接口调用失败，请联系管理员！",
+              title: "百度OCR识别失败，请联系管理员！",
               icon: "none",
               duration: 1998,
             });
             self.afterPicUploadFinished();
           }
         })
-        .catch((err) => {
-          self.afterPicUploadFinished();
-        });
-    },
-    // 获取百度OCR分析必须的配置
-    qryBaiduOcrConfig(fileCloudUrl) {
-      const self = this;
-      // 走专用凭据接口：credentialForApp → decryptForApp 换明文（阶段三·4.14）
-      getCredential("ocr")
-        .then((cred) => {
-          self.analysisByBaiduOcr(cred.appId, cred.appSecret, fileCloudUrl);
-        })
         .catch((error) => {
-          console.error("查询百度OCR分析凭据异常：" + (error?.msg || error));
+          console.error("百度OCR识别异常：" + (error?.msg || error));
           uni.showToast({
             title: "查询百度OCR分析配置项失败！",
             icon: "none",
             duration: 1998,
           });
+          self.afterPicUploadFinished();
         });
     },
+    // ===== 以下为原前端直连百度 OCR 逻辑（已注释保留，方便后期回退） =====
+    // analysisByBaiduOcr(ocrPubKey, ocrSecKey, fileCloudUrl) {
+    //   const self = this;
+    //   uni.request({
+    //     method: "POST", timeout: 102344,
+    //     // #ifdef H5
+    //     url: "/baiduOcrAuth",
+    //     // #endif
+    //     // #ifdef MP-WEIXIN
+    //     url: `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${ocrPubKey}&client_secret=${ocrSecKey}`,
+    //     // #endif
+    //     dataType: "json",
+    //   }).then((baiduOcrAuthRes) => {
+    //     if (baiduOcrAuthRes && baiduOcrAuthRes.length > 1 && baiduOcrAuthRes[1]?.data?.access_token) {
+    //       uni.request({
+    //         method: "POST", timeout: 102344,
+    //         // #ifdef H5
+    //         url: "/baiduOcr",
+    //         // #endif
+    //         // #ifdef MP-WEIXIN
+    //         url: `https://aip.baidubce.com/rest/2.0/ocr/v1/accurate_basic?access_token=${baiduOcrAuthRes[1]?.data?.access_token}`,
+    //         // #endif
+    //         data: { url: fileCloudUrl },
+    //         header: { "Content-Type": "application/x-www-form-urlencoded" },
+    //         dataType: "json",
+    //         success: function (baiduOcrRes) { self.ocrResultCallBack(baiduOcrRes, fileCloudUrl); },
+    //         fail: (err) => {
+    //           uni.showToast({ title: "百度OCR识别接口调用失败，请联系管理员！", icon: "none", duration: 1998 });
+    //           console.error("百度OCR识别接口调用失败: " + JSON.stringify(err));
+    //           self.afterPicUploadFinished();
+    //         },
+    //         complete: (res) => { console.log("百度OCR识别接口调用完成: " + JSON.stringify(res)); },
+    //       });
+    //     } else {
+    //       uni.showToast({ title: "百度OCR鉴权接口调用失败，请联系管理员！", icon: "none", duration: 1998 });
+    //       self.afterPicUploadFinished();
+    //     }
+    //   }).catch((err) => { self.afterPicUploadFinished(); });
+    // },
+    // // 获取百度OCR分析必须的配置
+    // qryBaiduOcrConfig_old(fileCloudUrl) {
+    //   const self = this;
+    //   getCredential("ocr").then((cred) => {
+    //     self.analysisByBaiduOcr(cred.appId, cred.appSecret, fileCloudUrl);
+    //   }).catch((error) => {
+    //     console.error("查询百度OCR分析凭据异常：" + (error?.msg || error));
+    //     uni.showToast({ title: "查询百度OCR分析配置项失败！", icon: "none", duration: 1998 });
+    //   });
+    // },
     // 上传图片到uniCloud，目前是改为使用若依的上传接口
     uploadPicForBaiDuOcr(fileList) {
       const self = this;
