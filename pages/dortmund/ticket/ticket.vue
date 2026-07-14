@@ -52,13 +52,6 @@
 import moment from "@/node_modules/moment";
 import "@/node_modules/moment/locale/zh-cn";
 
-// 各种工具类
-import { decryptString } from "@/utils/index";
-
-// 获取加密配置
-import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
-import { getCryptoSaltKey } from "@/neverUploadToGithub";
-
 export default {
   data() {
     return {

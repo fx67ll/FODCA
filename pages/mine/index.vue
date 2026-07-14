@@ -51,8 +51,7 @@
           </view>
         </view>
         <!-- 中奖金额统计接口仅限 fx67ll 本人使用，仅对 fx67ll 显示入口避免撞 403 -->
-        <view class="list-cell list-cell-arrow" @click="handleToLogStatistics"
-          v-if="userName && userName === 'fx67ll'">
+        <view class="list-cell list-cell-arrow" @click="handleToLogStatistics" v-if="userName && userName === 'fx67ll'">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="flag" size="22"></uni-icons></view>
             <view>中奖金额统计</view>
@@ -145,11 +144,9 @@
 <script>
 import noticePopup from "@/pages/notice/component/noticePopup.vue";
 
-// 获取加密配置
+// 获取配置（isNeedWaiKuai 非敏感键，明文返回）
 import { getSecretConfig } from "@/api/fx67ll/secret/key.js";
 import { latestNoticeLog } from "@/api/fx67ll/notice/log.js";
-import { decryptString } from "@/utils/index";
-import { getCryptoSaltKey } from "@/neverUploadToGithub";
 import { getToken } from "@/utils/auth";
 
 export default {
@@ -401,11 +398,10 @@ export default {
     },
     getWKConfig() {
       const self = this;
+      // isNeedWaiKuai 为非敏感键，后端鉴权分级匿名返回明文，前端直接取值（阶段三·4.12）
       getSecretConfig({ secretKey: "isNeedWaiKuai" }).then((res) => {
         if (res && res?.rows && res?.rows.length > 0 && res?.code === 200) {
-          const wkTmp = JSON.parse(
-            decryptString(res.rows[0].secretValue, getCryptoSaltKey()) || "false"
-          );
+          const wkTmp = JSON.parse(res.rows[0].secretValue || "false");
           uni.setStorageSync("isNeedWaiKuai", wkTmp);
           self.isNeedWaiKuai = wkTmp;
         }
