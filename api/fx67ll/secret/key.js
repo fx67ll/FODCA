@@ -9,12 +9,12 @@ export function getSecretConfig(query) {
   });
 }
 
-// 批量查询秘钥配置（一次请求查多个键，仅白名单内非敏感键返回明文）
+// 批量查询秘钥配置（POST，一次请求查多个键，仅白名单内非敏感键返回明文）
 export function getSecretConfigBatch(secretKeys) {
   return request({
     url: '/secret/key/getSecretKeyConfigForApp',
-    method: 'get',
-    params: { secretKeys },
+    method: 'post',
+    data: { secretKeys },
   });
 }
 
