@@ -1,11 +1,19 @@
 <template>
   <view class="setting-container" :style="{ height: `${windowHeight}px` }">
     <view class="menu-list">
-      <view
-        class="list-cell list-cell-arrow"
-        v-if="userName && userName !== 'user'"
-        @click="handleToPwd"
-      >
+      <view class="list-cell list-cell-arrow" @click="handleToServerStatus">
+        <view class="menu-item-box">
+          <view class="iconfont icon-code menu-icon"></view>
+          <view>系统状态</view>
+        </view>
+      </view>
+      <view class="list-cell list-cell-arrow" @click="handleToNotice">
+        <view class="menu-item-box">
+          <view class="iconfont icon-service menu-icon"></view>
+          <view>通知公告</view>
+        </view>
+      </view>
+      <view class="list-cell list-cell-arrow" v-if="userName && userName !== 'user'" @click="handleToPwd">
         <view class="menu-item-box">
           <view class="iconfont icon-password menu-icon"></view>
           <view>修改密码</view>
@@ -35,6 +43,8 @@
 </template>
 
 <script>
+import { openAdaptiveWindow } from "@/utils/browser.js";
+
 export default {
   data() {
     return {
@@ -44,6 +54,12 @@ export default {
     };
   },
   methods: {
+    handleToServerStatus() {
+      openAdaptiveWindow("/pages/server/status/index", this.$tab.navigateTo);
+    },
+    handleToNotice() {
+      this.$tab.navigateTo("/pages/notice/log/index/index");
+    },
     handleToPwd() {
       this.$tab.navigateTo("/pages/mine/pwd/index");
     },
