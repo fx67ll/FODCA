@@ -1,13 +1,13 @@
 <template>
   <view class="setting-container" :style="{ height: `${windowHeight}px` }">
     <view class="menu-list">
-      <view class="list-cell list-cell-arrow" @click="handleToServerStatus">
+      <view class="list-cell list-cell-arrow" @click="handleToServerStatus" v-if="userName && userName === 'fx67ll'">
         <view class="menu-item-box">
           <view class="iconfont icon-code menu-icon"></view>
           <view>系统状态</view>
         </view>
       </view>
-      <view class="list-cell list-cell-arrow" @click="handleToNotice">
+      <view class="list-cell list-cell-arrow" @click="handleToNotice" v-if="userName && userName === 'fx67ll'">
         <view class="menu-item-box">
           <view class="iconfont icon-service menu-icon"></view>
           <view>通知公告</view>
