@@ -50,8 +50,32 @@ export default {
     },
     quickPunchNow() {
       if (this.userName && ["fx67ll", "gnlll"].includes(this.userName)) {
-        this.isShowAddDrawer = true;
+        if (this.userName === "gnlll") {
+          // gnlll 保留打卡弹窗打开逻辑
+          this.isShowAddDrawer = true;
+        } else if (this.userName === "fx67ll") {
+          // fx67ll 超管：改为跳转日常通勤地图（打卡弹窗逻辑暂时隐藏，后续可能放开）
+          this.openDailyCommute();
+        }
       }
+    },
+    // 跳转日常通勤地图（外部链接，参考状态面板打开逻辑）
+    openDailyCommute() {
+      const url = "https://map.fx67ll.com/daily";
+      // #ifdef H5
+      try {
+        const newTab = window.open(url, "_blank");
+        if (!newTab) {
+          // 拦截时降级：当前页打开
+          window.location.href = url;
+        }
+      } catch (e) {
+        uni.showToast({ title: "浏览器禁止打开新标签", icon: "none" });
+      }
+      // #endif
+      // #ifndef H5
+      this.$tab.navigateTo(`/pages/common/webview/index?title=日常通勤&url=${url}`);
+      // #endif
     },
   },
 };
