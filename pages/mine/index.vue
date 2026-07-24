@@ -66,7 +66,7 @@
             <view>外快盈亏管理</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName && (userName !== 'fx67ll' || isNeedPunchIn)">
+        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
             <view>打卡工时管理</view>
