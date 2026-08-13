@@ -452,6 +452,12 @@ export default {
         pastCheckCount: 1023,
         // 是否需要每天带一注随机排列五，fx67ll个人用配置
         isNeedDailyRandomPL5: false,
+        // 当日随机排列五是否已经本地生成（仅生成未上传，随主号一起批量上传）
+        isDailyRandomPL5Generated: false,
+        // 当日随机排列五是否已经上传到云端（用于避免批量上传时重复提交排列五）
+        isDailyRandomPL5Uploaded: false,
+        // 当日随机排列五的完整上传数据缓存（含 dateCode/recordNumber/numberType 等，批量上传与复制时直接复用）
+        dailyRandomPL5Data: null,
         // 周五是否已经完成一键三连，fx67ll个人用配置
         isDoneOneClickThreeFriday: false,
         // 是否需要带一注高频号码组合
@@ -1003,6 +1009,10 @@ export default {
         this.settingInfo.isDoneOneClickThreeFriday = false;
         // 是否允许再次生成随机号码
         if (this.checkIsOnlyFirstTodayConfig()) {
+          // 进入新一轮生成时，重置随机排列五的生成与上传标记，允许重新本地生成并随主号批量上传
+          this.settingInfo.isDailyRandomPL5Generated = false;
+          this.settingInfo.isDailyRandomPL5Uploaded = false;
+          this.settingInfo.dailyRandomPL5Data = null;
           // 初始化本次生成过程的日志收集数组
           this._configLogLines = [`生成时间：${moment().format('YYYY-MM-DD HH:mm:ss')}`];
           let chasingNumObjTmp = null;
@@ -1020,12 +1030,12 @@ export default {
           // 生成配置记录汇总
           this.buildGenerateConfigLog();
 
-          // 如果打开了带一注随机排列五则需要自动生成随机排列五
+          // 如果打开了带一注随机排列五则自动生成随机排列五（仅本地生成，不立即上传，随主号一起批量上传）
           const isNeedDailyRandomPL5 = this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll";
           if (isNeedDailyRandomPL5) {
-            const msg = '[随机排列五] 配置生效 → 开始生成并上传今日随机排列五';
+            const msg = '[随机排列五] 配置生效 → 仅本地生成今日随机排列五，随主号批量上传';
             this._configLogLines && this._configLogLines.push(msg);
-            this.getOtherLuckyNumberDebounce(4);
+            this.buildDailyRandomPL5LocalDebounce();
           } else {
             const msg = '[随机排列五] 未开启，跳过';
             this._configLogLines && this._configLogLines.push(msg);
@@ -1038,15 +1048,13 @@ export default {
         // #ifdef H5
         this.drawerHeight = `${340 +
           this.luckyNumberList.length * 60 +
-          100 +
-          (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
+          100
           }rpx`;
         // #endif
 
         // #ifdef MP-WEIXIN
         this.drawerHeight = `${340 +
-          this.luckyNumberList.length * 60 +
-          (this.settingInfo.isNeedDailyRandomPL5 ? 60 : 0)
+          this.luckyNumberList.length * 60
           }rpx`;
         // #endif
 
@@ -1555,6 +1563,14 @@ export default {
         hasMorePurchases: "N",
         dateCode: this.todayDateCode,
       };
+
+      // 如果打开了"追加一注随机排列五"，则把排列五与主号合并后通过批量接口上传（排列五在前，主号在后），与周五一键三连复用同一批量接口
+      const isNeedDailyRandomPL5 = this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll";
+      if (isNeedDailyRandomPL5 && !this.settingInfo.isDailyRandomPL5Uploaded) {
+        this.handleUplaodTodayNumberWithPL5(addParams, isNeedConfirm);
+        return;
+      }
+
       addLog(addParams).then((res) => {
         self.isNetworkLoading = false;
         if (res?.code === 200) {
@@ -1570,6 +1586,47 @@ export default {
           });
         }
       });
+    },
+    // 开启"追加一注随机排列五"时，将排列五记录与主号合并通过批量接口一次性上传
+    // 排列五在前、主号在后，保证排列五先于主号写入（与周五一键三连复用同一事务批量接口）
+    async handleUplaodTodayNumberWithPL5(mainParams, isNeedConfirm) {
+      const self = this;
+      this.isNetworkLoading = true;
+      try {
+        // 优先复用生成阶段缓存的排列五数据，缓存缺失时现场补生成一次
+        let pl5Params = this.settingInfo.dailyRandomPL5Data;
+        if (!pl5Params) {
+          pl5Params = await this.buildOtherLuckyNumberData(4);
+          this.settingInfo.dailyRandomPL5Data = pl5Params;
+          this.settingInfo.isDailyRandomPL5Generated = true;
+        }
+        // 排列五在前，主号在后
+        const batchList = [pl5Params, mainParams];
+        const res = await batchAddLog(batchList);
+        self.isNetworkLoading = false;
+        if (res?.code === 200) {
+          // 标记当日排列五已上传，避免后续保存重复批量提交排列五
+          self.settingInfo.isDailyRandomPL5Uploaded = true;
+          self.saveLuckySettingLocal();
+          if (isNeedConfirm) {
+            self.isNeedCloseDrawerConfirm("号码记录已经成功保存到云端");
+          }
+        } else {
+          uni.showToast({
+            title: "号码记录保存失败，请联系管理员！",
+            icon: "none",
+            duration: 1998,
+          });
+        }
+      } catch (e) {
+        self.isNetworkLoading = false;
+        console.error("批量上传主号与随机排列五失败：", e);
+        uni.showToast({
+          title: "号码记录保存失败，请联系管理员！",
+          icon: "none",
+          duration: 1998,
+        });
+      }
     },
     // 上传当前生成的随机号码
     uploadLuckyNumber(isNeedConfirm) {
@@ -1681,16 +1738,22 @@ export default {
       //   this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       // }
 
-      // 如果打开了带一注随机排列五则需要调用一下这个方法，获取最新生成的随机排列五号码
+      // 如果打开了带一注随机排列五，则把本地缓存的排列五号码与主号组合后一起复制（排列五不再立即上传，故直接取本地缓存）
+      // 主号与排列五属于不同彩种，参考历史页批量复制逻辑，用分隔线 ------------------------ 区分两段内容
       if (this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll") {
         const dailyRandomPL5Title = "\n 老板买1注自选号码排列五\n";
-        const dailyRandomPL5Text = await this.getLatestPL5Record(false);
-        this.copyTextContent =
-          luckyTitle +
-          luckyContent +
-          dailyRandomPL5Title +
-          dailyRandomPL5Text +
-          luckyFooter;
+        const dailyRandomPL5Text = this.getDailyRandomPL5Text();
+        if (dailyRandomPL5Text) {
+          this.copyTextContent =
+            luckyTitle +
+            luckyContent +
+            "------------------------" +
+            dailyRandomPL5Title +
+            dailyRandomPL5Text +
+            luckyFooter;
+        } else {
+          this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
+        }
       } else {
         this.copyTextContent = luckyTitle + luckyContent + luckyFooter;
       }
@@ -2961,6 +3024,35 @@ export default {
         console.error(`排列${numType === 3 ? '三' : '五'}：查询最近有期号记录出错`, e);
       }
       return null;
+    },
+    // 仅在本地生成今日随机排列五并写入主配置JSON（不在号码面板中展示），等待随主号一起批量上传
+    async buildDailyRandomPL5Local() {
+      // 当日已本地生成过排列五则直接复用，不再重复生成
+      if (this.settingInfo.isDailyRandomPL5Generated && this.settingInfo.dailyRandomPL5Data) {
+        return;
+      }
+      const addParams = await this.buildOtherLuckyNumberData(4);
+      this.settingInfo.dailyRandomPL5Data = addParams;
+      this.settingInfo.isDailyRandomPL5Generated = true;
+      this.settingInfo.isDailyRandomPL5Uploaded = false;
+      this.saveLuckySettingLocal();
+      const msg = `[随机排列五] 本地生成完成：${addParams.recordNumber}（仅写入主配置JSON，待随主号批量上传）`;
+      this._configLogLines && this._configLogLines.push(msg);
+    },
+    // 仅在本地生成今日随机排列五 - 防抖处理
+    buildDailyRandomPL5LocalDebounce: _.debounce(function () {
+      this.buildDailyRandomPL5Local();
+    }, 233),
+    // 拼接本地缓存的当日随机排列五号码文字，供复制到剪切板时与主号组合（参考历史页批量复制拼接逻辑）
+    getDailyRandomPL5Text() {
+      const pl5Data = this.settingInfo.dailyRandomPL5Data;
+      const recordNumber = pl5Data?.recordNumber;
+      if (!recordNumber) {
+        return null;
+      }
+      const pl5List = recordNumber.split(",") || [];
+      const spaceThree = Array(2).fill(" ").join("");
+      return `\n${pl5List.join(spaceThree)}\n`;
     },
     // 返回当前最新生成的排列五记录
     async getLatestPL5Record(isNeedPush) {
