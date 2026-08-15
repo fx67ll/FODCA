@@ -7,6 +7,10 @@ export default {
   onLaunch: function () {
     this.initApp()
   },
+  // 页面不存在时兜底跳转首页（主要针对 H5 hash 路由白屏问题）
+  onPageNotFound(res) {
+    uni.reLaunch({ url: '/pages/index' })
+  },
   methods: {
     // 初始化应用
     initApp() {
