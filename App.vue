@@ -162,7 +162,7 @@ export default {
 
   html:not(.full-layout) {
     // 卡片纵向留白与屏幕圆角（iPhone Pro Max 屏幕圆角为 55px）
-    --card-inset: 20px;
+    --card-inset: 23px;
     --card-radius: 55px;
 
     background-color: #f5f6f8;
@@ -182,7 +182,7 @@ export default {
     // 它们全部相对卡片定位并被卡片圆角裁剪，与手机屏幕的表现一致，无需逐个覆盖定位规则
     uni-app {
       height: calc(100vh - 2 * var(--card-inset));
-      max-width: 430px;
+      max-width: 375px;
       margin: var(--card-inset) auto;
       border-radius: var(--card-radius);
       background-color: #ffffff;
