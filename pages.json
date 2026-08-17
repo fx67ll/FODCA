@@ -232,6 +232,15 @@
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "fx67ll",
-    "navigationBarBackgroundColor": "#FFFFFF"
+    "navigationBarBackgroundColor": "#FFFFFF",
+    // 以下三项仅 H5 生效，小程序编译时自动忽略，不影响微信小程序样式：
+    // 视口宽 ≤ 960px（手机、主流竖屏平板、横屏手机）时 rpx 按实际视口宽度换算，保持整屏移动端布局；
+    // 视口宽 > 960px（横屏平板、桌面浏览器，与 App.vue 中 980px 媒体查询阈值衔接）时 rpx 统一按 430px 基准换算，
+    // 与宽屏下 430px（iPhone Pro Max 规格宽）的居中卡片容器同宽，避免内容与容器宽度错位；
+    // 全屏布局模式下由 static/index.html 内联脚本将这三项恢复为 uni 框架默认值，见该文件注释
+    "rpxCalcMaxDeviceWidth": 960,
+    "rpxCalcBaseDeviceWidth": 430,
+    // 中和「恰好 750rpx 特殊跟随视口宽度」的换算逻辑，保证宽屏下所有 rpx 都按 480 基准换算
+    "rpxCalcIncludeWidth": 10000
   }
 }
