@@ -2,4 +2,42 @@
       	.supports('top: constant(a)'))
       document.write(
       	'<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
-      	(coverSupport ? ', viewport-fit=cover' : '') + '" />')</script><link rel=stylesheet href=./static/index.2da1efab.css></head><body><noscript><strong>本站点必须要开启JavaScript才能运行.</strong></noscript><div id=app></div><script src=./static/js/chunk-vendors.d6eaa7a6.js></script><script src=./static/js/index.6c63b80e.js></script></body></html>
+      	(coverSupport ? ', viewport-fit=cover' : '') + '" />')</script><link rel=stylesheet href=./static/index.2da1efab.css><script>// 桌面宽屏布局模式开关（仅 H5，小程序不使用该模板）：
+      // 默认「卡片」模式：宽屏（横屏且视口 ≥ 980px）下以 iPhone Pro Max 规格（430px 宽、55px 圆角）的居中悬浮卡片展示；
+      // localStorage['fx67ll-desktop-layout'] === 'full' 时恢复原始整页全宽布局，页面右下角有开关按钮可随时切换。
+      // rpx 换算基准在页面样式注入时读取 __uniConfig.globalStyle（运行时 upx2px 实时读取该对象），
+      // 必须在业务包给 __uniConfig 赋值时同步改写：这里用存取器拦截赋值，按当前模式写入 rpx 配置，
+      // 卡片模式三值与 pages.json 中 rpxCalc* 保持一致（430 基准与卡片同宽），
+      // 全屏模式恢复为 uni 框架默认值（视口 > 960px 时按 375 基准换算）
+      ;(function () {
+        var full = false
+        try {
+          full = localStorage.getItem('fx67ll-desktop-layout') === 'full'
+        } catch (e) {}
+        if (full) {
+          document.documentElement.classList.add('full-layout')
+        }
+        var config = null
+        Object.defineProperty(window, '__uniConfig', {
+          configurable: true,
+          enumerable: true,
+          get: function () {
+            return config
+          },
+          set: function (value) {
+            if (value && typeof value === 'object') {
+              var style = value.globalStyle || (value.globalStyle = {})
+              if (full) {
+                style.rpxCalcMaxDeviceWidth = 960
+                style.rpxCalcBaseDeviceWidth = 375
+                style.rpxCalcIncludeWidth = 750
+              } else {
+                style.rpxCalcMaxDeviceWidth = 960
+                style.rpxCalcBaseDeviceWidth = 430
+                style.rpxCalcIncludeWidth = 10000
+              }
+            }
+            config = value
+          }
+        })
+      })()</script></head><body><noscript><strong>本站点必须要开启JavaScript才能运行.</strong></noscript><div id=app></div><script src=./static/js/chunk-vendors.d6eaa7a6.js></script><script src=./static/js/index.a0a28425.js></script></body></html>
