@@ -7,7 +7,7 @@
       // localStorage['fx67ll-desktop-layout'] === 'full' 时恢复原始整页全宽布局，页面右下角有开关按钮可随时切换。
       // rpx 换算基准在页面样式注入时读取 __uniConfig.globalStyle（运行时 upx2px 实时读取该对象），
       // 必须在业务包给 __uniConfig 赋值时同步改写：这里用存取器拦截赋值，按当前模式写入 rpx 配置，
-      // 卡片模式三值与 pages.json 中 rpxCalc* 保持一致（430 基准与卡片同宽），
+      // 卡片模式阈值与 pages.json 中 rpxCalc* 保持一致（基准取实际卡片宽，与卡片同宽），
       // 全屏模式恢复为 uni 框架默认值（视口 > 960px 时按 375 基准换算）
       ; (function () {
         var full = false
@@ -33,11 +33,17 @@
                 style.rpxCalcIncludeWidth = 750
               } else {
                 style.rpxCalcMaxDeviceWidth = 960
-                style.rpxCalcBaseDeviceWidth = 430
+                // rpx 基准取实际卡片宽，与 App.vue 中 --card-h 的推导同源（46 = 2 × 23px 最小纵向留白）：
+                // 标准 430px；视口较矮卡片等比缩小时，750rpx 恒等于卡片宽，内容与卡片一起等比例缩放
+                var cardWidth = 430
+                if (window.matchMedia('(orientation: landscape) and (min-width: 980px)').matches) {
+                  cardWidth = Math.min(430, (window.innerHeight - 46) * 430 / 932)
+                }
+                style.rpxCalcBaseDeviceWidth = Math.round(cardWidth)
                 style.rpxCalcIncludeWidth = 10000
               }
             }
             config = value
           }
         })
-      })()</script></head><body><noscript><strong>本站点必须要开启JavaScript才能运行.</strong></noscript><div id=app></div><script src=./static/js/chunk-vendors.d6eaa7a6.js></script><script src=./static/js/index.3c7e18f7.js></script></body></html>
+      })()</script></head><body><noscript><strong>本站点必须要开启JavaScript才能运行.</strong></noscript><div id=app></div><script src=./static/js/chunk-vendors.4de6e6d4.js></script><script src=./static/js/index.04dee23f.js></script></body></html>
