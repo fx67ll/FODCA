@@ -793,6 +793,42 @@ export function previewImagesFromRichText(richText, startIndex = 0) {
 }
 
 /**
+ * 富文本字符串转换为纯文本，用于列表等纯文本展示场景，避免直接渲染HTML标签
+ * @param {string} richText - 富文本字符串
+ * @param {number} [maxLength=0] - 最大长度，超过则截断并追加省略号，0表示不截断
+ * @returns {string} 去除HTML标签后的纯文本内容
+ */
+export function getPlainTextFromRichText(richText, maxLength = 0) {
+  if (!richText || typeof richText !== 'string') {
+    return '';
+  }
+
+  let text = richText
+    // 图片标签替换为占位文案，避免纯图片内容在列表中显示为空
+    .replace(/<img[^>]*>/gi, '[图片]')
+    // 块级标签与换行标签替换为空格，避免去除标签后前后文字粘连
+    .replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, ' ')
+    .replace(/<(br|hr)\s*\/?>/gi, ' ')
+    // 去除剩余所有HTML标签
+    .replace(/<[^>]+>/g, '')
+    // 还原常见HTML转义字符，&amp;最后处理，避免二次解码
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    // 压缩空白字符为单个空格
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (maxLength > 0 && text.length > maxLength) {
+    text = text.substring(0, maxLength) + '...';
+  }
+  return text;
+}
+
+/**
  * 检查并申请相册权限
  * @param {Function} success - 权限获取成功后的回调
  */

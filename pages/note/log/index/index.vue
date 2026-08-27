@@ -13,7 +13,7 @@
             @click="(e) => handleActionClick(e, item)">
             <uni-section :title="item.updateTime || item.createTime" type="line">
               <uni-list :border="true">
-                <uni-list-item ellipsis="3" :title="item.noteContent" />
+                <uni-list-item ellipsis="3" :title="stripNoteContent(item.noteContent)" />
               </uni-list>
             </uni-section>
           </uni-swipe-action-item>
@@ -37,7 +37,7 @@ import noteDrawer from "@/pages/note/component/noteDrawer.vue";
 
 import { listNoteLog, delNoteLog } from "@/api/fx67ll/note/log";
 
-import { diffTimeStrFromNow, previewImagesFromRichText } from "@/utils/index";
+import { diffTimeStrFromNow, previewImagesFromRichText, getPlainTextFromRichText } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 
 import uniListChat from "@/uni_modules/uni-list/components/uni-list-chat/uni-list-chat.vue";
@@ -144,6 +144,10 @@ export default {
     this.queryNoteList();
   },
   methods: {
+    // 列表预览内容：富文本转纯文本，避免直接渲染HTML标签
+    stripNoteContent(noteContent) {
+      return getPlainTextFromRichText(noteContent) || "暂无内容";
+    },
     // 查询富文本列表
     queryNoteList(pageNum, pageSize) {
       const self = this;

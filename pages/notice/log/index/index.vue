@@ -144,6 +144,7 @@
 
 <script>
 import { listNoticeLog, getNoticeLog, listNoticeLogForApp, delNoticeLogForApp } from '@/api/fx67ll/notice/log';
+import { getPlainTextFromRichText } from '@/utils/index';
 import { showConfirm } from '@/utils/common';
 
 export default {
@@ -447,11 +448,9 @@ export default {
       const dict = this.statusDict.find((d) => d.value === status);
       return dict ? dict.label : '';
     },
-    // 列表预览内容：去标签 + 截断
+    // 列表预览内容：去标签 + 截断（统一走富文本纯文本工具方法）
     stripContent(html) {
-      if (!html) return '暂无内容';
-      const text = html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim();
-      return text.length > 60 ? text.substring(0, 60) + '...' : text;
+      return getPlainTextFromRichText(html, 60) || '暂无内容';
     },
     // 格式化时间
     formatTime(time) {
