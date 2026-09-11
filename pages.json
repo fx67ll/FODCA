@@ -143,6 +143,12 @@
       }
     },
     {
+      "path": "pages/dortmund/extra/simulate/simulate",
+      "style": {
+        "navigationBarTitleText": "外快数值模拟"
+      }
+    },
+    {
       "path": "pages/dortmund/ticket/ticket",
       "style": {
         "navigationBarTitleText": "多特蒙德大十字"

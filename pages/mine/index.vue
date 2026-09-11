@@ -66,6 +66,14 @@
             <view>外快盈亏管理</view>
           </view>
         </view>
+        <!-- 数值模拟入口与外快盈亏管理共用显隐配置 -->
+        <view class="list-cell list-cell-arrow" @click="handleToExtraSimulate"
+          v-if="userName && userName === 'fx67ll' && isNeedWaiKuai">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="loop" size="20"></uni-icons></view>
+            <view>外快数值模拟</view>
+          </view>
+        </view>
         <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
@@ -236,6 +244,9 @@ export default {
     },
     handleToExtraManagement() {
       this.$tab.navigateTo("/pages/dortmund/extra/index/index");
+    },
+    handleToExtraSimulate() {
+      this.$tab.navigateTo("/pages/dortmund/extra/simulate/simulate");
     },
     handleToPunchLog() {
       this.$tab.navigateTo("/pages/punch/log/record/record");
