@@ -13,7 +13,7 @@
             <view class="sim-version-row">
               <view class="sim-version-chip" v-for="v in simEnabledVersionList" :key="v.versionId"
                 :class="{ active: v.versionId === currentVersionId }" @click="handleSimVersionChange(v)">{{
-                  `版本${v.versionNo}` }}</view>
+                  v.versionName || `版本${v.versionNo}` }}</view>
               <view class="sim-version-chip manage" v-if="simVersionList.length > 0"
                 @click="handleSimVersionManage">管理</view>
               <view class="sim-version-empty" v-if="simEnabledVersionList.length === 0">暂无版本，记录本轮或重新模拟将自动开启</view>
@@ -147,6 +147,15 @@
           <text class="sim-record-value">{{ formatSimNumber(simRecordJoinValue) }}</text>
         </view>
         <view class="sim-record-field">
+          <text class="sim-record-label">本轮轮次</text>
+          <view class="sim-record-input-box">
+            <uni-easyinput type="number" v-model="simRecordRoundNo" placeholder="请输入本轮轮次" :inputBorder="true" />
+          </view>
+          <view class="sim-record-tip" :class="{ danger: simRecordRoundNoIsNegative }">
+            {{ simRecordRoundNoIsNegative ? "轮次为负，保存后该版本将被强制作废" : "默认自动顺延可修改，支持负值" }}
+          </view>
+        </view>
+        <view class="sim-record-field">
           <text class="sim-record-label">实际回收数值</text>
           <view class="sim-record-input-box">
             <uni-easyinput type="digit" v-model="simRecordReturnValue" placeholder="请输入实际回收数值" :inputBorder="true" />
@@ -164,31 +173,151 @@
         </view>
       </view>
     </uni-popup>
-    <!-- 版本管理弹窗（版本启用停用） -->
+    <!-- 版本管理弹窗（版本启用停用与作废） -->
     <uni-popup ref="versionPopup" type="dialog">
       <view class="sim-version-dialog">
         <view class="sim-version-dialog-title">管理模拟版本</view>
-        <view class="sim-version-dialog-tip">停用后版本将不在标签中展示，轮次记录仍保留，可随时重新启用；停用当前选中版本时将自动切换到最新启用版本</view>
+        <view class="sim-version-dialog-tip">停用后版本将不在标签中展示，轮次记录仍保留，可随时重新启用；作废后版本将从列表中隐藏且不可恢复；仅支持作废24小时内创建的版本，更早版本请在网页端后台操作；停用或作废当前选中版本时将自动切换到最新启用版本</view>
         <scroll-view class="sim-version-dialog-list" scroll-y>
           <view class="sim-version-dialog-item" v-for="v in simVersionList" :key="v.versionId"
             :class="{ disabled: v.delFlag === '2' }">
             <view class="sim-version-dialog-info">
               <view class="sim-version-dialog-row">
-                <text class="sim-version-dialog-no">版本{{ v.versionNo }}</text>
+                <text class="sim-version-dialog-no">{{ v.versionName || `版本${v.versionNo}` }}</text>
                 <text class="sim-version-dialog-tag" :class="v.simMode === 'half' ? 'half' : 'full'">{{
                   v.simMode === "half" ? "半量" : "全量" }}</text>
               </view>
-              <view class="sim-version-dialog-desc">初始 {{ v.initialValue }} · 系数 {{ v.coefficient }} · 目标 {{ v.targetValue }}</view>
+              <view class="sim-version-dialog-desc">版本{{ v.versionNo }} · 初始 {{ v.initialValue }} · 系数 {{ v.coefficient }} · 目标 {{ v.targetValue }}</view>
               <view class="sim-version-dialog-time">{{ v.createTime }}</view>
             </view>
-            <button class="sim-version-dialog-btn" size="mini" :class="v.delFlag === '2' ? '' : 'danger'"
-              :disabled="simVersionSwitching" @click="handleSimVersionToggle(v)">{{ v.delFlag === "2" ? "启用" : "停用"
-              }}</button>
+            <view class="sim-version-dialog-ops">
+              <button class="sim-version-dialog-btn" size="mini" :class="v.delFlag === '2' ? '' : 'danger'"
+                :disabled="simVersionSwitching" @click="handleSimVersionToggle(v)">{{ v.delFlag === "2" ? "启用" : "停用"
+                }}</button>
+              <button class="sim-version-dialog-btn invalidate" size="mini" :disabled="simVersionSwitching"
+                @click="handleSimVersionInvalidate(v)">作废</button>
+            </view>
           </view>
           <view class="sim-version-dialog-empty" v-if="simVersionList.length === 0">暂无版本记录</view>
         </scroll-view>
         <view class="sim-version-dialog-actions">
           <button class="sim-version-dialog-close" size="mini" @click="handleSimVersionManageClose">关 闭</button>
+        </view>
+      </view>
+    </uni-popup>
+    <!-- 开启新版本确认弹窗 -->
+    <uni-popup ref="versionCreatePopup" type="dialog">
+      <view class="sim-create-dialog">
+        <view class="sim-create-title">开启新版本</view>
+        <view class="sim-create-tip">将以当前参数配置开启新的模拟版本，历史轮次归档到旧版本，下一轮从初始数值重新开始</view>
+        <view class="sim-create-config">
+          <view class="sim-create-config-item">
+            <text class="sim-create-config-label">滚动模式</text>
+            <text class="sim-create-config-value">{{ simForm.simMode === "half" ? "半量滚动" : "全量滚动" }}</text>
+          </view>
+          <view class="sim-create-config-item">
+            <text class="sim-create-config-label">初始数值</text>
+            <text class="sim-create-config-value">{{ formatSimNumber(simForm.initialValue) }}</text>
+          </view>
+          <view class="sim-create-config-item">
+            <text class="sim-create-config-label">每轮系数</text>
+            <text class="sim-create-config-value">{{ formatSimNumber(simForm.coefficient) }}</text>
+          </view>
+          <view class="sim-create-config-item">
+            <text class="sim-create-config-label">目标数值</text>
+            <text class="sim-create-config-value">{{ formatSimNumber(simForm.targetValue) }}</text>
+          </view>
+        </view>
+        <view class="sim-create-field">
+          <text class="sim-create-field-label">版本名称</text>
+          <view class="sim-create-input-box">
+            <uni-easyinput type="text" v-model="simVersionCreateName" placeholder="请输入新版本名称" :inputBorder="true"
+              maxlength="20" />
+          </view>
+          <view class="sim-create-field-tip">名称仅用于辨识版本，创建后随版本保存</view>
+        </view>
+        <view class="sim-create-actions">
+          <button class="sim-create-btn" size="mini" @click="handleSimVersionCreateCancel">取 消</button>
+          <button class="sim-create-btn primary" size="mini"
+            :disabled="!simVersionCreateName || !simVersionCreateName.trim() || simVersionCreateSubmitting"
+            @click="confirmSimVersionCreate">确 定</button>
+        </view>
+      </view>
+    </uni-popup>
+    <!-- 版本作废第一步确认弹窗 -->
+    <uni-popup ref="invalidateConfirmPopup" type="dialog">
+      <view class="sim-invalidate-dialog">
+        <view class="sim-invalidate-banner">
+          <text class="sim-invalidate-banner-icon">!</text>
+          <text class="sim-invalidate-banner-text">高危操作警告</text>
+        </view>
+        <view class="sim-invalidate-title">作废模拟版本</view>
+        <view class="sim-invalidate-card" v-if="simInvalidateVersion">
+          <view class="sim-invalidate-card-row">
+            <text class="sim-invalidate-card-label">作废版本</text>
+            <text class="sim-invalidate-card-value">{{ simInvalidateVersion.versionName || `版本${simInvalidateVersion.versionNo}` }}</text>
+          </view>
+          <view class="sim-invalidate-card-row">
+            <text class="sim-invalidate-card-label">版本编号</text>
+            <text class="sim-invalidate-card-value">版本{{ simInvalidateVersion.versionNo }}</text>
+          </view>
+          <view class="sim-invalidate-card-row">
+            <text class="sim-invalidate-card-label">创建时间</text>
+            <text class="sim-invalidate-card-value">{{ simInvalidateVersion.createTime }}</text>
+          </view>
+        </view>
+        <view class="sim-invalidate-desc">作废后版本将从列表中隐藏且不可恢复，轮次记录将一并归档隐藏，请谨慎操作</view>
+        <view class="sim-invalidate-countdown-tip" :class="{ ready: simInvalidateCountdown <= 0 }">
+          {{ simInvalidateCountdown > 0 ? `请在 ${simInvalidateCountdown} 秒后再次确认，谨慎操作` : "倒计时结束，可继续二次确认" }}
+        </view>
+        <view class="sim-invalidate-actions">
+          <button class="sim-invalidate-btn" size="mini" @click="handleSimInvalidateCancel">取 消</button>
+          <button class="sim-invalidate-btn danger" size="mini" :disabled="simInvalidateCountdown > 0"
+            @click="handleSimInvalidateStep1Confirm">进入二次确认{{ simInvalidateCountdown > 0 ? `（${simInvalidateCountdown}s）` : "" }}</button>
+        </view>
+      </view>
+    </uni-popup>
+    <!-- 版本作废第二步确认弹窗 -->
+    <uni-popup ref="invalidateDangerPopup" type="dialog">
+      <view class="sim-invalidate-dialog">
+        <view class="sim-invalidate-banner">
+          <text class="sim-invalidate-banner-icon">!</text>
+          <text class="sim-invalidate-banner-text">二次验证</text>
+        </view>
+        <view class="sim-invalidate-title">确认作废版本</view>
+        <view class="sim-invalidate-desc">请输入「<text class="sim-invalidate-keyword">确认作废</text>」以确认作废该版本，此操作不可恢复</view>
+        <view class="sim-invalidate-input-box">
+          <uni-easyinput type="text" v-model="simInvalidateKeyword" placeholder="请输入确认作废" :inputBorder="true" />
+        </view>
+        <view class="sim-invalidate-actions">
+          <button class="sim-invalidate-btn" size="mini" @click="handleSimInvalidateCancel">取 消</button>
+          <button class="sim-invalidate-btn danger" size="mini"
+            :disabled="simInvalidateKeyword.trim() !== '确认作废' || simInvalidateSubmitting"
+            @click="handleSimInvalidateConfirm">{{ simInvalidateSubmitting ? "作废中..." : "确认作废" }}</button>
+        </view>
+      </view>
+    </uni-popup>
+    <!-- 版本强制作废系统通知弹窗 -->
+    <uni-popup ref="invalidNoticePopup" type="dialog">
+      <view class="sim-invalid-notice-dialog">
+        <view class="sim-invalid-notice-icon">
+          <text class="sim-invalid-notice-icon-text">!</text>
+        </view>
+        <view class="sim-invalid-notice-title">版本已被强制作废</view>
+        <view class="sim-invalid-notice-desc">版本「{{ simInvalidNoticeVersionName }}」本轮轮次为负数，系统已自动作废该版本，版本不再在列表中展示，轮次记录已一并归档隐藏。</view>
+        <view class="sim-invalid-notice-card">
+          <view class="sim-invalid-notice-card-item">
+            <text class="sim-invalid-notice-card-label">版本编号</text>
+            <text class="sim-invalid-notice-card-value">版本{{ simInvalidNoticeVersionNo }}</text>
+          </view>
+          <view class="sim-invalid-notice-card-item">
+            <text class="sim-invalid-notice-card-label">本轮轮次</text>
+            <text class="sim-invalid-notice-card-value danger">{{ simInvalidNoticeRoundNo }}</text>
+          </view>
+        </view>
+        <view class="sim-invalid-notice-tip">已自动切换到最新启用版本，可通过开启新版本重新开始模拟</view>
+        <view class="sim-invalid-notice-actions">
+          <button class="sim-invalid-notice-btn" size="mini" @click="handleSimInvalidNoticeClose">我知道了</button>
         </view>
       </view>
     </uni-popup>
@@ -203,8 +332,10 @@ import {
   getSimulateVersionList,
   addSimulateVersion,
   updateSimulateVersion,
+  invalidateSimulateVersion,
 } from "@/api/fx67ll/dortmund/extraSimulate";
 import { showConfirm } from "@/utils/common";
+import { diffTimeStrFromNow } from "@/utils/index";
 
 // 数值模拟参数本地缓存键
 const SIM_CONFIG_CACHE_KEY = "dortmund-extra-sim-config";
@@ -235,8 +366,30 @@ export default {
       simSubmitting: false,
       // 数值模拟本轮结果（Y达成 N未达成），打开弹窗前记录
       simRecordIsHit: "Y",
+      // 数值模拟本轮轮次（默认自动顺延可修改，支持负值）
+      simRecordRoundNo: 1,
       // 数值模拟实际回收数值（默认按系数计算，可按实际数值修改）
       simRecordReturnValue: 0,
+      // 数值模拟开启新版本弹窗输入的版本名称
+      simVersionCreateName: "",
+      // 数值模拟开启新版本提交中状态
+      simVersionCreateSubmitting: false,
+      // 数值模拟暂存的本轮结果（开启新版本确认后继续保存）
+      pendingSimRecord: null,
+      // 数值模拟待作废的版本记录
+      simInvalidateVersion: null,
+      // 数值模拟版本作废第一步确认倒计时（秒）
+      simInvalidateCountdown: 0,
+      // 数值模拟版本作废第二步确认输入的关键词
+      simInvalidateKeyword: "",
+      // 数值模拟版本作废提交中状态
+      simInvalidateSubmitting: false,
+      // 数值模拟版本作废第一步确认倒计时定时器
+      simInvalidateCountdownTimer: null,
+      // 数值模拟被强制作废的版本记录
+      simInvalidNoticeVersion: null,
+      // 数值模拟触发强制作废的负轮次
+      simInvalidNoticeRoundNo: "",
       fabConfig: {
         title: "uni-fab",
         directionStr: "垂直",
@@ -276,6 +429,20 @@ export default {
     // 数值模拟启用的版本列表（停用版本不在标签中展示）
     simEnabledVersionList() {
       return this.simVersionList.filter((item) => item.delFlag !== "2");
+    },
+    // 数值模拟本轮轮次是否为负（负值保存后版本将被强制作废）
+    simRecordRoundNoIsNegative() {
+      return parseInt(this.simRecordRoundNo) < 0;
+    },
+    // 数值模拟被强制作废的版本名称（无版本时展示占位）
+    simInvalidNoticeVersionName() {
+      const version = this.simInvalidNoticeVersion || {};
+      return version.versionName || `版本${version.versionNo || ""}`;
+    },
+    // 数值模拟被强制作废的版本编号
+    simInvalidNoticeVersionNo() {
+      const version = this.simInvalidNoticeVersion || {};
+      return version.versionNo || "-";
     },
     // 数值模拟参数配置概要（收起时展示当前模式与三项参数）
     simConfigSummary() {
@@ -379,6 +546,12 @@ export default {
       return true;
     }
     return false;
+  },
+  onHide() {
+    this.stopInvalidateCountdown();
+  },
+  onUnload() {
+    this.stopInvalidateCountdown();
   },
   watch: {
     // 数值模拟参数变动时写入本地缓存，下次进入页面自动恢复
@@ -588,12 +761,13 @@ export default {
       }
       return true;
     },
-    // 打开记录本轮结果弹窗，打开前校验参数并按系数预填实际回收数值
+    // 打开记录本轮结果弹窗，打开前校验参数并按下一轮轮次与系数预填
     handleSimRound(hit) {
       if (!this.validateSimParams()) {
         return;
       }
       this.simRecordIsHit = hit ? "Y" : "N";
+      this.simRecordRoundNo = this.simNextRoundNo;
       this.simRecordReturnValue =
         hit
           ? parseFloat(
@@ -604,9 +778,8 @@ export default {
           : 0;
       this.$refs.recordPopup.open("dialog");
     },
-    // 提交本轮结果记录，当前版本已归零或尚无版本时自动开启新版本再记录
+    // 提交本轮结果记录，当前版本已归零或尚无版本时先经确认弹窗开启新版本再记录
     submitSimRound() {
-      const self = this;
       const returnValue = parseFloat(this.simRecordReturnValue);
       if (isNaN(returnValue) || returnValue < 0) {
         uni.showToast({
@@ -616,26 +789,40 @@ export default {
         });
         return;
       }
-      if (!this.currentVersionId || this.simFinished) {
-        this.createSimVersion().then(() => {
-          self.doSubmitSimRound(returnValue);
+      const roundNo = parseInt(this.simRecordRoundNo);
+      if (isNaN(roundNo)) {
+        uni.showToast({
+          title: "本轮轮次不能为空！",
+          icon: "none",
+          duration: 1998,
         });
+        return;
+      }
+      const record = {
+        returnValue: returnValue,
+        roundNo: roundNo,
+      };
+      if (!this.currentVersionId || this.simFinished) {
+        // 暂存本轮结果，待开启新版本确认创建后再继续保存，取消则中止记录
+        this.pendingSimRecord = record;
+        this.$refs.versionCreatePopup.open("dialog");
       } else {
-        this.doSubmitSimRound(returnValue);
+        this.doSubmitSimRound(record);
       }
     },
-    // 保存本轮结果记录，保存后下一轮从保存的结束数值继续
-    doSubmitSimRound(returnValue) {
+    // 保存本轮结果记录，保存后下一轮从保存的结束数值继续，轮次为负时版本被强制作废
+    doSubmitSimRound(record) {
       const self = this;
       this.simSubmitting = true;
+      const roundNo = record.roundNo;
       addSimulate({
         versionId: self.currentVersionId,
         simMode: self.simForm.simMode,
-        roundNo: self.simNextRoundNo,
+        roundNo: roundNo,
         startValue: self.formatSimNumber(self.simNextStartValue),
         joinValue: self.formatSimNumber(self.simRecordJoinValue),
         isHit: self.simRecordIsHit,
-        returnValue: self.formatSimNumber(returnValue),
+        returnValue: self.formatSimNumber(record.returnValue),
         endValue: self.formatSimNumber(self.simRecordEndValue),
         roundChange: String(
           self.formatSimFactor(self.simRecordEndValue / self.simNextStartValue)
@@ -645,12 +832,25 @@ export default {
         .then((res) => {
           if (res?.code === 200) {
             self.$refs.recordPopup.close();
-            uni.showToast({
-              title: "本轮记录保存成功！",
-              icon: "none",
-              duration: 1998,
-            });
-            self.$refs.paging.reload();
+            if (roundNo < 0) {
+              // 轮次为负，版本已被后端强制作废，弹窗告知并刷新版本列表
+              self.simInvalidNoticeVersion =
+                self.simVersionList.find(
+                  (item) => item.versionId === self.currentVersionId
+                ) || { versionId: self.currentVersionId };
+              self.simInvalidNoticeRoundNo = roundNo;
+              self.$refs.invalidNoticePopup.open("dialog");
+              self.getSimVersionList().then(() => {
+                self.$refs.paging.reload();
+              });
+            } else {
+              uni.showToast({
+                title: "本轮记录保存成功！",
+                icon: "none",
+                duration: 1998,
+              });
+              self.$refs.paging.reload();
+            }
           } else {
             uni.showToast({
               title: "数值模拟轮次记录保存失败！",
@@ -675,29 +875,176 @@ export default {
       this.$refs.recordPopup.close();
     },
     // 以当前参数配置开启新的数值模拟版本，历史轮次归档到旧版本
-    createSimVersion() {
+    createSimVersion(versionName) {
       const self = this;
       return addSimulateVersion({
+        versionName: versionName,
         simMode: self.simForm.simMode,
         initialValue: self.formatSimNumber(self.simForm.initialValue),
         coefficient: self.formatSimNumber(self.simForm.coefficient),
         targetValue: self.formatSimNumber(self.simForm.targetValue),
-      }).then(() => self.getSimVersionList(true));
+      }).then((res) => {
+        if (res?.code === 200) {
+          return self.getSimVersionList(true);
+        }
+        return Promise.reject(res);
+      });
     },
-    // 手动开启新的数值模拟版本，下一轮从初始数值重新开始，历史轮次归档到旧版本
+    // 手动开启新的数值模拟版本，先经确认弹窗输入版本名称，确认后才创建
     handleSimRestart() {
-      const self = this;
       if (!this.validateSimParams()) {
         return;
       }
-      this.createSimVersion().then(() => {
+      this.pendingSimRecord = null;
+      this.$refs.versionCreatePopup.open("dialog");
+    },
+    // 取消开启新版本，有暂存的本轮结果时一并中止记录
+    handleSimVersionCreateCancel() {
+      this.pendingSimRecord = null;
+      this.simVersionCreateName = "";
+      this.$refs.versionCreatePopup.close();
+    },
+    // 开启新版本确认弹窗确认后创建版本，有暂存的本轮结果时继续保存
+    confirmSimVersionCreate() {
+      const self = this;
+      const versionName = (this.simVersionCreateName || "").trim();
+      if (!versionName) {
         uni.showToast({
-          title: `已开启新版本，下一轮将从初始数值 ${self.formatSimNumber(self.simForm.initialValue)} 重新开始！`,
+          title: "版本名称不能为空！",
           icon: "none",
           duration: 1998,
         });
-        self.$refs.paging.reload();
-      });
+        return;
+      }
+      this.simVersionCreateSubmitting = true;
+      this.createSimVersion(versionName)
+        .then(() => {
+          self.$refs.versionCreatePopup.close();
+          self.simVersionCreateName = "";
+          if (self.pendingSimRecord) {
+            const record = self.pendingSimRecord;
+            self.pendingSimRecord = null;
+            self.doSubmitSimRound(record);
+          } else {
+            uni.showToast({
+              title: `已开启新版本，下一轮将从初始数值 ${self.formatSimNumber(self.simForm.initialValue)} 重新开始！`,
+              icon: "none",
+              duration: 1998,
+            });
+            self.$refs.paging.reload();
+          }
+        })
+        .catch(() => {
+          uni.showToast({
+            title: "开启新版本失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        })
+        .finally(() => {
+          self.simVersionCreateSubmitting = false;
+        });
+    },
+    // 打开版本作废第一步确认弹窗，仅支持作废24小时内创建的版本，更早版本提示在网页端后台操作
+    handleSimVersionInvalidate(version) {
+      if (diffTimeStrFromNow(version?.createTime) <= -24) {
+        uni.showToast({
+          title: "版本创建时间已超过24小时，不允许作废操作！有需要请在网页端后台操作~",
+          icon: "none",
+          duration: 1998,
+        });
+        return;
+      }
+      this.simInvalidateVersion = version;
+      this.simInvalidateKeyword = "";
+      this.startInvalidateCountdown();
+      this.$refs.invalidateConfirmPopup.open("dialog");
+    },
+    // 版本作废第一步确认倒计时
+    startInvalidateCountdown() {
+      const self = this;
+      this.stopInvalidateCountdown();
+      this.simInvalidateCountdown = 5;
+      this.simInvalidateCountdownTimer = setInterval(() => {
+        if (self.simInvalidateCountdown > 0) {
+          self.simInvalidateCountdown--;
+        }
+        if (self.simInvalidateCountdown <= 0) {
+          self.stopInvalidateCountdown();
+        }
+      }, 1000);
+    },
+    // 停止版本作废第一步确认倒计时
+    stopInvalidateCountdown() {
+      this.simInvalidateCountdown = 0;
+      if (this.simInvalidateCountdownTimer) {
+        clearInterval(this.simInvalidateCountdownTimer);
+        this.simInvalidateCountdownTimer = null;
+      }
+    },
+    // 版本作废第一步确认通过，进入第二步输入关键词确认
+    handleSimInvalidateStep1Confirm() {
+      this.stopInvalidateCountdown();
+      this.$refs.invalidateConfirmPopup.close();
+      this.$refs.invalidateDangerPopup.open("dialog");
+    },
+    // 取消版本作废，关闭两步确认弹窗并重置状态
+    handleSimInvalidateCancel() {
+      this.stopInvalidateCountdown();
+      this.simInvalidateKeyword = "";
+      this.$refs.invalidateConfirmPopup.close();
+      this.$refs.invalidateDangerPopup.close();
+    },
+    // 版本作废二次验证通过，正式作废版本并刷新版本列表，作废当前选中版本时自动切换到最新启用版本
+    handleSimInvalidateConfirm() {
+      const self = this;
+      const version = this.simInvalidateVersion;
+      if (!version || !version.versionId) {
+        this.handleSimInvalidateCancel();
+        return;
+      }
+      this.simInvalidateSubmitting = true;
+      invalidateSimulateVersion({
+        versionId: version.versionId,
+      })
+        .then((res) => {
+          if (res?.code === 200) {
+            self.stopInvalidateCountdown();
+            self.simInvalidateKeyword = "";
+            self.$refs.invalidateDangerPopup.close();
+            self.$refs.invalidateConfirmPopup.close();
+            uni.showToast({
+              title: `版本「${version.versionName || `版本${version.versionNo}`}」已作废！`,
+              icon: "none",
+              duration: 1998,
+            });
+            self.getSimVersionList().then(() => {
+              self.$refs.paging.reload();
+            });
+          } else {
+            uni.showToast({
+              title: "版本作废失败！",
+              icon: "none",
+              duration: 1998,
+            });
+          }
+        })
+        .catch(() => {
+          uni.showToast({
+            title: "版本作废失败！",
+            icon: "none",
+            duration: 1998,
+          });
+        })
+        .finally(() => {
+          self.simInvalidateSubmitting = false;
+        });
+    },
+    // 关闭版本强制作废系统通知弹窗并重置状态
+    handleSimInvalidNoticeClose() {
+      this.simInvalidNoticeVersion = null;
+      this.simInvalidNoticeRoundNo = "";
+      this.$refs.invalidNoticePopup.close();
     },
     // 删除最近一条数值模拟轮次记录，下一轮回退到上一条的结束数值
     handleSimDeleteLast() {

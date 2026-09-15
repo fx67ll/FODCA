@@ -27,6 +27,15 @@ export function updateSimulateVersion(data) {
   });
 }
 
+// 作废外快盈亏数值模拟版本记录（软删除，作废后不在列表中展示）
+export function invalidateSimulateVersion(data) {
+  return request({
+    url: '/dortmund/extra/simulate/version/invalidateSimulateVersionForApp',
+    method: 'post',
+    data: data,
+  });
+}
+
 // 查询外快盈亏数值模拟轮次记录列表
 export function getSimulateList(query) {
   return request({
