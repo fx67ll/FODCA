@@ -2,7 +2,7 @@
     "name" : "fx67ll-app",
     "appid" : "__UNI__6F4A995",
     "description" : "",
-    "versionName" : "0.9.4",
+    "versionName" : "0.9.5",
     "versionCode" : 1,
     "transformPx" : false,
     "app-plus" : {
@@ -56,7 +56,7 @@
     },
     "vueVersion" : "2",
     "h5" : {
-        "template" : "static/index.html",
+        "template" : "common/html/index.html",
         "devServer" : {
             "port" : 9090,
             "https" : false
