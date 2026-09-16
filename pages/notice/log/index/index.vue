@@ -462,7 +462,7 @@ export default {
 </script>
 
 <style lang="less">
-@import url('@/static/style/mixin.less');
+@import url('@/common/style/mixin.less');
 
 .fx67ll-notice-box {
   min-height: 100vh;

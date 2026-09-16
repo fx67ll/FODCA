@@ -209,7 +209,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import '@/static/scss/index.scss';
+@import '@/common/scss/index.scss';
 
 /* #ifdef H5 */
 // 宽屏访问适配（小程序编译时整块剔除）：
@@ -217,8 +217,8 @@ export default {
 // 横屏平板与桌面浏览器默认以「iPhone Pro Max 规格的居中悬浮卡片」展示（430:932 恒定纵横比、
 // 55px 屏幕圆角、顶部灵动岛与底部 Home 指示条安全区，视口较矮时整卡等比缩小、恒居中），
 // 页面右下角提供开关（localStorage['fx67ll-desktop-layout']）可切换回原始整页全宽布局，
-// full-layout 类名由 static/index.html 中先于业务包执行的内联脚本添加，见该文件注释。
-// 媒体查询阈值取 980px，与 rpx 换算的 960px 上限衔接（见 pages.json 与 static/index.html 注释）：
+// full-layout 类名由 common/html/index.html 中先于业务包执行的内联脚本添加，见该文件注释。
+// 媒体查询阈值取 980px，与 rpx 换算的 960px 上限衔接（见 pages.json 与 common/html/index.html 注释）：
 // 980px 视口扣除滚动条宽度后仍大于 960px，保证卡片出现时 rpx 一定已按 430px 基准换算，二者不会错位
 
 // 布局切换开关按钮：挂在 body 下（uni-app 之外，不受卡片裁剪与定位影响），
