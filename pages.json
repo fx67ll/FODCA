@@ -168,6 +168,17 @@
       ]
     },
     {
+      "root": "pages/mahjong",
+      "pages": [
+        {
+          "path": "reservation/index",
+          "style": {
+            "navigationBarTitleText": "麻将室预定"
+          }
+        }
+      ]
+    },
+    {
       "root": "pages/note",
       "pages": [
         {

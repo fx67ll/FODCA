@@ -1,5 +1,5 @@
 <template>
-  <view class="mine-container" :style="{ height: `${windowHeight}px` }">
+  <view class="mine-container">
     <!--顶部个人信息栏-->
     <view class="header-section">
       <view class="flex padding justify-between">
@@ -74,7 +74,7 @@
             <view>外快数值模拟</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName">
+        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName && userName === 'fx67ll'">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
             <view>打卡工时管理</view>
@@ -84,6 +84,19 @@
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="compose" size="20"></uni-icons></view>
             <view>富文本备忘录</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName && userName !== 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
+            <view>打卡工时管理</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleToMahjongReservation"
+          v-if="userName && userName !== 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="shop" size="20"></uni-icons></view>
+            <view>麻将包间预定</view>
           </view>
         </view>
       </view>
@@ -179,9 +192,6 @@ export default {
     avatar() {
       return this.$store.state.user.avatar;
     },
-    windowHeight() {
-      return uni.getSystemInfoSync().windowHeight - 50;
-    },
   },
   onLoad() {
     this.getWKConfig();
@@ -253,6 +263,9 @@ export default {
     },
     handleToNoteLog() {
       this.$tab.navigateTo("/pages/note/log/index/index");
+    },
+    handleToMahjongReservation() {
+      this.$tab.navigateTo("/pages/mahjong/reservation/index");
     },
     handleToNotice() {
       this.$tab.navigateTo("/pages/notice/log/index/index");
@@ -368,7 +381,9 @@ page {
 
 .mine-container {
   width: 100%;
-  height: 100%;
+  /* 容器随内容自适应增高并自带背景色，min-height保证菜单较少时也撑满整屏，避免固定高度下内容溢出后下方背景缺失 */
+  min-height: 100%;
+  background-color: #f5f6f7;
 
   .header-section {
     padding: 15px 15px 45px 15px;
