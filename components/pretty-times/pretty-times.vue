@@ -550,13 +550,15 @@ export default {
 			const overnightStart = `${this.selectDate} 23:00:00`;
 			const nextDate = this.getNextDate(this.selectDate);
 			const overnightEnd = `${nextDate} 10:00:00`;
+			// 父组件按时间缓冲语义存储的包夜结束时间为结束时间减一小时（次日09:00），回显时两种格式均视为包夜选中
+			const overnightEndWithBuffer = `${nextDate} 09:00:00`;
 
 			// 检查当前选中的时间段是否匹配包夜
 			if (this.formParams && this.formParams.reservationStartTime && this.formParams.reservationEndTime) {
 				const startTime = this.formParams.reservationStartTime;
 				const endTime = this.formParams.reservationEndTime;
 
-				if (startTime === overnightStart && endTime === overnightEnd) {
+				if (startTime === overnightStart && (endTime === overnightEnd || endTime === overnightEndWithBuffer)) {
 					this.isOvernightActive = true;
 					this.orderDateTime = `${this.selectDate} 23:00 ~ ${nextDate} 10:00`;
 				} else {

@@ -35,13 +35,19 @@
 
     <!-- 底部操作按钮容器（放入文档流，适配安全区域） -->
     <view class="submit-btn-container">
-      <!-- 手动刷新按钮：点击后重新查询当日预约数据 -->
-      <view class="refresh-btn" @click="handleManualRefresh">
+      <!-- 手动刷新按钮：黄底白字文字按钮（与提交按钮同构，无描边），点击后重新查询当日预约数据 -->
+      <view class="refresh-btn" :class="{ 'refresh-btn-loading': isManualRefreshing }" @click="handleManualRefresh">
         <view :class="['refresh-btn-icon', isManualRefreshing ? 'refresh-btn-spinning' : '']">
-          <uni-icons type="refresh" color="#2ecc71" size="26"></uni-icons>
+          <uni-icons type="refresh" color="#ffffff" size="16"></uni-icons>
         </view>
+        <text>{{ isManualRefreshing ? "刷新中" : "刷新" }}</text>
       </view>
-      <button class="submit-btn" @click="handleSubmitReservation">提交预约</button>
+      <button class="submit-btn" @click="handleSubmitReservation">
+        <view class="submit-btn-icon">
+          <uni-icons type="checkmarkempty" color="#ffffff" size="16"></uni-icons>
+        </view>
+        <text>提交预约</text>
+      </button>
     </view>
 
     <!-- 麻将室介绍抽屉 -->
@@ -488,24 +494,33 @@ page {
   }
 }
 
-/* 手动刷新按钮：与提交按钮同高的纯图标按钮，无描边，置于提交按钮左侧 */
+/* 手动刷新按钮：黄底白字文字按钮，与提交按钮（绿底白字）同构无描边，语义黄色与主题绿区分主次 */
 .refresh-btn {
-  width: 88rpx;
+  width: 168rpx;
   height: 80rpx;
   border-radius: 40rpx;
+  background-color: #e6a23c;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 30rpx;
+  color: #ffffff;
   transition: all 0.25s ease;
 
   &:active {
-    background-color: rgba(46, 204, 113, 0.12);
+    background-color: #cf9236;
+    transform: scale(0.95);
+  }
+
+  &.refresh-btn-loading {
+    opacity: 0.75;
   }
 
   .refresh-btn-icon {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-right: 8rpx;
   }
 
   .refresh-btn-spinning {
@@ -539,14 +554,24 @@ page {
   flex: 1;
   margin: 0 0 0 20rpx;
   height: 80rpx;
-  line-height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background-color: #2ecc71;
   color: #ffffff;
   font-size: 32rpx;
   border-radius: 40rpx; // 圆角样式
+  transition: all 0.25s ease;
 
   &:active {
     background-color: #1e8449;
+    transform: scale(0.95);
+  }
+
+  .submit-btn-icon {
+    display: flex;
+    align-items: center;
+    margin-right: 8rpx;
   }
 }
 
