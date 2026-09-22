@@ -68,7 +68,7 @@
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
         todayWeek === "5" ? "0" : settingInfo.todayLuckyNumber
-      }}</view>
+        }}</view>
       <view class="fx67ll-lucky-title" @click="handleToLogHistory">今日随机幸运数字</view>
     </view>
 
@@ -86,7 +86,7 @@
               'color-hot-cold-append': index === luckyNumberList.length - 1 && settingInfo.isHotColdWeighted && !settingInfo.isOverrideRandomLogic && userName === 'fx67ll'
             }">{{
               itemFirst.num
-            }}</span>
+              }}</span>
             {{
               item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
             }}
@@ -288,6 +288,13 @@
               <switch class="fx67ll-setting-switch" :checked="settingInfo.isNeedDailyRandomPL5"
                 @change="isNeedDailyRandomPL5Change" />
             </view>
+            <!-- 🔽🔽🔽 排列三五七星彩冷热加权需求 开始 🔽🔽🔽 -->
+            <view class="fx67ll-setting-item">
+              <span>是否开启排列三五&七星彩随机逻辑的冷热加权</span>
+              <switch class="fx67ll-setting-switch" :checked="settingInfo.isOtherTypeHotColdWeighted"
+                @change="isOtherTypeHotColdWeightedChange" />
+            </view>
+            <!-- 🔼🔼🔼 排列三五七星彩冷热加权需求 结束 🔼🔼🔼 -->
           </view>
           <view class="fx67ll-setting-tip-placeholder"></view>
           <view class="fx67ll-setting-tip">
@@ -352,6 +359,7 @@ import {
   getLotteryNumberByFrequency,
   buildWeightedPool,
   drawFromWeightedPool,
+  drawDigitsFromWeightedPool,
   getFirstDrawDayOfYear,
   buildFirstIssueCodeOfThisYear,
   calcIssueCodeByOffset,
@@ -458,6 +466,8 @@ export default {
         isDailyRandomPL5Uploaded: false,
         // 当日随机排列五的完整上传数据缓存（含 dateCode/recordNumber/numberType 等，批量上传与复制时直接复用）
         dailyRandomPL5Data: null,
+        // 是否开启排列三排列五七星彩随机逻辑的冷热加权，fx67ll个人用配置
+        isOtherTypeHotColdWeighted: false,
         // 周五是否已经完成一键三连，fx67ll个人用配置
         isDoneOneClickThreeFriday: false,
         // 是否需要带一注高频号码组合
@@ -2032,6 +2042,10 @@ export default {
     isNeedDailyRandomPL5Change(e) {
       this.settingInfo.isNeedDailyRandomPL5 = e?.detail?.value;
     },
+    // 监听是否开启排列三排列五七星彩随机逻辑的冷热加权
+    isOtherTypeHotColdWeightedChange(e) {
+      this.settingInfo.isOtherTypeHotColdWeighted = e?.detail?.value;
+    },
     // 监听是否需要带一注高频号码组合
     isNeedHighFrequencyCombinationChange(e) {
       this.settingInfo.isNeedHighFrequencyCombination = e?.detail?.value;
@@ -2151,6 +2165,34 @@ export default {
       }
     },
     // 🔼🔼🔼 冷热加权需求 结束 🔼🔼🔼
+    // 图片上传结束后需要还原加载状态
+    // 🔽🔽🔽 排列三五七星彩冷热加权需求 开始 🔽🔽🔽
+    // 使用冷热加权逻辑生成排列三/排列五/七星彩的按位数字数组（按位独立抽取，允许重复数字）
+    // zone 与统计接口的分区一致：排列三/排列五数字与七星彩前六位为'前区'，七星彩尾号为'后区'
+    async buildWeightedDigitList(numberType, digitCount, zone) {
+      try {
+        const res = await listHistoryStatistics({ numberType });
+        if (!res?.rows?.length) return null;
+        const numType = parseInt(numberType);
+        const lotteryName = this.lotteryTypeMap[numType]?.text || '';
+        const weightName = this.settingInfo.hotColdWeightType === 'hot' ? '热加权' : '冷加权';
+        const pool = buildWeightedPool(res.rows, numType, zone, this.settingInfo.hotColdWeightType);
+        if (!pool || !pool.length) return null;
+        const weightMap = {};
+        pool.forEach(n => { weightMap[n] = (weightMap[n] || 0) + 1; });
+        const sorted = Object.entries(weightMap).sort((a, b) => b[1] - a[1]);
+        const msg = `[冷热加权] ${lotteryName}${zone === '后区' ? '尾号' : ''}加权池（共${pool.length}个）号码权重：${sorted.map(([n, w]) => `${n}:${w}`).join(' ')}`;
+        this._configLogLines && this._configLogLines.push(msg);
+        const digits = drawDigitsFromWeightedPool(pool, digitCount);
+        const msgResult = `[冷热加权] ${lotteryName}${zone === '后区' ? '尾号' : ''}${weightName}结果：${digits.join(',')}`;
+        this._configLogLines && this._configLogLines.push(msgResult);
+        return digits;
+      } catch (e) {
+        console.error('排列三五七星彩冷热加权号码生成失败：' + JSON.stringify(e));
+        return null;
+      }
+    },
+    // 🔼🔼🔼 排列三五七星彩冷热加权需求 结束 🔼🔼🔼
     // 图片上传结束后需要还原加载状态
     afterPicUploadFinished() {
       this.isNetworkLoading = false;
@@ -2870,23 +2912,35 @@ export default {
         weekType: this.todayWeek,
         hasMorePurchases: "N",
       };
+      // 开启冷热加权后，排列三/排列五/七星彩的随机数字改为从历史号码频率加权池中按位抽取
+      const isOtherTypeHotColdWeighted = this.settingInfo.isOtherTypeHotColdWeighted && this.userName === 'fx67ll';
       if (type === 3) {
-        const randomPl3Numbers = Array.from({ length: 3 }, () =>
-          Math.floor(Math.random() * 10)
-        );
+        let randomPl3Numbers = isOtherTypeHotColdWeighted ? await this.buildWeightedDigitList(3, 3, '前区') : null;
+        if (!randomPl3Numbers) {
+          randomPl3Numbers = Array.from({ length: 3 }, () =>
+            Math.floor(Math.random() * 10)
+          );
+        }
         addParams.recordNumber = randomPl3Numbers.join(",");
         addParams.numberType = "3";
       }
       if (type === 4) {
-        const randomPl5Numbers = Array.from({ length: 5 }, () =>
-          Math.floor(Math.random() * 10)
-        );
+        let randomPl5Numbers = isOtherTypeHotColdWeighted ? await this.buildWeightedDigitList(4, 5, '前区') : null;
+        if (!randomPl5Numbers) {
+          randomPl5Numbers = Array.from({ length: 5 }, () =>
+            Math.floor(Math.random() * 10)
+          );
+        }
         addParams.recordNumber = randomPl5Numbers.join(",");
         addParams.numberType = "4";
       }
       if (type === 5) {
-        const frontSix = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
-        const lastOne = Math.floor(Math.random() * 15);
+        let frontSix = isOtherTypeHotColdWeighted ? await this.buildWeightedDigitList(5, 6, '前区') : null;
+        let lastOneArr = isOtherTypeHotColdWeighted ? await this.buildWeightedDigitList(5, 1, '后区') : null;
+        if (!frontSix) {
+          frontSix = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
+        }
+        const lastOne = lastOneArr && lastOneArr.length ? lastOneArr[0] : Math.floor(Math.random() * 15);
         addParams.recordNumber = `${frontSix.join(",")},${lastOne}`;
         addParams.numberType = "5";
       }

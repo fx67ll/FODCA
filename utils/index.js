@@ -1010,7 +1010,7 @@ export function getLotteryNumberByFrequency(data, dayOfYear) {
   data.rows.forEach(item => {
     if (item.numberType === 1) {
       item.zone === '前区' ? groups.DLTFront.push(item) : groups.DLTBack.push(item);
-    } else {
+    } else if (item.numberType === 2) {
       item.zone === '前区' ? groups.SSQFront.push(item) : groups.SSQBack.push(item);
     }
   });
@@ -1083,6 +1083,21 @@ export function drawFromWeightedPool(pool, count) {
     }
   }
   return result.sort((a, b) => a - b);
+}
+
+/**
+ * 从加权池中按位独立抽取 count 个数字，允许重复数字，保持抽取顺序
+ * 适用于排列三/排列五/七星彩等按位数字型彩票（与 drawFromWeightedPool 的不重复升序逻辑区分）
+ * @param {Array} pool - 加权随机池
+ * @param {number} count - 需要抽取的数字位数
+ * @returns {Array} 按抽取顺序排列的数字数组
+ */
+export function drawDigitsFromWeightedPool(pool, count) {
+  const result = [];
+  for (let i = 0; i < count; i++) {
+    result.push(pool[Math.floor(Math.random() * pool.length)]);
+  }
+  return result;
 }
 
 // ===================== 跨年期号计算相关 =====================
