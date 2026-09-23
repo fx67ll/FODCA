@@ -61,7 +61,7 @@
 
 <script>
 // 预约时段选择组件，已移除组件内置的确认预约按钮，提交入口仅保留页面底部的提交预约按钮
-import prettyTimes from "@/components/pretty-times/pretty-times.vue";
+import prettyTimes from "@/pages/mahjong/component/pretty-times/pretty-times.vue";
 import roomDrawer from "@/pages/mahjong/component/roomDrawer.vue";
 import submitConfirmPopup from "@/pages/mahjong/component/submitConfirmPopup.vue";
 import { listMahjongReservationLog, addMahjongReservationLog } from "@/api/fx67ll/mahjong/log"

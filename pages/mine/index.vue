@@ -163,7 +163,7 @@
 </template>
 
 <script>
-import noticePopup from "@/pages/notice/component/noticePopup.vue";
+import noticePopup from "@/components/notice-popup/notice-popup.vue";
 
 // 获取配置（isNeedWaiKuai 非敏感键，明文返回）
 import { getSecretConfigBatch } from "@/api/fx67ll/secret/key.js";

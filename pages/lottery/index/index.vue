@@ -290,7 +290,7 @@
             </view>
             <!-- 🔽🔽🔽 排列三五七星彩冷热加权需求 开始 🔽🔽🔽 -->
             <view class="fx67ll-setting-item">
-              <span>是否开启排列三五&七星彩随机逻辑的冷热加权</span>
+              <span>是否开启随机排列三五&七星彩的冷热加权</span>
               <switch class="fx67ll-setting-switch" :checked="settingInfo.isOtherTypeHotColdWeighted"
                 @change="isOtherTypeHotColdWeightedChange" />
             </view>

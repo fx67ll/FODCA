@@ -17,7 +17,7 @@ import { getAvatar } from "@/api/system/user";
 
 import _ from "@/node_modules/underscore";
 
-import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
+import punchDrawer from "@/components/punch-drawer/punch-drawer.vue";
 
 export default {
   components: { punchDrawer },

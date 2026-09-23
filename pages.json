@@ -35,52 +35,77 @@
       }
     },
     {
-      "path": "pages/mine/avatar/index",
-      "style": {
-        "navigationBarTitleText": "修改头像"
-      }
-    },
-    {
-      "path": "pages/mine/info/index",
-      "style": {
-        "navigationBarTitleText": "个人信息"
-      }
-    },
-    {
-      "path": "pages/mine/info/edit",
-      "style": {
-        "navigationBarTitleText": "编辑资料"
-      }
-    },
-    {
-      "path": "pages/mine/pwd/index",
-      "style": {
-        "navigationBarTitleText": "修改密码"
-      }
-    },
-    {
-      "path": "pages/mine/setting/index",
-      "style": {
-        "navigationBarTitleText": "应用设置"
-      }
-    },
-    {
-      "path": "pages/mine/about/index",
-      "style": {
-        "navigationBarTitleText": "关于我们"
-      }
-    },
-    {
       "path": "pages/lottery/index/index",
       "style": {
         "navigationBarTitleText": "平平淡淡才是真"
       }
     }
   ],
-  // 微信小程序分包配置（H5 端自动合并为整包，页面路径不变，跳转逻辑无需调整）：
-  // 分包根即原页面目录，主包仅保留 tabBar 页面（首页/日常/我的）、登录注册与`我的`模块，
+  // 微信小程序分包配置（H5 端会合并构建，但仍使用这里声明的页面路径）：
+  // 主包仅保留 tabBar 页面（首页/日常/我的）及登录注册页面，其余业务按领域分包。
   // 配合 manifest.json 中已开启的 subPackages 分包优化，将各业务模块的专属组件与依赖编译进对应分包，控制主包体积
   "subPackages": [
+    {
+      "root": "pages/mine/avatar",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "修改头像"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/mine/info",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "个人信息"
+          }
+        },
+        {
+          "path": "edit",
+          "style": {
+            "navigationBarTitleText": "编辑资料"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/mine/pwd",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "修改密码"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/mine/setting",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "应用设置"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/mine/about",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "关于我们"
+          }
+        }
+      ]
+    },
     {
       "root": "pages/common",
       "pages": [

@@ -49,7 +49,7 @@
 </template>
 
 <script>
-import punchDrawer from "@/pages/punch/component/punchDrawer.vue";
+import punchDrawer from "@/components/punch-drawer/punch-drawer.vue";
 
 import { getPunchLogList, delPunchLog } from "@/api/fx67ll/punch/log";
 

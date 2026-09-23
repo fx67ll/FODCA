@@ -270,5 +270,5 @@ export default {
 </script>
 
 <style lang="less">
-@import url("./punchDrawer.less");
+@import url("./punch-drawer.less");
 </style>

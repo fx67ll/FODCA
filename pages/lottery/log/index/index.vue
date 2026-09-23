@@ -188,7 +188,7 @@
 </template>
 
 <script>
-import logDrawer from "@/pages/lottery/component/logDrawer/logDrawer.vue";
+import logDrawer from "@/pages/lottery/log/component/logDrawer/logDrawer.vue";
 
 import { getLogList, delLog, editLog, getLogInfo, mergeLog } from "@/api/fx67ll/lottery/log";
 import { getSetting } from "@/api/fx67ll/lottery/setting";
