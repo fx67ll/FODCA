@@ -67,7 +67,7 @@
 
     <lottery-draw-popup :isShow="isShowLotteryDrawPopup" :statusText="lotteryDrawStatusText"
       :targetText="lotteryDrawTargetText" :logs="lotteryDrawLogs" :isWin="lotteryDrawIsWin" :isRunning="isDrawLoading"
-      @close="closeLotteryDrawPopup" />
+      :timeText="lotteryDrawTimeText" @close="closeLotteryDrawPopup" @stop="stopDrawLottery" @resume="resumeDrawLottery" />
 
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
@@ -528,7 +528,7 @@ export default {
       isShowLotteryDrawPopup: false,
       lotteryDrawRunId: 0,
       lotteryDrawTypeKey: null,
-      // 模拟摇奖累计耗时按彩种独立保存，不写入真实摇奖配置
+      // 模拟摇奖累计耗时运行时状态，读取与保存走摇奖配置的分彩种字段，随配置同步云端实现跨设备同步
       simulationDrawTimeHistory: {
         DLT: 0,
         SSQ: 0,
@@ -597,6 +597,10 @@ export default {
     },
     lotteryDrawTargetText() {
       return this.formatSimulationNumber(this.lotteryDrawTarget);
+    },
+    // 模拟摇奖累计耗时文案（含历史累计与本次进行中的耗时），供过程弹窗展示
+    lotteryDrawTimeText() {
+      return this.getTimeDurationText(this.drawLotteryTime);
     },
   },
   watch: {
@@ -2790,52 +2794,80 @@ export default {
     getSimulationLotteryKey() {
       return mapLotteryNumberType(this.todayWeek) === "1" ? "DLT" : "SSQ";
     },
-    // 读取独立的模拟摇奖耗时，并兼容迁移旧配置中的累计耗时
+    // 读取模拟摇奖累计耗时，优先读取摇奖配置中的分彩种字段，随配置同步云端实现跨设备同步
     loadSimulationDrawTimeHistory() {
-      const storageKey = "lotterySimulationTimeHistory";
-      let storedHistory = null;
-      try {
-        // #ifdef H5
-        const historyText = localStorage.getItem(storageKey);
-        storedHistory = historyText ? JSON.parse(historyText) : null;
-        // #endif
-        // #ifdef MP-WEIXIN
-        const historyData = wx.getStorageSync(storageKey);
-        storedHistory = typeof historyData === "string" ? JSON.parse(historyData) : historyData;
-        // #endif
-      } catch (error) {
-        console.error("读取模拟摇奖累计耗时失败：", error);
-      }
-
-      const hasSeparateHistory = storedHistory && typeof storedHistory === "object";
       const history = {
-        DLT: Math.max(0, Number(storedHistory?.DLT) || 0),
-        SSQ: Math.max(0, Number(storedHistory?.SSQ) || 0),
+        DLT: Math.max(0, Number(this.settingInfo.simulationDrawTimeDLT) || 0),
+        SSQ: Math.max(0, Number(this.settingInfo.simulationDrawTimeSSQ) || 0),
       };
-      if (!hasSeparateHistory) {
+      // 配置中尚无分彩种字段时（旧版本数据），一次性迁移旧版独立本地缓存与更早配置中的单值累计耗时，不改动其他配置
+      const hasConfigFields =
+        _.has(this.settingInfo, "simulationDrawTimeDLT") || _.has(this.settingInfo, "simulationDrawTimeSSQ");
+      if (!hasConfigFields) {
+        const legacyKey = "lotterySimulationTimeHistory";
+        let legacyHistory = null;
+        try {
+          // #ifdef H5
+          const historyText = localStorage.getItem(legacyKey);
+          legacyHistory = historyText ? JSON.parse(historyText) : null;
+          // #endif
+          // #ifdef MP-WEIXIN
+          const historyData = wx.getStorageSync(legacyKey);
+          legacyHistory = typeof historyData === "string" ? JSON.parse(historyData) : historyData;
+          // #endif
+        } catch (error) {
+          console.error("读取旧版模拟摇奖累计耗时失败：", error);
+        }
+        let isLegacyMigrated = false;
+        if (legacyHistory && typeof legacyHistory === "object") {
+          const legacyDLT = Math.max(0, Number(legacyHistory.DLT) || 0);
+          const legacySSQ = Math.max(0, Number(legacyHistory.SSQ) || 0);
+          if (legacyDLT > history.DLT) {
+            history.DLT = legacyDLT;
+            isLegacyMigrated = true;
+          }
+          if (legacySSQ > history.SSQ) {
+            history.SSQ = legacySSQ;
+            isLegacyMigrated = true;
+          }
+        }
         const legacyTime = Math.max(0, Number(this.settingInfo.drawLotteryTimeHistory) || 0);
         if (legacyTime > 0) {
-          history[this.getSimulationLotteryKey()] = legacyTime;
+          const lotteryKey = this.getSimulationLotteryKey();
+          if (legacyTime > history[lotteryKey]) {
+            history[lotteryKey] = legacyTime;
+            isLegacyMigrated = true;
+          }
         }
-      }
-      this.simulationDrawTimeHistory = history;
-      if (!hasSeparateHistory && (history.DLT > 0 || history.SSQ > 0)) {
-        this.saveSimulationDrawTimeHistory();
+        this.simulationDrawTimeHistory = history;
+        if (isLegacyMigrated) {
+          // 迁移结果写入配置字段随配置保存，并清理旧版独立缓存避免旧数据再次覆盖
+          this.saveSimulationDrawTimeHistory();
+          this.clearLegacySimulationTimeCache();
+        }
+      } else {
+        this.simulationDrawTimeHistory = history;
       }
       return history;
     },
+    // 保存模拟摇奖累计耗时到摇奖配置的分彩种字段，随配置保存云端，其他模拟过程数据仍仅保存在当前页面内存中
     saveSimulationDrawTimeHistory() {
-      const storageKey = "lotterySimulationTimeHistory";
-      const historyText = JSON.stringify(this.simulationDrawTimeHistory);
+      this.settingInfo.simulationDrawTimeDLT = Math.max(0, Number(this.simulationDrawTimeHistory.DLT) || 0);
+      this.settingInfo.simulationDrawTimeSSQ = Math.max(0, Number(this.simulationDrawTimeHistory.SSQ) || 0);
+      this.saveLuckySettingLocal();
+    },
+    // 清理旧版模拟摇奖累计耗时的独立本地缓存
+    clearLegacySimulationTimeCache() {
+      const legacyKey = "lotterySimulationTimeHistory";
       try {
         // #ifdef H5
-        localStorage.setItem(storageKey, historyText);
+        localStorage.removeItem(legacyKey);
         // #endif
         // #ifdef MP-WEIXIN
-        wx.setStorageSync(storageKey, historyText);
+        wx.removeStorage({ key: legacyKey });
         // #endif
       } catch (error) {
-        console.error("保存模拟摇奖累计耗时失败：", error);
+        console.error("清理旧版模拟摇奖累计耗时缓存失败：", error);
       }
     },
     getSimulationDrawTotalTime() {
@@ -2987,10 +3019,48 @@ export default {
         ? `继续摇奖，已耗时：${this.getTimeDurationText(this.drawLotteryTime)}`
         : "模拟摇奖";
     },
-    closeLotteryDrawPopup() {
-      if (!this.isDrawLoading) {
-        this.isShowLotteryDrawPopup = false;
+    // 继续模拟摇奖，恢复累计耗时后从目标号码继续滚动，目标缺失时重新查询今日追号目标
+    async resumeDrawLottery() {
+      if (this.isDrawLoading) {
+        return;
       }
+      this.isDrawLoading = true;
+      this.lotteryDrawRunId += 1;
+      const runId = this.lotteryDrawRunId;
+      this.drawLotteryStartTime = Date.now();
+      this.drawLotteryTime = this.getSimulationDrawTotalTime();
+      this.appendLotteryDrawLog(`继续模拟摇奖，当前彩种累计耗时：${this.getTimeDurationText(this.drawLotteryTime)}`);
+      try {
+        if (!this.lotteryDrawTarget) {
+          this.lotteryDrawStatusText = "正在查询今日追号目标";
+          const target = await this.queryDailyChasingNumber();
+          if (!this.isDrawLoading || runId !== this.lotteryDrawRunId) {
+            return;
+          }
+          if (!target) {
+            this.appendLotteryDrawLog("未查询到有效的今日追号目标，模拟摇奖已结束");
+            this.finishLotteryDraw("未查询到今日追号目标");
+            return;
+          }
+          this.lotteryDrawTarget = target;
+          this.appendLotteryDrawLog(`已选定目标中奖号码：${this.formatSimulationNumber(target)}`);
+        }
+        await this.runLotteryDrawRound(runId);
+      } catch (error) {
+        if (!this.isDrawLoading || runId !== this.lotteryDrawRunId) {
+          return;
+        }
+        console.error("模拟摇奖异常：", error);
+        this.appendLotteryDrawLog("模拟摇奖异常，已结束本次模拟");
+        this.finishLotteryDraw("模拟摇奖异常");
+      }
+    },
+    closeLotteryDrawPopup() {
+      // 模拟进行中点击关闭直接结束本次模拟（累计耗时保留可继续），再关闭过程弹窗
+      if (this.isDrawLoading) {
+        this.stopDrawLottery();
+      }
+      this.isShowLotteryDrawPopup = false;
     },
     // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
     getOtherLuckyNumberDebounce: _.debounce(function (type) {
