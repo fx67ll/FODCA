@@ -20,6 +20,7 @@ yarn.lock
 .vscode
 .history
 .claude
+.codex-tmp
 
 neverUploadToGithub.js
 /node_modules
