@@ -14,8 +14,8 @@
               <view class="sim-version-chip" v-for="v in simEnabledVersionList" :key="v.versionId"
                 :class="{ active: v.versionId === currentVersionId }" @click="handleSimVersionChange(v)">{{
                   v.versionName || `版本${v.versionNo}` }}</view>
-              <view class="sim-version-chip manage" v-if="simVersionList.length > 0"
-                @click="handleSimVersionManage">管理</view>
+              <view class="sim-version-chip manage" v-if="simVersionList.length > 0" @click="handleSimVersionManage">管理
+              </view>
               <view class="sim-version-empty" v-if="simEnabledVersionList.length === 0">暂无版本，记录本轮或重新模拟将自动开启</view>
             </view>
           </scroll-view>
@@ -177,7 +177,8 @@
     <uni-popup ref="versionPopup" type="dialog">
       <view class="sim-version-dialog">
         <view class="sim-version-dialog-title">管理模拟版本</view>
-        <view class="sim-version-dialog-tip">停用后版本将不在标签中展示，轮次记录仍保留，可随时重新启用；作废后版本将从列表中隐藏且不可恢复；仅支持作废24小时内创建的版本，更早版本请在网页端后台操作；停用或作废当前选中版本时将自动切换到最新启用版本</view>
+        <view class="sim-version-dialog-tip">
+          停用后版本将不在标签中展示，轮次记录仍保留，可随时重新启用；作废后版本将从列表中隐藏且不可恢复；仅支持作废24小时内创建的版本，更早版本请在网页端后台操作；停用或作废当前选中版本时将自动切换到最新启用版本</view>
         <scroll-view class="sim-version-dialog-list" scroll-y>
           <view class="sim-version-dialog-item" v-for="v in simVersionList" :key="v.versionId"
             :class="{ disabled: v.delFlag === '2' }">
@@ -187,7 +188,9 @@
                 <text class="sim-version-dialog-tag" :class="v.simMode === 'half' ? 'half' : 'full'">{{
                   v.simMode === "half" ? "半量" : "全量" }}</text>
               </view>
-              <view class="sim-version-dialog-desc">版本{{ v.versionNo }} · 初始 {{ v.initialValue }} · 系数 {{ v.coefficient }} · 目标 {{ v.targetValue }}</view>
+              <view class="sim-version-dialog-desc">版本{{ v.versionNo }} · 初始 {{ v.initialValue }} · 系数 {{ v.coefficient
+                }} ·
+                目标 {{ v.targetValue }}</view>
               <view class="sim-version-dialog-time">{{ v.createTime }}</view>
             </view>
             <view class="sim-version-dialog-ops">
@@ -255,7 +258,8 @@
         <view class="sim-invalidate-card" v-if="simInvalidateVersion">
           <view class="sim-invalidate-card-row">
             <text class="sim-invalidate-card-label">作废版本</text>
-            <text class="sim-invalidate-card-value">{{ simInvalidateVersion.versionName || `版本${simInvalidateVersion.versionNo}` }}</text>
+            <text class="sim-invalidate-card-value">{{ simInvalidateVersion.versionName ||
+              `版本${simInvalidateVersion.versionNo}` }}</text>
           </view>
           <view class="sim-invalidate-card-row">
             <text class="sim-invalidate-card-label">版本编号</text>
@@ -273,7 +277,9 @@
         <view class="sim-invalidate-actions">
           <button class="sim-invalidate-btn" size="mini" @click="handleSimInvalidateCancel">取 消</button>
           <button class="sim-invalidate-btn danger" size="mini" :disabled="simInvalidateCountdown > 0"
-            @click="handleSimInvalidateStep1Confirm">进入二次确认{{ simInvalidateCountdown > 0 ? `（${simInvalidateCountdown}s）` : "" }}</button>
+            @click="handleSimInvalidateStep1Confirm">进入二次确认{{ simInvalidateCountdown > 0 ?
+              `（${simInvalidateCountdown}s）` :
+            "" }}</button>
         </view>
       </view>
     </uni-popup>
@@ -304,7 +310,8 @@
           <text class="sim-invalid-notice-icon-text">!</text>
         </view>
         <view class="sim-invalid-notice-title">版本已被强制作废</view>
-        <view class="sim-invalid-notice-desc">版本「{{ simInvalidNoticeVersionName }}」本轮轮次为负数，系统已自动作废该版本，版本不再在列表中展示，轮次记录已一并归档隐藏。</view>
+        <view class="sim-invalid-notice-desc">版本「{{ simInvalidNoticeVersionName
+          }}」本轮轮次为负数，系统已自动作废该版本，版本不再在列表中展示，轮次记录已一并归档隐藏。</view>
         <view class="sim-invalid-notice-card">
           <view class="sim-invalid-notice-card-item">
             <text class="sim-invalid-notice-card-label">版本编号</text>
@@ -336,11 +343,13 @@ import {
 } from "@/api/fx67ll/dortmund/extraSimulate";
 import { showConfirm } from "@/utils/common";
 import { diffTimeStrFromNow } from "@/utils/index";
+import uniPopup from "@/pages/dortmund/component/uni-popup/uni-popup.vue";
 
 // 数值模拟参数本地缓存键
 const SIM_CONFIG_CACHE_KEY = "dortmund-extra-sim-config";
 
 export default {
+  components: { uniPopup },
   data() {
     return {
       // 数值模拟参数配置

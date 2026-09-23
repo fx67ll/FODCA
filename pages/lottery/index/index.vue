@@ -65,10 +65,14 @@
       </view>
     </view>
 
+    <lottery-draw-popup :isShow="isShowLotteryDrawPopup" :statusText="lotteryDrawStatusText"
+      :targetText="lotteryDrawTargetText" :logs="lotteryDrawLogs" :isWin="lotteryDrawIsWin" :isRunning="isDrawLoading"
+      @close="closeLotteryDrawPopup" />
+
     <view class="fx67ll-lucky-box" v-if="settingInfo.todayLuckyNumber">
       <view class="fx67ll-lucky-bumber">{{
         todayWeek === "5" ? "0" : settingInfo.todayLuckyNumber
-        }}</view>
+      }}</view>
       <view class="fx67ll-lucky-title" @click="handleToLogHistory">今日随机幸运数字</view>
     </view>
 
@@ -86,7 +90,7 @@
               'color-hot-cold-append': index === luckyNumberList.length - 1 && settingInfo.isHotColdWeighted && !settingInfo.isOverrideRandomLogic && userName === 'fx67ll'
             }">{{
               itemFirst.num
-              }}</span>
+            }}</span>
             {{
               item.lotteryNumberSecond && item.lotteryNumberSecond.length > 0 ? "-" : ""
             }}
@@ -340,6 +344,7 @@ import uniNumberBox from "@/uni_modules/uni-number-box/components/uni-number-box
 
 // 号码生成配置日志组件
 import configLogDrawer from "@/pages/lottery/component/configLogDrawer/configLogDrawer.vue";
+import lotteryDrawPopup from "@/components/lottery-draw-popup/lottery-draw-popup.vue";
 
 // underscores函数库
 import _ from "@/node_modules/underscore";
@@ -364,6 +369,7 @@ import {
   buildFirstIssueCodeOfThisYear,
   calcIssueCodeByOffset,
   isDateCodeYearMatch,
+  checkLotteryResult,
 } from "@/utils/index";
 import { showConfirm } from "@/utils/common";
 import { getToken } from "@/utils/auth";
@@ -385,6 +391,7 @@ export default {
     uniIcons,
     uniNumberBox,
     configLogDrawer,
+    lotteryDrawPopup,
   },
   data() {
     return {
@@ -511,6 +518,21 @@ export default {
       isDrawLoading: false,
       // 模拟摇奖计时
       drawLotteryTime: 0,
+      // 模拟摇奖独立运行状态，不写入真实摇奖配置
+      drawLotteryStartTime: null,
+      lotteryDrawAttempt: 0,
+      lotteryDrawTarget: null,
+      lotteryDrawLogs: [],
+      lotteryDrawStatusText: "准备中",
+      lotteryDrawIsWin: false,
+      isShowLotteryDrawPopup: false,
+      lotteryDrawRunId: 0,
+      lotteryDrawTypeKey: null,
+      // 模拟摇奖累计耗时按彩种独立保存，不写入真实摇奖配置
+      simulationDrawTimeHistory: {
+        DLT: 0,
+        SSQ: 0,
+      },
       // 调用接口的加载标识
       isNetworkLoading: false,
       // 周五一键三连提交中标志，防止重复点击造成并发请求
@@ -572,6 +594,9 @@ export default {
       if (this.settingInfo.isNeedLowFrequencyCombination) fixedSlots++;
       // 最高随机注数 = 5 - 固定占位，但至少保留 1 注随机
       return Math.max(1, 5 - fixedSlots);
+    },
+    lotteryDrawTargetText() {
+      return this.formatSimulationNumber(this.lotteryDrawTarget);
     },
   },
   watch: {
@@ -635,6 +660,11 @@ export default {
       this.timer = null;
       this.luckyTimer = null;
       this.fakeDrawTimer = null;
+      if (this.countLoading) {
+        this.countLoading = false;
+        this.luckyRandomProgrss = 0;
+        this.luckyProgrssCount = 0;
+      }
       // 隐藏时停止计时
       if (this.isDrawLoading) {
         this.stopDrawLottery();
@@ -1037,19 +1067,11 @@ export default {
           }
           await this.packageRandomList(chasingNumObjTmp, pastNumObjTmp);
 
+          // 随机排列五的配置、冷热加权过程与最终号码必须完成后再汇总日志
+          await this.buildDailyRandomPL5Local();
+
           // 生成配置记录汇总
           this.buildGenerateConfigLog();
-
-          // 如果打开了带一注随机排列五则自动生成随机排列五（仅本地生成，不立即上传，随主号一起批量上传）
-          const isNeedDailyRandomPL5 = this.settingInfo.isNeedDailyRandomPL5 && this.userName === "fx67ll";
-          if (isNeedDailyRandomPL5) {
-            const msg = '[随机排列五] 配置生效 → 仅本地生成今日随机排列五，随主号批量上传';
-            this._configLogLines && this._configLogLines.push(msg);
-            this.buildDailyRandomPL5LocalDebounce();
-          } else {
-            const msg = '[随机排列五] 未开启，跳过';
-            this._configLogLines && this._configLogLines.push(msg);
-          }
 
           this.settingInfo.firstRandomDate = moment().format("YYYY-MM-DD");
           this.saveLuckySettingLocal();
@@ -1131,8 +1153,19 @@ export default {
       const chasingNumber = await getChaseNumberSetting(queryParams).then((res) => {
         if (res?.code === 200) {
           if (res?.rows && res?.rows?.length > 0) {
-            if (res?.rows[0]?.chaseNumber) {
-              const arrFir = res?.rows[0]?.chaseNumber?.split("-");
+            const rows = res.rows
+              .filter((item) => item?.chaseNumber)
+              .sort((left, right) => {
+                const leftId = Number(left?.settingId ?? left?.id ?? left?.chaseId);
+                const rightId = Number(right?.settingId ?? right?.id ?? right?.chaseId);
+                if (Number.isFinite(leftId) && Number.isFinite(rightId) && leftId !== rightId) {
+                  return leftId - rightId;
+                }
+                return String(left.chaseNumber).localeCompare(String(right.chaseNumber));
+              });
+            const selectedRow = rows[0];
+            if (selectedRow?.chaseNumber) {
+              const arrFir = selectedRow.chaseNumber.split("-");
               if (arrFir && arrFir.length > 1) {
                 const numFirTmp = (arrFir[0]?.split(",") || []).map((item) =>
                   item ? parseInt(item) : ""
@@ -1273,7 +1306,26 @@ export default {
         this._configLogLines && this._configLogLines.push(msg);
       };
 
-      log(`[生成开始] 彩票类型：${lotteryName}，配置随机注数：${this.settingInfo.luckyCount} 注，允许重复串号：${this.settingInfo.isNeedRepeat ? '是' : '否'}`);
+      const yesOrNo = (value) => value ? '是' : '否';
+      const isHotColdEffective = isAdmin && this.settingInfo.isHotColdWeighted;
+      const isOverrideEffective = isHotColdEffective && this.settingInfo.isOverrideRandomLogic;
+      const randomConstraintStatus = isOverrideEffective ? '不生效（冷热加权覆盖模式）' : '生效';
+      const adminStatus = isAdmin ? '生效' : '不生效（仅管理员可用）';
+      const weightName = this.settingInfo.hotColdWeightType === 'hot' ? '热加权' : '冷加权';
+
+      // 按代码实际执行顺序记录设置面板中的全部配置，关闭项和因权限/覆盖模式失效的配置也保留
+      log(`[配置-01] 彩票类型：${lotteryName}；需要随机输出的注数：${this.settingInfo.luckyCount} 注`);
+      log(`[配置-02] 当日是否仅允许生成一次随机：${yesOrNo(this.settingInfo.isOnlyFirstToday)}`);
+      log(`[配置-03] 是否允许出现重复串号：${yesOrNo(this.settingInfo.isNeedRepeat)}；执行状态：${randomConstraintStatus}`);
+      log(`[配置-04] 当日幸运数字是否包含在内：${yesOrNo(this.settingInfo.isNeedLuckyNumber)}；执行状态：${randomConstraintStatus}`);
+      log(`[配置-05] 过往最高频中奖号码是否包含在内：${yesOrNo(this.settingInfo.isNeedAddPastRewardNumber)}；统计期数：${this.settingInfo.pastCheckCount}；执行状态：${isAdmin ? randomConstraintStatus : adminStatus}`);
+      log(`[配置-06] 随机号码冷热加权：${yesOrNo(this.settingInfo.isHotColdWeighted)}；加权类型：${weightName}；覆盖当前随机逻辑：${yesOrNo(this.settingInfo.isOverrideRandomLogic)}；执行状态：${isHotColdEffective ? (isOverrideEffective ? '覆盖模式' : '追加模式') : (isAdmin ? '未开启' : adminStatus)}`);
+      log(`[配置-07] 是否添加一注每日追号：${yesOrNo(this.settingInfo.isNeedDailyChasingNumber)}；执行状态：${adminStatus}`);
+      log(`[配置-08] 是否添加一注历史开奖高频号码组合：${yesOrNo(this.settingInfo.isNeedHighFrequencyCombination)}；执行状态：${adminStatus}`);
+      log(`[配置-09] 是否添加一注历史开奖低频号码组合：${yesOrNo(this.settingInfo.isNeedLowFrequencyCombination)}；执行状态：${adminStatus}`);
+      log(`[配置-10] 是否添加一注随机排列五：${yesOrNo(this.settingInfo.isNeedDailyRandomPL5)}；执行状态：${adminStatus}`);
+      log(`[配置-11] 是否开启随机排列三/排列五/七星彩冷热加权：${yesOrNo(this.settingInfo.isOtherTypeHotColdWeighted)}；执行状态：${adminStatus}`);
+      log('[执行过程] 以下记录按号码生成逻辑的实际执行顺序输出');
 
       if (isAdmin) {
         // 固定追加注：追号、高频组合、低频组合，不占用随机注数配置
@@ -1352,7 +1404,7 @@ export default {
       const fixedEndIndex = this.luckyNumberList.length;
       const isHotColdAppend = this.settingInfo.isHotColdWeighted && !this.settingInfo.isOverrideRandomLogic && isAdmin;
       const isHotColdOverride = this.settingInfo.isHotColdWeighted && this.settingInfo.isOverrideRandomLogic && isAdmin;
-      const weightName = this.settingInfo.hotColdWeightType === 'hot' ? '热' : '冷';
+      const randomWeightName = this.settingInfo.hotColdWeightType === 'hot' ? '热' : '冷';
 
       // 工具：生成单注普通随机号码，逐注检查重复串号、幸运数字、过往高频号码，不满足只重摇该注
       // pastHighFreNum 为过往出现频率最高的单个数字（number | null）
@@ -1408,7 +1460,7 @@ export default {
       if (isHotColdAppend) {
         // 追加模式：先生成 (randomInitLength - 1) 注普通随机（逐注检查幸运数字），最后生成 1 注冷热加权（不参与重摇）
         const normalCount = randomInitLength - 1;
-        log(`[冷热加权] 追加模式 - 共 ${randomInitLength} 注，其中普通随机 ${normalCount} 注 + ${weightName}加权 1 注`);
+        log(`[冷热加权] 追加模式 - 共 ${randomInitLength} 注，其中普通随机 ${normalCount} 注 + ${randomWeightName}加权 1 注`);
         for (let i = 0; i < normalCount; i++) {
           const obj = generateOneNote(i, '（普通随机）', pastHighFreNumber);
           this.luckyNumberList.push(this.packageTempObjForWX(obj));
@@ -1420,12 +1472,12 @@ export default {
         } else {
           const fallback = this.packageTempObj(lotteryKey, normalCount);
           this.luckyNumberList.push(this.packageTempObjForWX(fallback));
-          log(`[冷热加权] ${weightName}加权失败，降级为普通随机 - 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
-          log(`[随机生成] 第 ${randomInitLength} 注（${weightName}加权失败，降级普通随机，同样不参与随机配置检查）- 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
+          log(`[冷热加权] ${randomWeightName}加权失败，降级为普通随机 - 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
+          log(`[随机生成] 第 ${randomInitLength} 注（${randomWeightName}加权失败，降级普通随机，同样不参与随机配置检查）- 前区：${fallback.lotteryNumberFirst.join(',')}，后区：${fallback.lotteryNumberSecond.join(',')}`);
         }
       } else if (isHotColdOverride) {
         // 覆盖模式：全部注数由冷热加权生成，逐注检查幸运数字，不满足只重摇该注
-        log(`[冷热加权] 覆盖模式 - 全部 ${randomInitLength} 注由${weightName}加权生成（覆盖模式下随机相关配置已关闭，不做额外检查）`);
+        log(`[冷热加权] 覆盖模式 - 全部 ${randomInitLength} 注由${randomWeightName}加权生成（覆盖模式下随机相关配置已关闭，不做额外检查）`);
         for (let i = 0; i < randomInitLength; i++) {
           let attempt = 0;
           let finalObj;
@@ -2575,9 +2627,9 @@ export default {
       let nowProgress = progress;
       this.countLoading = true;
       if (isFirst) {
-        this.countStartTime = moment().format("X");
+        this.countStartTime = Date.now();
       } else {
-        const nowTime = moment().format("X");
+        const nowTime = Date.now();
         console.log('====================开始计算今天是不是幸运日====================');
         console.log("当前计算已耗时：", this.getTimeDuration(this.countStartTime, nowTime, "milliseconds")
         );
@@ -2665,7 +2717,7 @@ export default {
             this.settingInfo.todayLuckyText = null;
             this.settingInfo.luckyClickTotal = 0;
             this.saveLuckySettingLocal();
-            setTimeout(function () {
+            this.luckyTimer = setTimeout(function () {
               self.getTodayLucky();
             }, firstShowDuration + 100);
           }
@@ -2688,153 +2740,256 @@ export default {
         s: currentTime.seconds(),
       }).format("HH:mm:ss");
     },
+    // 格式化模拟摇奖号码
+    formatSimulationNumber(numberObj) {
+      if (!numberObj) {
+        return "";
+      }
+      const getNumber = (item) => item && typeof item === "object" ? item.num : item;
+      const first = (numberObj.lotteryNumberFirst || []).map(getNumber).join(",");
+      const second = (numberObj.lotteryNumberSecond || []).map(getNumber).join(",");
+      return second ? `${first}-${second}` : first;
+    },
+    // 生成一注不依赖真实配置的模拟号码
+    buildSimulationNumber() {
+      const lotteryType = mapLotteryNumberType(this.todayWeek);
+      const drawFromPool = (source, count) => {
+        const pool = [...source];
+        for (let index = pool.length - 1; index > 0; index -= 1) {
+          const randomIndex = Math.floor(Math.random() * (index + 1));
+          [pool[index], pool[randomIndex]] = [pool[randomIndex], pool[index]];
+        }
+        return quickSort(pool.slice(0, count));
+      };
+      if (lotteryType === "1") {
+        return {
+          lotteryNumberFirst: drawFromPool(this.luckyNumberFront, 5),
+          lotteryNumberSecond: drawFromPool(this.luckyNumberBack, 2),
+        };
+      }
+      return {
+        lotteryNumberFirst: drawFromPool(this.luckyNumberRed, 6),
+        lotteryNumberSecond: drawFromPool(this.luckyNumberBlue, 1),
+      };
+    },
+    appendLotteryDrawLog(message) {
+      this.lotteryDrawLogs.push(message);
+      if (this.lotteryDrawLogs.length > 2000) {
+        this.lotteryDrawLogs.splice(0, this.lotteryDrawLogs.length - 2000);
+      }
+    },
+    getSimulationMatchText(currentNumber, targetNumber) {
+      const currentFirst = currentNumber.lotteryNumberFirst || [];
+      const currentSecond = currentNumber.lotteryNumberSecond || [];
+      const targetFirst = targetNumber.lotteryNumberFirst || [];
+      const targetSecond = targetNumber.lotteryNumberSecond || [];
+      const firstMatchCount = currentFirst.filter((item) => targetFirst.includes(item)).length;
+      const secondMatchCount = currentSecond.filter((item) => targetSecond.includes(item)).length;
+      return `前区命中 ${firstMatchCount} 个，后区命中 ${secondMatchCount} 个`;
+    },
+    getSimulationLotteryKey() {
+      return mapLotteryNumberType(this.todayWeek) === "1" ? "DLT" : "SSQ";
+    },
+    // 读取独立的模拟摇奖耗时，并兼容迁移旧配置中的累计耗时
+    loadSimulationDrawTimeHistory() {
+      const storageKey = "lotterySimulationTimeHistory";
+      let storedHistory = null;
+      try {
+        // #ifdef H5
+        const historyText = localStorage.getItem(storageKey);
+        storedHistory = historyText ? JSON.parse(historyText) : null;
+        // #endif
+        // #ifdef MP-WEIXIN
+        const historyData = wx.getStorageSync(storageKey);
+        storedHistory = typeof historyData === "string" ? JSON.parse(historyData) : historyData;
+        // #endif
+      } catch (error) {
+        console.error("读取模拟摇奖累计耗时失败：", error);
+      }
+
+      const hasSeparateHistory = storedHistory && typeof storedHistory === "object";
+      const history = {
+        DLT: Math.max(0, Number(storedHistory?.DLT) || 0),
+        SSQ: Math.max(0, Number(storedHistory?.SSQ) || 0),
+      };
+      if (!hasSeparateHistory) {
+        const legacyTime = Math.max(0, Number(this.settingInfo.drawLotteryTimeHistory) || 0);
+        if (legacyTime > 0) {
+          history[this.getSimulationLotteryKey()] = legacyTime;
+        }
+      }
+      this.simulationDrawTimeHistory = history;
+      if (!hasSeparateHistory && (history.DLT > 0 || history.SSQ > 0)) {
+        this.saveSimulationDrawTimeHistory();
+      }
+      return history;
+    },
+    saveSimulationDrawTimeHistory() {
+      const storageKey = "lotterySimulationTimeHistory";
+      const historyText = JSON.stringify(this.simulationDrawTimeHistory);
+      try {
+        // #ifdef H5
+        localStorage.setItem(storageKey, historyText);
+        // #endif
+        // #ifdef MP-WEIXIN
+        wx.setStorageSync(storageKey, historyText);
+        // #endif
+      } catch (error) {
+        console.error("保存模拟摇奖累计耗时失败：", error);
+      }
+    },
+    getSimulationDrawTotalTime() {
+      const lotteryKey = this.lotteryDrawTypeKey || this.getSimulationLotteryKey();
+      const historyTime = Math.max(0, Number(this.simulationDrawTimeHistory[lotteryKey]) || 0);
+      const currentTime = this.drawLotteryStartTime
+        ? Math.max(0, Math.floor((Date.now() - this.drawLotteryStartTime) / 1000))
+        : 0;
+      return historyTime + currentTime;
+    },
+    settleSimulationDrawTime(isWin) {
+      const lotteryKey = this.lotteryDrawTypeKey || this.getSimulationLotteryKey();
+      const totalTime = this.getSimulationDrawTotalTime();
+      this.drawLotteryTime = totalTime;
+      this.drawLotteryStartTime = null;
+      this.simulationDrawTimeHistory[lotteryKey] = isWin ? 0 : totalTime;
+      this.saveSimulationDrawTimeHistory();
+      return totalTime;
+    },
+    finishLotteryDraw(statusText, isWin = false) {
+      const totalTime = this.settleSimulationDrawTime(isWin);
+      clearTimeout(this.fakeDrawTimer);
+      this.fakeDrawTimer = null;
+      this.isDrawLoading = false;
+      this.drawLotteryText = !isWin && totalTime > 0
+        ? `继续摇奖，已耗时：${this.getTimeDurationText(totalTime)}`
+        : "模拟摇奖";
+      this.lotteryDrawStatusText = statusText;
+      return totalTime;
+    },
+    async runLotteryDrawRound(runId) {
+      if (!this.isDrawLoading || runId !== this.lotteryDrawRunId || !this.lotteryDrawTarget) {
+        return;
+      }
+      const lotteryType = mapLotteryNumberType(this.todayWeek);
+      const currentNumber = this.buildSimulationNumber();
+      const currentText = this.formatSimulationNumber(currentNumber);
+      const targetText = this.formatSimulationNumber(this.lotteryDrawTarget);
+      const result = checkLotteryResult(lotteryType, currentText, targetText);
+      const matchText = this.getSimulationMatchText(currentNumber, this.lotteryDrawTarget);
+      this.lotteryDrawAttempt += 1;
+      this.drawLotteryTime = this.getSimulationDrawTotalTime();
+      this.drawLotteryText = `模拟摇奖中，已耗时：${this.getTimeDurationText(this.drawLotteryTime)}`;
+      this.lotteryDrawStatusText = `正在模拟第 ${this.lotteryDrawAttempt} 次摇奖`;
+      this.appendLotteryDrawLog(
+        `第 ${this.lotteryDrawAttempt} 次：生成号码 ${currentText}；${matchText}；匹配结果：${result.prizeText}`
+      );
+
+      if (result.prizeLevel >= 1 && result.prizeLevel <= 3) {
+        this.lotteryDrawIsWin = true;
+        const winningTime = this.finishLotteryDraw("Congratulations! You won the simulated lottery draw", true);
+        this.appendLotteryDrawLog(`命中${result.prizeText}，本次中奖累计耗时：${this.getTimeDurationText(winningTime)}，模拟摇奖结束`);
+        uni.showToast({
+          title: "Congratulations! You won the simulated lottery draw",
+          icon: "none",
+          duration: 1998,
+        });
+        return;
+      }
+
+      let drawGap = 88;
+      // #ifdef H5
+      drawGap = 1;
+      // #endif
+      // #ifdef MP-WEIXIN
+      drawGap = 88;
+      // #endif
+      this.fakeDrawTimer = setTimeout(() => {
+        this.fakeDrawLottery(false);
+      }, drawGap);
+    },
     // 模拟摇奖
-    fakeDrawLottery(isFirst) {
+    async fakeDrawLottery(isFirst) {
       if (this.todayWeek === "5") {
         uni.showToast({
           title: "非常抱歉，今天是星期五，不提供模拟摇奖~",
           icon: "none",
           duration: 1998,
         });
-      } else {
-        const self = this;
-        // 记录开始摇奖状态
+      } else if (isFirst) {
+        if (this.isDrawLoading) {
+          return;
+        }
         this.isDrawLoading = true;
-        // 判断是否事第一次点击
-        if (isFirst) {
-          this.countStartTime = moment().format("X");
-          this.drawLotteryTime = this.settingInfo.drawLotteryTimeHistory;
-        } else {
-          const nowTime = moment().format("X");
-          this.drawLotteryTime =
-            this.settingInfo.drawLotteryTimeHistory +
-            this.getTimeDuration(this.countStartTime, nowTime, "milliseconds");
-          console.log("摇奖总耗时：", this.drawLotteryTime, "秒");
-          this.drawLotteryText = `模拟摇奖中，已耗时：${this.getTimeDurationText(
-            this.drawLotteryTime
-          )}`;
+        this.isShowLotteryDrawPopup = true;
+        this.lotteryDrawRunId += 1;
+        const runId = this.lotteryDrawRunId;
+        this.lotteryDrawAttempt = 0;
+        this.lotteryDrawTarget = null;
+        this.lotteryDrawLogs = [];
+        this.lotteryDrawStatusText = "正在查询今日追号目标";
+        this.lotteryDrawIsWin = false;
+        this.loadSimulationDrawTimeHistory();
+        this.lotteryDrawTypeKey = this.getSimulationLotteryKey();
+        this.drawLotteryStartTime = Date.now();
+        this.drawLotteryTime = this.simulationDrawTimeHistory[this.lotteryDrawTypeKey] || 0;
+        this.drawLotteryText = "模拟摇奖准备中...";
+        this.appendLotteryDrawLog("开始模拟摇奖，正在查询今日对应彩种的追号号码");
+        if (this.drawLotteryTime > 0) {
+          this.appendLotteryDrawLog(`已恢复当前彩种未中奖累计耗时：${this.getTimeDurationText(this.drawLotteryTime)}`);
         }
-        // 模拟摇奖，并判断是否中奖
-        this.settingInfo.luckyCount = 2;
-        this.settingInfo.isOnlyFirstToday = false;
 
-        // 第一次摇号
-        this.packageRandomList();
-        const yourNumberTempList = [];
-        this.luckyNumberList[1].lotteryNumberFirst.forEach((item) => {
-          yourNumberTempList.push(item.num);
-        });
-        this.luckyNumberList[1].lotteryNumberSecond.forEach((item) => {
-          yourNumberTempList.push(item.num);
-        });
-        const yourNumber = yourNumberTempList.join(",");
-
-        // 第二次摇号
-        this.packageRandomList();
-        const rightNumberTempList = [];
-        this.luckyNumberList[1].lotteryNumberFirst.forEach((item) => {
-          rightNumberTempList.push(item.num);
-        });
-        this.luckyNumberList[1].lotteryNumberSecond.forEach((item) => {
-          rightNumberTempList.push(item.num);
-        });
-        const rightNumber = rightNumberTempList.join(",");
-
-        const isWin = _.isEqual(yourNumber, rightNumber);
-        console.log(`${yourNumber}\n${rightNumber}\n是否中奖：${isWin}`);
-        // 若中奖，结束递归摇奖
-        if (isWin) {
-          // 中奖了停止摇奖状态
-          this.isDrawLoading = false;
-          // 记录中奖状态和号码
-          console.log("今日模拟中奖号码：", rightNumber);
-          this.settingInfo.bigRewardNumber = rightNumber;
-          this.settingInfo.isGetBigReward = true;
-          this.saveLuckySettingLocal();
-        } else {
-          clearTimeout(this.fakeDrawTimer);
-          this.fakeDrawTimer = null;
-
-          // #ifdef H5
-          const drawGapH5 = 1;
-          this.fakeDrawTimer = setTimeout(function () {
-            self.fakeDrawLottery(false);
-          }, drawGapH5);
-          // #endif
-
-          // #ifdef MP-WEIXIN
-          const drawGapWX = 88;
-          this.fakeDrawTimer = setTimeout(function () {
-            self.fakeDrawLottery(false);
-          }, drawGapWX);
-          // #endif
+        try {
+          const target = await this.queryDailyChasingNumber();
+          if (!this.isDrawLoading || runId !== this.lotteryDrawRunId) {
+            return;
+          }
+          if (!target) {
+            this.appendLotteryDrawLog("未查询到有效的今日追号目标，模拟摇奖已结束");
+            this.finishLotteryDraw("未查询到今日追号目标");
+            return;
+          }
+          this.lotteryDrawTarget = target;
+          this.appendLotteryDrawLog(`已选定目标中奖号码：${this.formatSimulationNumber(target)}`);
+          await this.runLotteryDrawRound(runId);
+        } catch (error) {
+          if (!this.isDrawLoading || runId !== this.lotteryDrawRunId) {
+            return;
+          }
+          console.error("模拟摇奖异常：", error);
+          this.appendLotteryDrawLog("模拟摇奖异常，已结束本次模拟");
+          this.finishLotteryDraw("模拟摇奖异常");
         }
+      } else if (this.isDrawLoading) {
+        await this.runLotteryDrawRound(this.lotteryDrawRunId);
       }
     },
-    // 停止计时
+    // 停止模拟摇奖
     stopDrawLottery() {
-      const self = this;
+      if (!this.isDrawLoading) {
+        return;
+      }
+      this.lotteryDrawRunId += 1;
+      const totalTime = this.settleSimulationDrawTime(false);
       this.isDrawLoading = false;
-      const drawLotteryTimeTemp = this.drawLotteryTime;
-      // #ifdef H5
-      this.initCacheSettingLocal();
-      this.drawLotteryText = `继续摇奖，已耗时：${this.getTimeDurationText(
-        drawLotteryTimeTemp
-      )}`;
-      this.settingInfo.drawLotteryTimeHistory = drawLotteryTimeTemp;
-      // #endif
-      // #ifdef MP-WEIXIN
-      // 微信回调有延时，这里直接拷贝 `this.initCacheSettingLocal()` 方法过来
-      wx.getStorage({
-        key: "settingInfo",
-        success: function (res) {
-          let settingInfo = JSON.parse(res.data);
-          self.settingInfo = {
-            ...settingInfo,
-          };
-          // 如果打开了只允许一注随机则需要重新渲染当日的随机号码
-          if (
-            self.settingInfo.isOnlyFirstToday &&
-            self.settingInfo.firstRandomDate === moment().format("YYYY-MM-DD")
-          ) {
-            self.luckyNumberList = self.settingInfo.localLuckyNumberList;
-          }
-          // 初始化完缓存配置项后初始化今日幸运数字
-          self.initTodayLuckyNumber(settingInfo.luckyNumberDate);
-          // 初始化模拟摇奖配置
-          self.initDrawLottery();
-          // 微信回调有延时，这里还原配置后保存计时
-          self.drawLotteryText = `继续摇奖，已耗时：${self.getTimeDurationText(
-            drawLotteryTimeTemp
-          )}`;
-          self.settingInfo.drawLotteryTimeHistory = drawLotteryTimeTemp;
-        },
-        fail: function () {
-          // 如果第一次进入没有缓存配置，仍然需要生成当日幸运数字
-          self.initTodayLuckyNumber(null);
-        },
-      });
-      // #endif
-      this.saveLuckySettingLocal();
       clearTimeout(this.fakeDrawTimer);
       this.fakeDrawTimer = null;
+      this.drawLotteryText = `继续摇奖，已耗时：${this.getTimeDurationText(totalTime)}`;
+      this.lotteryDrawStatusText = "模拟摇奖已暂停";
+      this.appendLotteryDrawLog(`本次模拟摇奖已停止，当前彩种累计耗时：${this.getTimeDurationText(totalTime)}`);
     },
     // 初始化摇奖状态
     initDrawLottery() {
-      if (
-        !this.settingInfo.isGetBigReward &&
-        this.settingInfo.drawLotteryTimeHistory > 0
-      ) {
-        this.drawLotteryText = `继续摇奖，已耗时：${this.getTimeDurationText(
-          this.settingInfo.drawLotteryTimeHistory
-        )}`;
-      } else {
-        if (this.settingInfo.isGetBigReward) {
-          this.drawLotteryText = `已中奖，中奖号码是：${this.settingInfo.bigRewardNumber}`;
-          this.settingInfo.drawLotteryTimeHistory = 0;
-        } else {
-          this.drawLotteryText = "模拟摇奖";
-        }
+      this.loadSimulationDrawTimeHistory();
+      this.lotteryDrawTypeKey = this.getSimulationLotteryKey();
+      this.drawLotteryTime = this.simulationDrawTimeHistory[this.lotteryDrawTypeKey] || 0;
+      this.drawLotteryStartTime = null;
+      this.drawLotteryText = this.drawLotteryTime > 0
+        ? `继续摇奖，已耗时：${this.getTimeDurationText(this.drawLotteryTime)}`
+        : "模拟摇奖";
+    },
+    closeLotteryDrawPopup() {
+      if (!this.isDrawLoading) {
+        this.isShowLotteryDrawPopup = false;
       }
     },
     // 获取随机号码，先检查是否生成过相关记录，再生成其他类型的随机数并直接上传 - 防抖处理
@@ -2930,6 +3085,10 @@ export default {
           randomPl5Numbers = Array.from({ length: 5 }, () =>
             Math.floor(Math.random() * 10)
           );
+          if (isOtherTypeHotColdWeighted) {
+            const msg = `[随机排列五] 冷热加权未生成有效号码，已降级为普通随机：${randomPl5Numbers.join(',')}`;
+            this._configLogLines && this._configLogLines.push(msg);
+          }
         }
         addParams.recordNumber = randomPl5Numbers.join(",");
         addParams.numberType = "4";
@@ -3081,8 +3240,20 @@ export default {
     },
     // 仅在本地生成今日随机排列五并写入主配置JSON（不在号码面板中展示），等待随主号一起批量上传
     async buildDailyRandomPL5Local() {
+      const isAdmin = this.userName === "fx67ll";
+      const isEnabled = Boolean(this.settingInfo.isNeedDailyRandomPL5);
+      const isWeightedEnabled = Boolean(this.settingInfo.isOtherTypeHotColdWeighted);
+      const log = (msg) => {
+        this._configLogLines && this._configLogLines.push(msg);
+      };
+      log(`[随机排列五] 执行配置 - 添加一注随机排列五：${isEnabled ? '是' : '否'}；排列五/七星彩冷热加权：${isWeightedEnabled ? '是' : '否'}；当前用户权限：${isAdmin ? '符合' : '不符合'}`);
+      if (!isEnabled || !isAdmin) {
+        log(`[随机排列五] ${!isEnabled ? '配置未开启' : '当前用户无执行权限'}，跳过生成`);
+        return;
+      }
       // 当日已本地生成过排列五则直接复用，不再重复生成
       if (this.settingInfo.isDailyRandomPL5Generated && this.settingInfo.dailyRandomPL5Data) {
+        log(`[随机排列五] 已存在当日本地号码，直接复用：${this.settingInfo.dailyRandomPL5Data.recordNumber || '无有效号码'}`);
         return;
       }
       const addParams = await this.buildOtherLuckyNumberData(4);
@@ -3090,7 +3261,8 @@ export default {
       this.settingInfo.isDailyRandomPL5Generated = true;
       this.settingInfo.isDailyRandomPL5Uploaded = false;
       this.saveLuckySettingLocal();
-      const msg = `[随机排列五] 本地生成完成：${addParams.recordNumber}（仅写入主配置JSON，待随主号批量上传）`;
+      const generateType = isWeightedEnabled ? '冷热加权随机（加权失败时自动降级普通随机）' : '普通随机';
+      const msg = `[随机排列五] 本地生成完成：${addParams.recordNumber}；生成方式：${generateType}（仅写入主配置JSON，待随主号批量上传）`;
       this._configLogLines && this._configLogLines.push(msg);
     },
     // 仅在本地生成今日随机排列五 - 防抖处理

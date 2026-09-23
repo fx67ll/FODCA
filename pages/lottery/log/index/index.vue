@@ -205,8 +205,8 @@ import vTabs from "@/uni_modules/v-tabs/v-tabs.vue";
 
 // 中奖查询 + OCR 后端代理接口
 import { queryRewardForApp } from "@/api/fx67ll/lottery/log.js";
-import uniPopup from "@/uni_modules/uni-popup/components/uni-popup/uni-popup.vue";
-import uniPopupDialog from "@/uni_modules/uni-popup/components/uni-popup-dialog/uni-popup-dialog.vue";
+import uniPopup from "@/pages/lottery/log/component/uni-popup/uni-popup.vue";
+import uniPopupDialog from "@/pages/lottery/log/component/uni-popup-dialog.vue";
 
 // 日期时间处理
 import moment from "@/node_modules/moment";
