@@ -24,9 +24,9 @@
         <scroll-view scroll-y="true" class="lottery-draw-popup-content" :scroll-top="logScrollTopProp"
           scroll-with-animation @scroll="handleLogScroll">
           <view class="lottery-draw-popup-log-list" v-if="reversedLogs.length">
-            <view class="lottery-draw-popup-log" v-for="(item, index) in reversedLogs" :key="logs.length - index">
-              <text class="lottery-draw-popup-log-index">{{ logs.length - index }}</text>
-              <text class="lottery-draw-popup-log-text">{{ item }}</text>
+            <view class="lottery-draw-popup-log" v-for="item in reversedLogs" :key="item.logKey">
+              <text class="lottery-draw-popup-log-index">{{ item.logKey }}</text>
+              <text class="lottery-draw-popup-log-text">{{ item.logText }}</text>
             </view>
           </view>
           <view class="lottery-draw-popup-empty" v-else>暂无模拟摇奖过程信息</view>
@@ -98,8 +98,13 @@ export default {
   },
   computed: {
     // 倒序展示模拟摇奖过程信息，最新消息固定在最上方，无需手动下滑查看
+    // 以原始序号作为唯一key（小程序端:key不支持表达式，无法直接使用logs.length - index）
     reversedLogs() {
-      return (this.logs || []).slice().reverse();
+      const logs = this.logs || [];
+      return logs.slice().reverse().map((logText, index) => ({
+        logKey: logs.length - index,
+        logText,
+      }));
     },
     // 右侧按钮文案：模拟中为停止，停止后为继续，中奖结束后隐藏
     footerBtnText() {

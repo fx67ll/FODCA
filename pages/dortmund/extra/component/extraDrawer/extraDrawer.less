@@ -1,0 +1,820 @@
+@import url('@/common/style/mixin.less');
+
+// 定义主题色
+@theme-color: #2ecc71;
+@theme-color-light: #d5f4e6;
+@theme-color-dark: #27ae60;
+
+// 定义警告色（合并操作为高危操作，确认按钮与警告横幅使用）
+@warning-color: #ffa940;
+@warning-color-dark: #fa8c16;
+
+.fx67ll-extra-drawer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #f9fdfb 0%, #ffffff 100%);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+
+  // 金额四宫格样式（记录选择卡片与合并结果预览共用，按外快盈亏记录金额字段特点展示）
+  .fx67ll-stat-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+
+    .fx67ll-stat-chip {
+      width: calc(50% - 8rpx);
+      margin-bottom: 12rpx;
+      box-sizing: border-box;
+      padding: 12rpx 16rpx;
+      background: linear-gradient(135deg, #f7fbf9, #f0f9f4);
+      border: 1px solid rgba(213, 244, 230, 0.6);
+      border-radius: 12rpx;
+
+      // 四宫格固定两行，末行取消下边距，避免底部留白不均
+      &:nth-child(n+3) {
+        margin-bottom: 0;
+      }
+
+      .fx67ll-stat-chip-label {
+        display: flex;
+        align-items: center;
+        font-size: 22rpx;
+        color: #7f8c8d;
+        margin-bottom: 6rpx;
+
+        .fx67ll-stat-chip-icon {
+          margin-right: 6rpx;
+          font-size: 22rpx;
+        }
+      }
+
+      .fx67ll-stat-chip-value {
+        display: block;
+        font-size: 28rpx;
+        color: #2c3e50;
+        font-weight: 600;
+        word-break: break-all;
+      }
+    }
+  }
+
+  // 工具栏样式
+  .fx67ll-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20rpx 32rpx;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(213, 244, 230, 0.8);
+    box-shadow: 0 2rpx 12rpx rgba(46, 204, 113, 0.05);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    .fx67ll-toolbar-left {
+      display: flex;
+      align-items: center;
+
+      .fx67ll-select-all {
+        display: flex;
+        align-items: center;
+        padding: 12rpx 20rpx;
+        border-radius: 50rpx;
+        background: #f0f9f4;
+        transition: all 0.2s ease;
+
+        &:active {
+          background: #e0f3e9;
+          transform: scale(0.98);
+        }
+
+        .fx67ll-select-checkbox {
+          width: 36rpx;
+          height: 36rpx;
+          border-radius: 8rpx;
+          border: 2rpx solid #a8e6c3;
+          background: white;
+          margin-right: 12rpx;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+
+          text {
+            font-size: 24rpx;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+          }
+
+          &.fx67ll-select-checkbox-checked {
+            background: @theme-color;
+            border-color: @theme-color;
+            box-shadow: 0 2rpx 8rpx rgba(46, 204, 113, 0.3);
+
+            text {
+              opacity: 1;
+            }
+          }
+        }
+
+        text {
+          font-size: 26rpx;
+          color: #2c3e50;
+          font-weight: 500;
+        }
+      }
+    }
+
+    .fx67ll-toolbar-right {
+      .fx67ll-selected-badge {
+        padding: 8rpx 20rpx;
+        background: linear-gradient(135deg, @theme-color, @theme-color-dark);
+        border-radius: 30rpx;
+        box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.25);
+
+        text {
+          font-size: 24rpx;
+          color: white;
+          font-weight: 600;
+          letter-spacing: 0.5rpx;
+        }
+      }
+    }
+  }
+
+  // 滚动区域样式
+  .fx67ll-extra-scroll {
+    flex: 1;
+    padding: 0;
+    background: #f9fdfb;
+  }
+
+  // 外快盈亏记录列表样式
+  .fx67ll-extra-list {
+    padding: 20rpx 32rpx;
+
+    .fx67ll-extra-cell {
+      display: flex;
+      align-items: center;
+      padding: 28rpx 24rpx;
+      margin-bottom: 16rpx;
+      background: white;
+      border-radius: 16rpx;
+      border: 1px solid rgba(213, 244, 230, 0.8);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+
+      &:active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.06);
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      // 左侧装饰线
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4rpx;
+        background: linear-gradient(180deg, @theme-color, #a8e6c3);
+        opacity: 0;
+        transition: opacity 0.3s;
+        border-radius: 0 3rpx 3rpx 0;
+      }
+
+      // 选中状态样式
+      &.fx67ll-extra-cell-selected {
+        border-color: @theme-color;
+        background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(39, 174, 96, 0.05));
+        box-shadow: 0 4rpx 16rpx rgba(46, 204, 113, 0.12);
+
+        &::before {
+          opacity: 1;
+        }
+      }
+
+      // 左侧选中指示器
+      .fx67ll-extra-cell-left {
+        margin-right: 24rpx;
+        flex-shrink: 0;
+
+        .fx67ll-selection-indicator {
+          width: 36rpx;
+          height: 36rpx;
+          border-radius: 8rpx;
+          border: 2rpx solid #a8e6c3;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+
+          text {
+            font-size: 20rpx;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+          }
+
+          &.fx67ll-selection-indicator-checked {
+            background: @theme-color;
+            border-color: @theme-color;
+            box-shadow: 0 2rpx 8rpx rgba(46, 204, 113, 0.3);
+            animation: checkIn 0.2s ease-out;
+
+            text {
+              opacity: 1;
+            }
+          }
+        }
+      }
+
+      // 内容区域
+      .fx67ll-extra-cell-content {
+        flex: 1;
+        min-width: 0;
+
+        // 头部：创建时间居左、盈亏金额胶囊居右，两端对齐
+        .fx67ll-extra-cell-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12rpx;
+
+          .fx67ll-extra-cell-time {
+            display: flex;
+            align-items: center;
+            font-size: 24rpx;
+            color: #7f8c8d;
+
+            .fx67ll-time-icon {
+              margin-right: 8rpx;
+              font-size: 20rpx;
+              opacity: 0.7;
+            }
+          }
+
+          // 盈亏金额胶囊样式（配色与外快盈亏记录列表页保持一致）
+          .fx67ll-extra-badge {
+            border-radius: 100px;
+            font-size: 24rpx;
+            line-height: 36rpx;
+            color: #ffffff;
+            padding: 6rpx 16rpx;
+            flex-shrink: 0;
+          }
+
+          .fx67ll-extra-badge-success {
+            background-color: #2ecc71;
+          }
+
+          .fx67ll-extra-badge-fail {
+            background-color: #ff5a5f;
+          }
+
+          .fx67ll-extra-badge-normal {
+            background-color: #999999;
+          }
+        }
+
+        // 备注单行省略展示，虚线分隔与金额四宫格区分层级
+        .fx67ll-extra-cell-remark {
+          display: flex;
+          align-items: center;
+          margin-top: 12rpx;
+          padding-top: 12rpx;
+          border-top: 1px dashed rgba(213, 244, 230, 0.8);
+
+          .fx67ll-extra-cell-remark-icon {
+            margin-right: 8rpx;
+            font-size: 20rpx;
+            opacity: 0.7;
+            flex-shrink: 0;
+          }
+
+          .fx67ll-extra-cell-remark-text {
+            flex: 1;
+            min-width: 0;
+            font-size: 22rpx;
+            color: #95a5a6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
+  }
+
+  // 空状态样式
+  .fx67ll-empty {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    padding: 60rpx 32rpx;
+
+    .fx67ll-empty-icon {
+      width: 120rpx;
+      height: 120rpx;
+      background: linear-gradient(135deg, #f0f9f4, #e0f3e9);
+      border-radius: 30rpx;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32rpx;
+      animation: float 3s ease-in-out infinite;
+
+      text {
+        font-size: 56rpx;
+        opacity: 0.7;
+      }
+    }
+
+    .fx67ll-empty-text {
+      font-size: 30rpx;
+      color: #2c3e50;
+      font-weight: 500;
+      margin-bottom: 12rpx;
+    }
+
+    .fx67ll-empty-subtext {
+      font-size: 24rpx;
+      color: #95a5a6;
+    }
+  }
+
+  // 合并结果预览面板样式
+  .fx67ll-merge-preview {
+    margin: 20rpx 32rpx 0;
+    background: white;
+    border-radius: 16rpx;
+    border: 1px solid rgba(213, 244, 230, 0.8);
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+
+    .fx67ll-merge-preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24rpx 28rpx;
+      background: linear-gradient(135deg, rgba(46, 204, 113, 0.08), rgba(39, 174, 96, 0.05));
+      border-bottom: 1px solid rgba(213, 244, 230, 0.8);
+
+      .fx67ll-merge-preview-title {
+        display: flex;
+        align-items: center;
+        font-size: 30rpx;
+        color: #2c3e50;
+        font-weight: 600;
+
+        .fx67ll-merge-preview-icon {
+          margin-right: 12rpx;
+          font-size: 30rpx;
+        }
+      }
+
+      .fx67ll-merge-preview-count {
+        padding: 6rpx 20rpx;
+        background: linear-gradient(135deg, @theme-color, @theme-color-dark);
+        border-radius: 30rpx;
+        box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.25);
+
+        text {
+          font-size: 24rpx;
+          color: white;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .fx67ll-merge-preview-body {
+      padding: 16rpx 16rpx 8rpx;
+
+      // 合并推导字段重点展示区：盈亏金额之和与是否盈利大字号呈现
+      .fx67ll-merge-preview-hero {
+        display: flex;
+        justify-content: space-between;
+        padding: 8rpx 8rpx 20rpx;
+        animation: fadeInScale 0.3s ease-out;
+
+        .fx67ll-merge-preview-hero-item {
+          display: flex;
+          flex-direction: column;
+          width: calc(50% - 8rpx);
+          box-sizing: border-box;
+
+          .fx67ll-merge-preview-label {
+            font-size: 24rpx;
+            color: #7f8c8d;
+            margin-bottom: 8rpx;
+          }
+
+          .fx67ll-merge-preview-hero-value {
+            font-size: 40rpx;
+            color: #2c3e50;
+            font-weight: 700;
+            line-height: 1.3;
+            word-break: break-all;
+          }
+        }
+      }
+
+      // 创建时间整行展示
+      .fx67ll-merge-preview-time {
+        display: flex;
+        align-items: center;
+        padding: 16rpx 8rpx 12rpx;
+
+        .fx67ll-merge-preview-time-icon {
+          margin-right: 8rpx;
+          font-size: 22rpx;
+          opacity: 0.7;
+        }
+
+        .fx67ll-merge-preview-time-text {
+          font-size: 24rpx;
+          color: #7f8c8d;
+          word-break: break-all;
+        }
+      }
+    }
+
+    .fx67ll-merge-preview-tip {
+      padding: 20rpx 28rpx;
+      font-size: 22rpx;
+      color: #95a5a6;
+      line-height: 1.6;
+      border-top: 1px dashed rgba(213, 244, 230, 0.8);
+    }
+  }
+
+  // 合并后盈亏金额预览配色（与列表盈亏金额配色一致）
+  .fx67ll-win-money-positive {
+    color: #2ecc71;
+  }
+
+  .fx67ll-win-money-negative {
+    color: #ff5a5f;
+  }
+
+  .fx67ll-win-money-zero {
+    color: #999999;
+  }
+
+  // 合并操作警告横幅样式
+  .fx67ll-merge-warning-banner {
+    display: flex;
+    align-items: flex-start;
+    margin: 20rpx 32rpx 0;
+    padding: 24rpx 28rpx;
+    background: linear-gradient(135deg, #fdf6ec, #faecd8);
+    border-radius: 16rpx;
+    border-left: 8rpx solid #e6a23c;
+
+    .fx67ll-merge-warning-icon {
+      margin-right: 16rpx;
+
+      text {
+        font-size: 32rpx;
+      }
+    }
+
+    .fx67ll-merge-warning-body {
+      flex: 1;
+
+      .fx67ll-merge-warning-title {
+        font-size: 28rpx;
+        color: #b88230;
+        font-weight: 600;
+        margin-bottom: 8rpx;
+      }
+
+      .fx67ll-merge-warning-desc {
+        font-size: 24rpx;
+        color: #a07a3f;
+        line-height: 1.6;
+      }
+    }
+  }
+
+  // 合并后备注录入样式
+  .fx67ll-merge-remark-box {
+    margin: 20rpx 32rpx 20rpx;
+    background: white;
+    border-radius: 16rpx;
+    border: 1px solid rgba(213, 244, 230, 0.8);
+    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+    padding: 24rpx 28rpx;
+
+    .fx67ll-merge-remark-label {
+      font-size: 26rpx;
+      color: #2c3e50;
+      font-weight: 500;
+      margin-bottom: 16rpx;
+    }
+
+    .fx67ll-merge-remark-count {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 8rpx;
+
+      text {
+        font-size: 22rpx;
+        color: #95a5a6;
+      }
+    }
+  }
+
+  // 按钮区域样式
+  .fx67ll-extra-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 32rpx;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(213, 244, 230, 0.8);
+    flex-shrink: 0;
+    box-shadow: 0 -4rpx 20rpx rgba(0, 0, 0, 0.04);
+
+    .fx67ll-btn-submit {
+      flex: 1;
+      margin-right: 20rpx;
+      height: 88rpx;
+      line-height: 88rpx;
+      font-size: 30rpx;
+      border-radius: 16rpx;
+      background: linear-gradient(135deg, @theme-color, @theme-color-dark);
+      border: none;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4rpx 12rpx rgba(46, 204, 113, 0.25);
+
+      // 按钮点击效果
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        transition: left 0.5s;
+      }
+
+      &:active::before {
+        left: 100%;
+      }
+
+      &:not(.fx67ll-btn-disabled):active {
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(46, 204, 113, 0.35);
+      }
+
+      &.fx67ll-btn-disabled {
+        background: linear-gradient(135deg, #bdc3c7, #95a5a6);
+        box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+        opacity: 0.6;
+      }
+
+      // 合并确认为高危操作，按钮使用警告色突出提示
+      &.fx67ll-btn-warning {
+        background: linear-gradient(135deg, @warning-color, @warning-color-dark);
+        box-shadow: 0 4rpx 12rpx rgba(250, 140, 22, 0.25);
+
+        &:not(.fx67ll-btn-disabled):active {
+          box-shadow: 0 6rpx 18rpx rgba(250, 140, 22, 0.35);
+        }
+      }
+
+      .fx67ll-btn-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .fx67ll-btn-icon {
+          margin-right: 12rpx;
+          font-size: 28rpx;
+        }
+      }
+    }
+
+    .fx67ll-btn-cancel {
+      width: 180rpx;
+      height: 88rpx;
+      line-height: 88rpx;
+      font-size: 30rpx;
+      border-radius: 16rpx;
+      background: white;
+      color: #7f8c8d;
+      border: 1px solid #a8e6c3;
+      transition: all 0.2s ease;
+      box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+
+      &:active {
+        background: #f0f9f4;
+        border-color: @theme-color;
+        transform: translateY(-2rpx);
+        box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.08);
+      }
+
+      .fx67ll-btn-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .fx67ll-btn-icon {
+          margin-right: 10rpx;
+          font-size: 26rpx;
+        }
+      }
+    }
+  }
+}
+
+// 动画定义
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes checkIn {
+  0% {
+    transform: scale(0.8);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20rpx);
+  }
+}
+
+// 响应式调整
+@media (max-width: 480px) {
+  .fx67ll-extra-drawer {
+    .fx67ll-toolbar {
+      padding: 20rpx 24rpx;
+
+      .fx67ll-select-all {
+        padding: 10rpx 16rpx;
+      }
+    }
+
+    .fx67ll-extra-list {
+      padding: 20rpx 24rpx;
+
+      .fx67ll-extra-cell {
+        padding: 24rpx 20rpx;
+
+        .fx67ll-extra-cell-content {
+          .fx67ll-extra-cell-header {
+            .fx67ll-extra-cell-time {
+              font-size: 22rpx;
+            }
+
+            .fx67ll-extra-badge {
+              font-size: 22rpx;
+              padding: 4rpx 12rpx;
+            }
+          }
+
+          .fx67ll-extra-cell-remark {
+            .fx67ll-extra-cell-remark-text {
+              font-size: 20rpx;
+            }
+          }
+        }
+      }
+    }
+
+    .fx67ll-stat-grid {
+      .fx67ll-stat-chip {
+        padding: 10rpx 12rpx;
+
+        .fx67ll-stat-chip-label {
+          font-size: 20rpx;
+
+          .fx67ll-stat-chip-icon {
+            font-size: 20rpx;
+          }
+        }
+
+        .fx67ll-stat-chip-value {
+          font-size: 26rpx;
+        }
+      }
+    }
+
+    .fx67ll-merge-preview {
+      margin: 20rpx 24rpx 0;
+
+      .fx67ll-merge-preview-body {
+        .fx67ll-merge-preview-hero {
+          .fx67ll-merge-preview-hero-item {
+            .fx67ll-merge-preview-hero-value {
+              font-size: 36rpx;
+            }
+          }
+        }
+
+        .fx67ll-merge-preview-time {
+          .fx67ll-merge-preview-time-text {
+            font-size: 22rpx;
+          }
+        }
+      }
+    }
+
+    .fx67ll-merge-warning-banner {
+      margin: 20rpx 24rpx 0;
+
+      .fx67ll-merge-warning-body {
+        .fx67ll-merge-warning-title {
+          font-size: 26rpx;
+        }
+
+        .fx67ll-merge-warning-desc {
+          font-size: 22rpx;
+        }
+      }
+    }
+
+    .fx67ll-merge-remark-box {
+      margin: 20rpx 24rpx;
+    }
+
+    .fx67ll-empty {
+      padding: 40rpx 24rpx;
+
+      .fx67ll-empty-icon {
+        width: 100rpx;
+        height: 100rpx;
+        margin-bottom: 24rpx;
+
+        text {
+          font-size: 48rpx;
+        }
+      }
+
+      .fx67ll-empty-text {
+        font-size: 28rpx;
+      }
+
+      .fx67ll-empty-subtext {
+        font-size: 22rpx;
+      }
+    }
+
+    .fx67ll-extra-btn {
+      padding: 24rpx;
+
+      .fx67ll-btn-submit,
+      .fx67ll-btn-cancel {
+        height: 80rpx;
+        line-height: 80rpx;
+        font-size: 28rpx;
+      }
+
+      .fx67ll-btn-cancel {
+        width: 160rpx;
+      }
+    }
+  }
+}
