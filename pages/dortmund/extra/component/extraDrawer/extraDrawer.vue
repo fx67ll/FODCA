@@ -1,6 +1,6 @@
 <template>
-  <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible.sync="isShowExtraDrawer"
-    :radius="true" :height="drawerHeight" @close="closeDrawer">
+  <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible="drawerVisible"
+    :radius="true" :height="drawerHeight" @closeDrawer="closeDrawer">
     <view class="fx67ll-extra-drawer">
       <!-- 记录选择步骤 -->
       <template v-if="!isConfirmStep">
@@ -266,6 +266,8 @@ export default {
       // Drawer组件相关参数
       drawerHeight: "85%",
       drawerTitle: moment().format("YYYY-MM-DD HH:mm:ss dddd"),
+      // 本地维护的抽屉显示状态，避免直接透传prop被zb-drawer内部反向修改
+      drawerVisible: false,
       // 本地选中的主键数组，用于跟踪选中状态
       localCheckedIds: [],
       // 记录是否已经处理过默认选中
@@ -274,6 +276,8 @@ export default {
       isConfirmStep: false,
       // 合并后新记录的备注（可不填写）
       mergeRemark: "",
+      // 进入合并确认步骤时的所选记录快照，预览与提交均以快照为准，避免列表刷新导致预览漂移
+      mergeRows: [],
     };
   },
 
@@ -281,11 +285,6 @@ export default {
     // 选中的项目数量
     selectedCount() {
       return this.localCheckedIds.length;
-    },
-
-    // 选中的记录数据（保持列表展示顺序）
-    selectedList() {
-      return this.multipleExtraDataList.filter((item) => this.localCheckedIds.includes(item.extraId));
     },
 
     // 动态计算滚动区域高度
@@ -301,14 +300,14 @@ export default {
       return this.localCheckedIds.length === this.multipleExtraDataList.length;
     },
 
-    // 待合并记录条数
+    // 待合并记录条数（取合并确认步骤快照）
     mergeCount() {
-      return this.selectedList.length;
+      return this.mergeRows.length;
     },
 
     // 所选记录中创建时间最新的一条（快照类数值与创建时间预览取自该条）
     lastMergeRow() {
-      const rows = [...this.selectedList].sort((a, b) =>
+      const rows = [...this.mergeRows].sort((a, b) =>
         (a.createTime || "").localeCompare(b.createTime || "")
       );
       return rows.length > 0 ? rows[rows.length - 1] : null;
@@ -317,7 +316,7 @@ export default {
     // 合并后盈亏金额预览：所选记录盈亏金额之和
     mergedWinMoney() {
       let total = 0;
-      this.selectedList.forEach((item) => {
+      this.mergeRows.forEach((item) => {
         const winMoney = parseFloat(item.winMoney);
         if (!isNaN(winMoney)) {
           total += winMoney;
@@ -350,23 +349,26 @@ export default {
   },
 
   watch: {
-    // 监听父组件传递的显示状态
+    // 监听父组件传递的显示状态，同步至本地显示状态后再交给zb-drawer渲染
     isShowExtraDrawer(newValue) {
       if (newValue) {
+        this.drawerVisible = true;
         // 显示时更新时间
         this.showNowTime();
         // 重置默认选中处理标志与合并确认步骤状态
         this.hasProcessedDefaultSelection = false;
         this.isConfirmStep = false;
         this.mergeRemark = "";
+        this.mergeRows = [];
         // 延迟处理默认选中，确保数据已加载
         this.$nextTick(() => {
           this.processDefaultSelection();
         });
       } else {
+        this.drawerVisible = false;
         this.localCheckedIds = [];
+        this.mergeRows = [];
         this.clearTimer();
-        this.$emit("hideDrawer", false);
       }
     },
 
@@ -403,6 +405,8 @@ export default {
   mounted() {
     // moment初始汉化
     moment.locale("zh-cn");
+    // 组件挂载时同步一次本地显示状态，兜底异步加载完成前父组件已置为显示的场景
+    this.drawerVisible = this.isShowExtraDrawer;
     if (this.isShowExtraDrawer) {
       this.showNowTime();
       // 延迟处理默认选中，确保数据已加载
@@ -452,11 +456,13 @@ export default {
       return `${item.winMoney}`;
     },
 
-    // 关闭当前弹窗
+    // 关闭当前弹窗（取消按钮与zb-drawer右上角关闭按钮共用，同步本地显示状态并通知父组件重置）
     closeDrawer() {
+      this.drawerVisible = false;
       this.localCheckedIds = [];
       this.isConfirmStep = false;
       this.mergeRemark = "";
+      this.mergeRows = [];
       this.clearTimer();
       this.$emit("hideDrawer", false);
     },
@@ -595,7 +601,8 @@ export default {
         }
       }
 
-      // 校验通过，进入合并确认步骤
+      // 校验通过，快照所选记录并进入合并确认步骤（预览与提交均以快照为准）
+      this.mergeRows = this.multipleExtraDataList.filter((item) => this.localCheckedIds.includes(item.extraId));
       this.isConfirmStep = true;
     },
 
@@ -603,12 +610,13 @@ export default {
     handleBackToSelect() {
       this.isConfirmStep = false;
       this.mergeRemark = "";
+      this.mergeRows = [];
     },
 
-    // 确认合并：将所选记录与合并后备注提交给父组件，由父组件调用后台事务接口完成合并
+    // 确认合并：将快照的所选记录与合并后备注提交给父组件，由父组件调用后台事务接口完成合并
     handleMergeConfirm() {
       this.$emit("submitDrawer", {
-        selectedList: this.selectedList,
+        selectedList: this.mergeRows,
         extraRemark: this.mergeRemark,
       });
     },

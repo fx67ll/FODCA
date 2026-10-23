@@ -220,13 +220,13 @@ export default {
     },
     handleActionClick(e, record) {
       const self = this;
-      if (e?.index === 1) {
+      if (e?.position === "right" && e?.index === 1) {
         this.defaultSelectedList = [record];
         setTimeout(() => {
           self.isShowExtraDrawer = true;
         }, 444)
       }
-      if (e?.index === 2) {
+      if (e?.position === "right" && e?.index === 2) {
         showConfirm(
           `删除后数据无法恢复，请确认是否删除创建时间为：${record?.createTime} 的外快盈亏记录？`,
           "警告"
