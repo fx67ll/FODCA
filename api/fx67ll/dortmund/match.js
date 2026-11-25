@@ -17,6 +17,14 @@ export function getMatchInfo(matchId) {
   });
 }
 
+// 查询比赛当前有效倍率版本；无有效版本时 data 为 null，界面展示空状态
+export function getActiveOdds(matchId) {
+  return request({
+    url: '/dortmund/match/getActiveOddsForApp/' + matchId,
+    method: 'get',
+  });
+}
+
 // 移动端仅补录或修正比赛赛果与倍率赛果，不覆盖比赛编排字段
 export function updateMatchResult(data) {
   return request({

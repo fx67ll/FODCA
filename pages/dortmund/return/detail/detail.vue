@@ -69,11 +69,10 @@
           <view class="return-detail-section-title">
             <text class="return-detail-section-icon">⚽</text>
             <text>组合内比赛</text>
-            <text class="return-detail-count">{{ (detail.matches || []).length }}</text>
+            <text class="return-detail-count">{{ matchRows.length }}</text>
           </view>
-          <view v-if="(detail.matches || []).length" class="return-match-list">
-            <view v-for="(match, index) in detail.matches" :key="match.itemId || match.matchId || index"
-              class="return-match-card">
+          <view v-if="matchRows.length" class="return-match-list">
+            <view v-for="(match, index) in matchRows" :key="match._rowKey" class="return-match-card">
               <view class="return-match-head">
                 <text class="return-match-index">{{ index + 1 }}</text>
                 <view class="return-match-title-wrap">
@@ -170,6 +169,14 @@ export default {
   computed: {
     images() {
       return Array.isArray(this.detail.images) ? this.detail.images.filter((image) => image && image.imageId) : [];
+    },
+    // 小程序模板不支持复杂 :key 表达式，预先为每条组合明细生成稳定行键
+    matchRows() {
+      const matches = Array.isArray(this.detail.matches) ? this.detail.matches : [];
+      return matches.map((match, index) => ({
+        ...match,
+        _rowKey: match.itemId || match.matchId || `match-${index}`,
+      }));
     },
     // 小程序模板不支持在 :src 中调用方法，图片地址在计算属性中统一拼接
     imageViews() {

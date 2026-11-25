@@ -5,6 +5,15 @@
   background: #f2faf5;
 }
 
+/* #ifdef H5 */
+// H5 默认导航栏为 fixed 布局；z-paging 使用 fixed 时若不扣除导航与宽屏卡片安全区，
+// 顶部内容会落到模拟状态栏和导航栏下方，这里统一从真实内容区顶部开始渲染。
+.fx67ll-match-box .z-paging-content-fixed {
+  top: calc(var(--window-top, 44px) + var(--safe-top, 0px));
+  bottom: var(--safe-bottom, 0px);
+}
+/* #endif */
+
 .match-top {
   padding: 24rpx 28rpx 18rpx;
   background: linear-gradient(180deg, #e8f8ee 0%, #f2faf5 100%);
@@ -71,7 +80,7 @@
 .match-hero-emoji {
   display: inline-block;
   margin-right: 10rpx;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
   line-height: 1;
 }
 
@@ -344,8 +353,8 @@
   }
 
   &:active {
-    transform: scale(0.985);
-    box-shadow: 0 4rpx 14rpx rgba(34, 92, 57, 0.06);
+    transform: none;
+    box-shadow: 0 8rpx 24rpx rgba(34, 92, 57, 0.07);
   }
 }
 
@@ -606,6 +615,392 @@
   white-space: nowrap;
 }
 
+.match-card-view {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2rpx;
+  align-items: center;
+  padding: 8rpx 4rpx 8rpx 18rpx;
+  font-size: 21rpx;
+  font-weight: 750;
+  color: #2aa866;
+  transition: opacity 0.15s ease;
+
+  &:active {
+    opacity: 0.55;
+  }
+}
+
+/* 左滑赛果录入弹窗：紧凑、移动端优先，常规赛果单选，倍率赛果多选 */
+.match-entry-dialog {
+  display: flex;
+  flex-direction: column;
+  width: calc(100vw - 112rpx);
+  max-width: 600rpx;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 24rpx;
+  box-shadow: 0 22rpx 60rpx rgba(24, 79, 48, 0.22);
+  animation: match-entry-pop 0.24s ease both;
+}
+
+.match-entry-head {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 18rpx;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 24rpx 26rpx 20rpx;
+  background: linear-gradient(135deg, #edfaf2, #f8fffb);
+  border-bottom: 1rpx solid #dff1e7;
+}
+
+.match-entry-title-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.match-entry-kicker {
+  font-size: 16rpx;
+  font-weight: 800;
+  color: #44ad75;
+  letter-spacing: 2rpx;
+}
+
+.match-entry-title {
+  margin-top: 3rpx;
+  font-size: 30rpx;
+  font-weight: 850;
+  color: #254332;
+}
+
+.match-entry-subtitle {
+  margin-top: 7rpx;
+  overflow: hidden;
+  font-size: 20rpx;
+  color: #7d9185;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-entry-close {
+  display: flex;
+  flex: 0 0 52rpx;
+  align-items: center;
+  justify-content: center;
+  width: 52rpx;
+  height: 52rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1rpx solid #dcece3;
+  border-radius: 50%;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease;
+
+  &:active {
+    background: #e8f6ee;
+    transform: rotate(90deg);
+  }
+
+  &.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+.match-entry-body {
+  flex: 1;
+  box-sizing: border-box;
+  height: 56vh;
+  max-height: 720rpx;
+  padding: 18rpx 24rpx 4rpx;
+}
+
+.match-entry-odds {
+  display: flex;
+  gap: 18rpx;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 84rpx;
+  padding: 16rpx 18rpx;
+  background: linear-gradient(135deg, #eaf9ef, #f6fdf9);
+  border: 1rpx solid #ccebd8;
+  border-radius: 16rpx;
+  margin-top: 10rpx;
+
+  &.is-empty {
+    background: #f7faf8;
+    border-color: #e4ede7;
+  }
+}
+
+.match-entry-odds-loading {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+  font-size: 20rpx;
+  color: #7c8e83;
+}
+
+.match-entry-spinner {
+  width: 26rpx;
+  height: 26rpx;
+  border: 3rpx solid #ccebd8;
+  border-top-color: #2ecc71;
+  border-radius: 50%;
+  animation: match-entry-spin 0.75s linear infinite;
+}
+
+.match-entry-odds-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 0;
+}
+
+.match-entry-odds-label {
+  font-size: 17rpx;
+  color: #7b9182;
+}
+
+.match-entry-odds-code {
+  overflow: hidden;
+  font-size: 21rpx;
+  font-weight: 800;
+  color: #268f58;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.match-entry-handicap {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2rpx;
+  align-items: flex-end;
+}
+
+.match-entry-handicap-label {
+  font-size: 17rpx;
+  color: #83958a;
+}
+
+.match-entry-handicap-value {
+  font-size: 28rpx;
+  font-weight: 900;
+
+  &.is-positive {
+    color: #23a361;
+  }
+
+  &.is-negative {
+    color: #e15353;
+  }
+
+  &.is-neutral {
+    color: #64766b;
+  }
+}
+
+.match-entry-odds-empty-icon {
+  font-size: 30rpx;
+}
+
+.match-entry-odds-empty-title {
+  display: block;
+  font-size: 21rpx;
+  font-weight: 750;
+  color: #596d60;
+}
+
+.match-entry-odds-empty-desc {
+  display: block;
+  margin-top: 3rpx;
+  font-size: 18rpx;
+  color: #8b9a91;
+}
+
+.match-entry-section {
+  padding-top: 18rpx;
+  margin-top: 18rpx;
+  border-top: 1rpx dashed #e3eee7;
+}
+
+.match-entry-section:last-child {
+  padding-bottom: 24rpx;
+}
+
+.match-entry-section-head {
+  display: flex;
+  gap: 12rpx;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12rpx;
+}
+
+.match-entry-section-title {
+  font-size: 23rpx;
+  font-weight: 800;
+  color: #2b4736;
+}
+
+.match-entry-section-tip {
+  font-size: 17rpx;
+  color: #8b9b91;
+}
+
+.match-entry-result-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9rpx;
+}
+
+.match-entry-result {
+  display: flex;
+  gap: 5rpx;
+  align-items: center;
+  justify-content: center;
+  padding: 13rpx 6rpx;
+  background: #f8fbf9;
+  border: 1rpx solid #e2eee7;
+  border-radius: 12rpx;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+
+  &.is-active {
+    background: #e9f9ef;
+    border-color: #8fddaf;
+    box-shadow: 0 5rpx 14rpx rgba(46, 204, 113, 0.13);
+  }
+}
+
+.match-entry-result-icon {
+  font-size: 23rpx;
+}
+
+.match-entry-result-text {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #5b6e62;
+
+  .is-active & {
+    color: #1d8d55;
+  }
+}
+
+.match-entry-odds-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8rpx;
+}
+
+.match-entry-odds-option {
+  display: flex;
+  gap: 7rpx;
+  align-items: center;
+  padding: 10rpx 11rpx;
+  background: #f8fbf9;
+  border: 1rpx solid #e2eee7;
+  border-radius: 11rpx;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:active {
+    transform: scale(0.975);
+  }
+
+  &.is-active {
+    background: linear-gradient(135deg, #2ecc71, #27b565);
+    border-color: #2ecc71;
+    box-shadow: 0 5rpx 14rpx rgba(46, 204, 113, 0.18);
+  }
+}
+
+.match-entry-option-code {
+  display: flex;
+  flex: 0 0 37rpx;
+  align-items: center;
+  justify-content: center;
+  height: 28rpx;
+  font-size: 16rpx;
+  font-weight: 800;
+  color: #2b9460;
+  background: #e6f8ed;
+  border-radius: 6rpx;
+
+  .is-active & {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.match-entry-option-name {
+  flex: 1;
+  font-size: 19rpx;
+  font-weight: 650;
+  color: #596d60;
+
+  .is-active & {
+    color: #ffffff;
+  }
+}
+
+.match-entry-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12rpx;
+  padding: 18rpx 24rpx calc(18rpx + constant(safe-area-inset-bottom));
+  padding-bottom: calc(18rpx + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-top: 1rpx solid #e6efe9;
+  padding: 20rpx;
+}
+
+.match-entry-btn {
+  display: flex;
+  flex: 1;
+  gap: 6rpx;
+  align-items: center;
+  justify-content: center;
+  height: 68rpx;
+  margin: 0;
+  font-size: 23rpx;
+  font-weight: 750;
+  line-height: 68rpx;
+  border: 0;
+  border-radius: 14rpx;
+
+  &::after {
+    border: 0;
+  }
+
+  &[disabled] {
+    opacity: 0.55;
+  }
+
+  &.is-cancel {
+    color: #62756a;
+    background: #f2f6f3;
+  }
+
+  &.is-save {
+    color: #ffffff;
+    background: linear-gradient(135deg, #2ecc71, #24ae61);
+    box-shadow: 0 8rpx 18rpx rgba(46, 204, 113, 0.24);
+  }
+}
+
 .match-empty {
   display: flex;
   flex-direction: column;
@@ -654,5 +1049,23 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes match-entry-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18rpx) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes match-entry-spin {
+  to {
+    transform: rotate(360deg);
   }
 }

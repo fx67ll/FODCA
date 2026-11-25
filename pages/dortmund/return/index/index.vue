@@ -40,8 +40,8 @@
 
             <scroll-view scroll-x class="return-chip-scroll" :show-scrollbar="false">
               <view class="return-chip-row">
-                <view v-for="option in verificationOptions" :key="option.value || 'all'" class="return-chip"
-                  :class="{ 'is-active': filters.verificationStatus === option.value, [option.className]: true }"
+                <view v-for="option in verificationOptions" :key="option.text" class="return-chip"
+                  :class="['return-chip', filters.verificationStatus === option.value ? 'is-active' : '', option.className]"
                   @click="selectVerification(option.value)">
                   <text>{{ option.text }}</text>
                 </view>
@@ -65,12 +65,12 @@
         </view>
       </template>
 
-      <!-- 卡片列表：点击进入详情，左滑只保留核验和图片操作 -->
+      <!-- 卡片列表：仅右下角“查看”进入详情，避免整卡点击误触；左滑保留核验和图片操作 -->
       <uni-swipe-action>
         <view v-for="item in returnList" :key="item.combinationId" class="return-card-wrap"
           :style="{ animationDelay: item._animationDelay }">
           <uni-swipe-action-item :right-options="item._actionOptions" @click="(e) => handleActionClick(e, item)">
-            <view class="return-card" @click="openDetailPage(item)">
+            <view class="return-card">
               <view class="return-card-head">
                 <view class="return-card-title-wrap">
                   <text class="return-card-kicker">{{ item.combinationCode || 'AI 回报组合' }}</text>
@@ -118,6 +118,10 @@
 
               <view class="return-card-footer">
                 <text class="return-card-time">🕒 {{ normalizeDateTime(item.createTime) }}</text>
+                <view class="return-card-view" @click.stop="openDetailPage(item)">
+                  <text>查看</text>
+                  <uni-icons type="right" size="12" color="#2ecc71" />
+                </view>
               </view>
             </view>
           </uni-swipe-action-item>
@@ -170,11 +174,11 @@ export default {
         { text: '未采用', value: 'N' },
         { text: '全部采用状态', value: '' },
       ],
-      // 详情由卡片点击进入；未采用组合没有核验或上传动作，不再提供单独的查看按钮
+      // 详情仅由卡片右下角“查看”进入；未采用组合没有核验或上传动作
       baseActionOptions: [],
       adoptedActionOptions: [
         { text: '核验', style: { backgroundColor: '#2ecc71' } },
-        { text: '上传', style: { backgroundColor: '#8b5cf6' } },
+        { text: '上传', style: { backgroundColor: '#e6a23c' } },
       ],
       verifyingId: null,
     };

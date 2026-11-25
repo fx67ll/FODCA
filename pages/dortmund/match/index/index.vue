@@ -40,8 +40,8 @@
 
             <scroll-view scroll-x class="match-chip-scroll" :show-scrollbar="false">
               <view class="match-chip-row">
-                <view v-for="option in resultOptions" :key="option.value || 'all'" class="match-chip"
-                  :class="{ 'is-active': filters.matchResult === option.value, [option.className]: true }"
+                <view v-for="option in resultOptions" :key="option.text" class="match-chip"
+                  :class="['match-chip', filters.matchResult === option.value ? 'is-active' : '', option.className]"
                   @click="selectMatchResult(option.value)">
                   <text>{{ option.text }}</text>
                 </view>
@@ -75,12 +75,12 @@
         </view>
       </template>
 
-      <!-- 比赛卡片：点击进入详情，左滑快速进入赛果录入 -->
+      <!-- 比赛卡片：仅右下角“查看”进入详情，左滑打开轻量赛果录入弹窗，避免整卡误触 -->
       <uni-swipe-action>
         <view v-for="item in matchList" :key="item.matchId" class="match-card-wrap"
           :style="{ animationDelay: item._animationDelay }">
           <uni-swipe-action-item :right-options="actionOptions" @click="(e) => handleActionClick(e, item)">
-            <view class="match-card" @click="openDetailPage(item)">
+            <view class="match-card">
               <view class="match-card-head">
                 <view class="match-card-code-wrap">
                   <text class="match-card-code">{{ item.matchCode || '比赛记录' }}</text>
@@ -137,6 +137,10 @@
 
               <view class="match-card-footer">
                 <text class="match-card-tip">🕒 更新 {{ normalizeDateTime(item.updateTime || item.createTime) }}</text>
+                <view class="match-card-view" @click.stop="openDetailPage(item)">
+                  <text>查看</text>
+                  <uni-icons type="right" size="12" color="#2ecc71" />
+                </view>
               </view>
             </view>
           </uni-swipe-action-item>
@@ -150,19 +154,106 @@
       </view>
     </z-paging-mini>
 
+    <!-- 左滑“录入赛果”仅打开轻量弹窗，避免离开列表；有效倍率只读展示让分值 -->
+    <uni-popup ref="resultPopup" type="dialog" :is-mask-click="!entrySaving">
+      <view class="match-entry-dialog">
+        <view class="match-entry-head">
+          <view class="match-entry-title-wrap">
+            <text class="match-entry-kicker">QUICK ENTRY</text>
+            <text class="match-entry-title">录入赛果</text>
+            <text class="match-entry-subtitle">{{ entryMatchupText }}</text>
+          </view>
+          <view class="match-entry-close" :class="{ 'is-disabled': entrySaving }" @click="closeResultPopup">
+            <uni-icons type="closeempty" size="18" color="#7f9186" />
+          </view>
+        </view>
+
+        <scroll-view scroll-y class="match-entry-body">
+          <view class="match-entry-odds" :class="{ 'is-empty': !entryActiveOdds }">
+            <view v-if="entryOddsLoading" class="match-entry-odds-loading">
+              <view class="match-entry-spinner" />
+              <text>正在读取有效倍率版本…</text>
+            </view>
+            <template v-else-if="entryActiveOdds">
+              <view class="match-entry-odds-copy">
+                <text class="match-entry-odds-label">当前有效倍率版本</text>
+                <text class="match-entry-odds-code">{{ entryActiveOdds.oddsCode || '未命名版本' }}</text>
+              </view>
+              <view class="match-entry-handicap">
+                <text class="match-entry-handicap-label">让分值</text>
+                <text class="match-entry-handicap-value" :class="entryHandicapClass">
+                  {{ formatHandicap(entryActiveOdds.handicapValue) }}
+                </text>
+              </view>
+            </template>
+            <template v-else>
+              <text class="match-entry-odds-empty-icon">📌</text>
+              <view>
+                <text class="match-entry-odds-empty-title">暂无有效倍率版本</text>
+                <text class="match-entry-odds-empty-desc">仍可先登记常规赛果与倍率赛果。</text>
+              </view>
+            </template>
+          </view>
+
+          <view class="match-entry-section">
+            <view class="match-entry-section-head">
+              <text class="match-entry-section-title">常规赛果</text>
+              <text class="match-entry-section-tip">单选，可再次点击取消</text>
+            </view>
+            <view class="match-entry-result-row">
+              <view v-for="(option, index) in matchResultOptions" :key="option.value" class="match-entry-result"
+                :class="{ 'is-active': entryMatchResult === option.value }"
+                @click="selectEntryMatchResult(option.value)">
+                <text class="match-entry-result-icon">{{ resultIcons[index] }}</text>
+                <text class="match-entry-result-text">{{ option.text }}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="match-entry-section">
+            <view class="match-entry-section-head">
+              <text class="match-entry-section-title">倍率赛果</text>
+              <text class="match-entry-section-tip">可多选，已选 {{ entryOddsList.length }} 项</text>
+            </view>
+            <view class="match-entry-odds-grid">
+              <view v-for="option in oddsResultOptions" :key="option.value" class="match-entry-odds-option"
+                :class="{ 'is-active': entryOddsMap[option.value] }" @click="toggleEntryOddsResult(option.value)">
+                <text class="match-entry-option-code">{{ option.value }}</text>
+                <text class="match-entry-option-name">{{ option.text }}</text>
+                <uni-icons v-if="entryOddsMap[option.value]" type="checkmarkempty" size="14" color="#ffffff" />
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="match-entry-actions">
+          <button class="match-entry-btn is-cancel" :disabled="entrySaving" @click="closeResultPopup">取消</button>
+          <button class="match-entry-btn is-save" :disabled="entrySaving || entryOddsLoading" @click="saveEntryResult">
+            <uni-icons :type="entrySaving ? 'spinner-cycle' : 'checkmarkempty'" size="16" color="#ffffff" />
+            <text>{{ entrySaving ? '保存中…' : '保存赛果' }}</text>
+          </button>
+        </view>
+      </view>
+    </uni-popup>
+
   </view>
 </template>
 
 <script>
-import { getMatchList } from '@/api/fx67ll/dortmund/match';
+import { getActiveOdds, getMatchList, updateMatchResult } from '@/api/fx67ll/dortmund/match';
 import {
+  MATCH_RESULT_OPTIONS,
+  ODDS_RESULT_OPTIONS,
   cardAnimationDelay,
+  formatNumber,
   matchResultLabel,
   normalizeDateTime,
   oddsResultLabels,
 } from '@/pages/dortmund/common/format';
+import uniPopup from '@/pages/dortmund/component/uni-popup/uni-popup.vue';
 
 export default {
+  components: { uniPopup },
   data() {
     return {
       matchList: [],
@@ -182,11 +273,39 @@ export default {
         { text: '平局', value: '1', className: 'is-draw' },
         { text: '客队胜', value: '2', className: 'is-away' },
       ],
-      // 静态左滑操作配置：详情由卡片点击进入，左滑只保留高频赛果录入
+      // 静态左滑操作配置：详情由右下角“查看”进入，左滑只保留高频赛果录入
       actionOptions: [
-        { text: '录赛果', style: { backgroundColor: '#2ecc71' } },
+        { text: '录入赛果', style: { backgroundColor: '#2ecc71' } },
       ],
+      // 轻量赛果录入弹窗状态；与详情页各自维护草稿，只有确认保存后才写回服务端
+      entryItem: {},
+      entryMatchResult: '',
+      entryOddsList: [],
+      entryActiveOdds: null,
+      entryOddsLoading: false,
+      entrySaving: false,
+      matchResultOptions: MATCH_RESULT_OPTIONS,
+      oddsResultOptions: ODDS_RESULT_OPTIONS,
+      resultIcons: ['🏠', '🤝', '✈️'],
     };
+  },
+  computed: {
+    entryMatchupText() {
+      const item = this.entryItem || {};
+      return `${item.homeTeamName || '未知主队'} VS ${item.awayTeamName || '未知客队'}`;
+    },
+    // 小程序模板不保证支持数组 includes 调用，勾选状态统一转换为字典查询
+    entryOddsMap() {
+      return this.entryOddsList.reduce((map, value) => {
+        map[value] = true;
+        return map;
+      }, {});
+    },
+    entryHandicapClass() {
+      const value = Number(this.entryActiveOdds?.handicapValue);
+      if (!Number.isFinite(value) || value === 0) return 'is-neutral';
+      return value > 0 ? 'is-positive' : 'is-negative';
+    },
   },
   onShow() {
     // 从详情页返回后重新查询，确保刚补录的赛果和关联组合统计立即生效。
@@ -289,13 +408,115 @@ export default {
     handleActionClick(event, item) {
       if (event?.position && event.position !== 'right') return;
       if (event?.index === 0) {
-        this.openDetailPage(item, true);
+        this.openResultPopup(item);
       }
     },
-    openDetailPage(item, focusResult = false) {
+    normalizeId(value) {
+      const id = Number(value);
+      return Number.isInteger(id) && id > 0 ? id : null;
+    },
+    // 左滑录入只打开弹窗；先回填列表已有赛果，再异步读取当前有效倍率版本
+    openResultPopup(item) {
+      const matchId = this.normalizeId(item?.matchId);
+      if (!matchId) return;
+      this.entryItem = item;
+      this.entryMatchResult = MATCH_RESULT_OPTIONS.some(
+        (option) => option.value === String(item.matchResult || ''),
+      ) ? String(item.matchResult) : '';
+      const tokens = String(item.oddsResult || '')
+        .split(/[,，;；、\s]+/)
+        .map((token) => token.trim().toUpperCase())
+        .filter(Boolean);
+      this.entryOddsList = ODDS_RESULT_OPTIONS
+        .map((option) => option.value)
+        .filter((value) => tokens.includes(value));
+      this.entryActiveOdds = null;
+      this.entryOddsLoading = true;
+      this.$refs.resultPopup && this.$refs.resultPopup.open('dialog');
+
+      getActiveOdds(matchId)
+        .then((res) => {
+          // 用户可能已关闭并打开另一场比赛，过期响应不能污染当前弹窗
+          if (String(this.entryItem.matchId) !== String(matchId)) return;
+          if (res?.code === 200) {
+            this.entryActiveOdds = res.data || null;
+          }
+        })
+        .catch(() => {
+          // request.js 已统一提示网络或业务异常；无有效版本由接口返回 null，不进入此分支
+        })
+        .finally(() => {
+          if (String(this.entryItem.matchId) === String(matchId)) {
+            this.entryOddsLoading = false;
+          }
+        });
+    },
+    closeResultPopup() {
+      if (this.entrySaving) return;
+      this.$refs.resultPopup && this.$refs.resultPopup.close();
+    },
+    selectEntryMatchResult(value) {
+      this.entryMatchResult = this.entryMatchResult === value ? '' : value;
+    },
+    toggleEntryOddsResult(value) {
+      if (this.entryOddsList.includes(value)) {
+        this.entryOddsList = this.entryOddsList.filter((item) => item !== value);
+      } else {
+        this.entryOddsList = [...this.entryOddsList, value];
+      }
+    },
+    buildEntryOddsResult() {
+      const values = ODDS_RESULT_OPTIONS
+        .map((option) => option.value)
+        .filter((value) => this.entryOddsList.includes(value));
+      return values.length ? values.join(',') : null;
+    },
+    formatHandicap(value) {
+      if (value === null || value === undefined || value === '') return '未设置';
+      const number = Number(value);
+      if (!Number.isFinite(number)) return String(value);
+      const text = formatNumber(number, 2);
+      return number > 0 ? `+${text}` : text;
+    },
+    // 保存后沿用服务端赛果失效规则；刷新列表以同步关联组合核验状态
+    saveEntryResult() {
+      if (this.entrySaving || this.entryOddsLoading) return;
+      const matchId = this.normalizeId(this.entryItem.matchId);
+      if (!matchId) {
+        uni.showToast({ title: '比赛主键缺失，请关闭后重试', icon: 'none' });
+        return;
+      }
+      const oddsResult = this.buildEntryOddsResult();
+      if (!this.entryMatchResult && !oddsResult) {
+        uni.showToast({ title: '请至少录入一项赛果', icon: 'none' });
+        return;
+      }
+      this.entrySaving = true;
+      updateMatchResult({
+        matchId,
+        matchResult: this.entryMatchResult || null,
+        oddsResult,
+      })
+        .then((res) => {
+          if (res?.code === 200) {
+            this.$refs.resultPopup && this.$refs.resultPopup.close();
+            uni.showToast({ title: '赛果已保存', icon: 'none' });
+            setTimeout(() => this.reloadList(), 260);
+          } else {
+            uni.showToast({ title: res?.msg || '赛果保存失败，请稍后重试', icon: 'none' });
+          }
+        })
+        .catch(() => {
+          // request.js 已统一提示服务端语义错误
+        })
+        .finally(() => {
+          this.entrySaving = false;
+        });
+    },
+    openDetailPage(item) {
       if (!item?.matchId) return;
       uni.navigateTo({
-        url: `/pages/dortmund/match/detail/detail?matchId=${item.matchId}${focusResult ? '&focus=result' : ''}`,
+        url: `/pages/dortmund/match/detail/detail?matchId=${item.matchId}`,
       });
     },
   },

@@ -37,6 +37,50 @@
           </view>
         </view>
 
+        <!-- 有效倍率是回报组合冻结数据，详情页只读展示，不在移动端切换或编辑版本 -->
+        <view class="match-detail-section match-active-odds-section">
+          <view class="match-detail-section-title">
+            <text class="match-detail-section-icon">🎚️</text>
+            <text>有效倍率版本</text>
+            <text v-if="activeOdds" class="match-active-odds-badge">当前有效</text>
+          </view>
+          <view v-if="activeOddsLoading" class="match-active-odds-loading">
+            <view class="match-loading-ring" />
+            <text>正在读取倍率版本…</text>
+          </view>
+          <template v-else-if="activeOdds">
+            <view class="match-active-odds-head">
+              <view class="match-active-odds-copy">
+                <text class="match-active-odds-code">{{ activeOdds.oddsCode || '未命名版本' }}</text>
+                <text class="match-active-odds-source">来源 {{ normalizeDateTime(activeOdds.sourceTime) }}</text>
+              </view>
+              <view class="match-active-handicap">
+                <text class="match-active-handicap-label">让分值</text>
+                <text class="match-active-handicap-value" :class="activeHandicapClass">
+                  {{ formatHandicap(activeOdds.handicapValue) }}
+                </text>
+              </view>
+            </view>
+            <view class="match-active-odds-grid">
+              <view v-for="row in activeOddsRows" :key="row.value" class="match-active-odds-item">
+                <view class="match-active-odds-item-head">
+                  <text class="match-active-odds-tag">{{ row.value }}</text>
+                  <text class="match-active-odds-name">{{ row.text }}</text>
+                </view>
+                <text class="match-active-odds-value">{{ formatOddsValue(row.odds) }}</text>
+                <text class="match-active-odds-weight">权重 {{ formatOddsWeight(row.weight) }}</text>
+              </view>
+            </view>
+          </template>
+          <view v-else class="match-active-odds-empty">
+            <text class="match-active-odds-empty-icon">📌</text>
+            <view>
+              <text class="match-active-odds-empty-title">暂无有效倍率版本</text>
+              <text class="match-active-odds-empty-desc">赛果仍可正常补录，倍率版本请从 Web 端维护。</text>
+            </view>
+          </view>
+        </view>
+
         <view id="match-result-entry" class="match-detail-section match-result-section">
           <view class="match-detail-section-title">
             <text class="match-detail-section-icon">✍️</text>
@@ -116,13 +160,24 @@
 </template>
 
 <script>
-import { getMatchInfo, updateMatchResult } from '@/api/fx67ll/dortmund/match';
+import { getActiveOdds, getMatchInfo, updateMatchResult } from '@/api/fx67ll/dortmund/match';
 import {
   MATCH_RESULT_OPTIONS,
   ODDS_RESULT_OPTIONS,
+  formatNumber,
   matchResultLabel,
   normalizeDateTime,
 } from '@/pages/dortmund/common/format';
+
+// 有效倍率六类字段与前端展示编码一一对应，避免详情页依赖后端字段顺序
+const ACTIVE_ODDS_FIELDS = Object.freeze({
+  HW: ['homeWinOdds', 'homeWinWeight'],
+  DR: ['drawOdds', 'drawWeight'],
+  AW: ['awayWinOdds', 'awayWinWeight'],
+  HH: ['handicapHomeWinOdds', 'handicapHomeWinWeight'],
+  HD: ['handicapDrawOdds', 'handicapDrawWeight'],
+  HA: ['handicapAwayWinOdds', 'handicapAwayWinWeight'],
+});
 
 export default {
   name: 'MatchDetailPage',
@@ -138,6 +193,8 @@ export default {
       oddsResultList: [],
       matchResultOptions: MATCH_RESULT_OPTIONS,
       oddsResultOptions: ODDS_RESULT_OPTIONS,
+      activeOdds: null,
+      activeOddsLoading: false,
       resultIcons: ['🏠', '🤝', '✈️'],
       loading: false,
       saving: false,
@@ -152,6 +209,24 @@ export default {
         .filter((option) => this.oddsResultList.includes(option.value))
         .map((option) => `${option.value} ${option.text}`);
       return labels.length ? labels.join('、') : '未登记';
+    },
+    // 详情页固定展示六类有效倍率；无有效版本时整块显示空状态
+    activeOddsRows() {
+      if (!this.activeOdds) return [];
+      return ODDS_RESULT_OPTIONS.map((option) => {
+        const fields = ACTIVE_ODDS_FIELDS[option.value] || [];
+        return {
+          value: option.value,
+          text: option.text,
+          odds: this.activeOdds[fields[0]],
+          weight: this.activeOdds[fields[1]],
+        };
+      });
+    },
+    activeHandicapClass() {
+      const value = Number(this.activeOdds?.handicapValue);
+      if (!Number.isFinite(value) || value === 0) return 'is-neutral';
+      return value > 0 ? 'is-positive' : 'is-negative';
     },
     // 小程序模板不保证支持数组 includes 调用，选择状态预先转换为字典查询
     selectedOddsMap() {
@@ -239,6 +314,8 @@ export default {
       if (showLoading) {
         this.loading = true;
       }
+      // 基础详情与倍率版本并行读取；倍率失败不阻断赛果补录主流程
+      this.refreshActiveOdds(id);
       return getMatchInfo(id)
         .then((res) => {
           if (res?.code === 200) {
@@ -256,6 +333,38 @@ export default {
         .finally(() => {
           this.loading = false;
         });
+    },
+    // 倍率版本单独加载，失败不影响比赛基础详情和赛果录入
+    refreshActiveOdds(matchId) {
+      this.activeOddsLoading = true;
+      return getActiveOdds(matchId)
+        .then((res) => {
+          if (res?.code === 200) {
+            this.activeOdds = res.data || null;
+          }
+        })
+        .catch(() => {
+          this.activeOdds = null;
+        })
+        .finally(() => {
+          this.activeOddsLoading = false;
+        });
+    },
+    formatHandicap(value) {
+      if (value === null || value === undefined || value === '') return '未设置';
+      const number = Number(value);
+      if (!Number.isFinite(number)) return String(value);
+      const text = formatNumber(number, 2);
+      return number > 0 ? `+${text}` : text;
+    },
+    formatOddsValue(value) {
+      if (value === null || value === undefined || value === '') return '未设置';
+      return formatNumber(value, 4);
+    },
+    formatOddsWeight(value) {
+      if (value === null || value === undefined || value === '') return '未设置';
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toFixed(4) : String(value);
     },
     selectMatchResult(value) {
       this.draft.matchResult = this.draft.matchResult === value ? '' : value;
