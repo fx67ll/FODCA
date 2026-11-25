@@ -157,6 +157,39 @@
           }
         },
         {
+          "path": "return/index/index",
+          "style": {
+            "navigationBarTitleText": "回报组合记录"
+          }
+        },
+        {
+          "path": "return/detail/detail",
+          "style": {
+            "navigationBarTitleText": "回报组合详情",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "return/upload/upload",
+          "style": {
+            "navigationBarTitleText": "上传组合图片",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "match/index/index",
+          "style": {
+            "navigationBarTitleText": "比赛历史记录"
+          }
+        },
+        {
+          "path": "match/detail/detail",
+          "style": {
+            "navigationBarTitleText": "比赛记录详情",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
           "path": "ticket/ticket",
           "style": {
             "navigationBarTitleText": "多特蒙德大十字"

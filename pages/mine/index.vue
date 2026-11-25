@@ -58,7 +58,6 @@
           </view>
         </view>
         <!-- 只允许超级管理员fx67ll使用外快盈亏管理的功能，后续视情况开放 -->
-        <!-- 2023已禁用，2024再出发 -->
         <view class="list-cell list-cell-arrow" @click="handleToExtraManagement"
           v-if="userName && userName === 'fx67ll' && isNeedWaiKuai">
           <view class="menu-item-box">
@@ -74,13 +73,23 @@
             <view>外快数值模拟</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName && userName === 'fx67ll'">
+        <!-- 多特蒙德移动端核心业务入口，与外快盈亏管理共用超级管理员显隐配置 -->
+        <view class="list-cell list-cell-arrow" @click="handleToReturnCombination"
+          v-if="userName && userName === 'fx67ll' && isNeedWaiKuai">
           <view class="menu-item-box">
-            <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
-            <view>打卡工时管理</view>
+            <view><uni-icons color="#2ecc71" type="paperclip" size="20"></uni-icons></view>
+            <view>回报组合记录</view>
           </view>
         </view>
-        <view class="list-cell list-cell-arrow" @click="handleToNoteLog">
+        <!-- 多特蒙德移动端核心业务入口，与外快盈亏管理共用超级管理员显隐配置 -->
+        <view class="list-cell list-cell-arrow" @click="handleToMatchHistory"
+          v-if="userName && userName === 'fx67ll' && isNeedWaiKuai">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="map-pin-ellipse" size="20"></uni-icons></view>
+            <view>比赛历史记录</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleToNoteLog" v-if="userName && userName !== 'fx67ll'">
           <view class="menu-item-box">
             <view><uni-icons color="#2ecc71" type="compose" size="20"></uni-icons></view>
             <view>富文本备忘录</view>
@@ -132,6 +141,18 @@
             <view>编辑资料</view>
           </view>
         </view> -->
+        <view class="list-cell list-cell-arrow" @click="handleToPunchLog" v-if="userName && userName === 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="calendar" size="20"></uni-icons></view>
+            <view>打卡工时管理</view>
+          </view>
+        </view>
+        <view class="list-cell list-cell-arrow" @click="handleToNoteLog" v-if="userName && userName === 'fx67ll'">
+          <view class="menu-item-box">
+            <view><uni-icons color="#2ecc71" type="compose" size="20"></uni-icons></view>
+            <view>富文本备忘录</view>
+          </view>
+        </view>
       </view>
 
       <view class="menu-list menu-list-last">
@@ -257,6 +278,12 @@ export default {
     },
     handleToExtraSimulate() {
       this.$tab.navigateTo("/pages/dortmund/extra/simulate/simulate");
+    },
+    handleToReturnCombination() {
+      this.$tab.navigateTo("/pages/dortmund/return/index/index");
+    },
+    handleToMatchHistory() {
+      this.$tab.navigateTo("/pages/dortmund/match/index/index");
     },
     handleToPunchLog() {
       this.$tab.navigateTo("/pages/punch/log/record/record");
