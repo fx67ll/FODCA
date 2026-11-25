@@ -9,8 +9,8 @@
               <uni-list :border="true">
                 <uni-list-chat :avatar="'https://vip.fx67ll.com/vip-api/getRandomAvatar?avatarBlockNum=' + 6
                   " :title="`￥${item.extraMoney}${item.saveMoney && item.saveMoney !== '0'
-                      ? ' / ￥' + item.saveMoney
-                      : ''
+                    ? ' / ￥' + item.saveMoney
+                    : ''
                     }`" :note="item.extraRemark">
                   <template v-slot:default>
                     <view :style="{ fontSize: '14px', color: '#999', paddingRight: '6rpx' }">￥{{
@@ -53,12 +53,12 @@
                             'fx67ll-extra-badge-normal':
                               item.isWin !== 'Y' && item.winMoney === '0',
                           }">{{
-                          item.isWin === "Y"
-                            ? `+${item.winMoney}`
-                            : item.winMoney === "0"
-                              ? "0"
-                              : `${item.winMoney}`
-                        }}
+                            item.isWin === "Y"
+                              ? `+${item.winMoney}`
+                              : item.winMoney === "0"
+                                ? "0"
+                                : `${item.winMoney}`
+                          }}
                           </text>
                         </view>
                   </template>

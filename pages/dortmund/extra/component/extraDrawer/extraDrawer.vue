@@ -1,6 +1,6 @@
 <template>
-  <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible="drawerVisible"
-    :radius="true" :height="drawerHeight" @closeDrawer="closeDrawer">
+  <zb-drawer mode="bottom" :title="drawerTitle" :wrapperClosable="false" :visible="drawerVisible" :radius="true"
+    :height="drawerHeight" @closeDrawer="closeDrawer">
     <view class="fx67ll-extra-drawer">
       <!-- 记录选择步骤 -->
       <template v-if="!isConfirmStep">
@@ -135,11 +135,13 @@
               <view class="fx67ll-merge-preview-hero">
                 <view class="fx67ll-merge-preview-hero-item">
                   <text class="fx67ll-merge-preview-label">合并后盈亏金额</text>
-                  <text class="fx67ll-merge-preview-hero-value" :class="mergedWinMoneyClass">{{ mergedWinMoneyText }}</text>
+                  <text class="fx67ll-merge-preview-hero-value" :class="mergedWinMoneyClass">{{ mergedWinMoneyText
+                  }}</text>
                 </view>
                 <view class="fx67ll-merge-preview-hero-item">
                   <text class="fx67ll-merge-preview-label">合并后是否盈利</text>
-                  <text class="fx67ll-merge-preview-hero-value" :class="mergedWinMoneyClass">{{ previewIsWinText }}</text>
+                  <text class="fx67ll-merge-preview-hero-value" :class="mergedWinMoneyClass">{{ previewIsWinText
+                  }}</text>
                 </view>
               </view>
               <!-- 快照字段：与记录选择卡片同构的金额四宫格，直观对照合并后新记录取自所选范围内最新一条的原值 -->
