@@ -1,7 +1,7 @@
 <template>
   <view class="fx67ll-match-box">
-    <z-paging-mini ref="paging" back-to-top-bottom="40rpx" :auto-show-back-to-top="true" v-model="matchList"
-      @query="queryMatchList">
+    <z-paging-mini ref="paging" :paging-style="pagingStyle" back-to-top-bottom="40rpx" :auto-show-back-to-top="true"
+      v-model="matchList" @query="queryMatchList">
       <!-- 顶部固定区：标题、比赛球队搜索和赛果筛选不随列表滚动 -->
       <template v-slot:top>
         <view class="match-top">
@@ -262,7 +262,7 @@ export default {
       filterOpen: false,
       filters: {
         keyword: '',
-        matchResult: '',
+        matchResult: 'U',
         beginMatchTime: '',
         endMatchTime: '',
       },
@@ -290,6 +290,16 @@ export default {
     };
   },
   computed: {
+    // H5 宽屏卡片中导航栏和顶部安全区均为 fixed；通过组件内联样式覆盖 z-paging 默认的 windowTop，
+    // 让列表从真实内容区开始，避免顶部 Hero 被模拟导航栏遮挡。其他平台保持组件默认定位。
+    pagingStyle() {
+      const style = {};
+      // #ifdef H5
+      style.top = 'calc(var(--window-top, 44px) + var(--safe-top, 0px))';
+      style.bottom = 'var(--safe-bottom, 0px)';
+      // #endif
+      return style;
+    },
     entryMatchupText() {
       const item = this.entryItem || {};
       return `${item.homeTeamName || '未知主队'} VS ${item.awayTeamName || '未知客队'}`;

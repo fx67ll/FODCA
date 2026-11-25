@@ -5,14 +5,6 @@
   background: #f2faf5;
 }
 
-/* #ifdef H5 */
-// 与比赛列表一致：扣除 H5 导航栏和宽屏卡片顶部安全区，避免 fixed 列表覆盖模拟头部。
-.fx67ll-return-box .z-paging-content-fixed {
-  top: calc(var(--window-top, 44px) + var(--safe-top, 0px));
-  bottom: var(--safe-bottom, 0px);
-}
-/* #endif */
-
 .return-top {
   padding: 24rpx 28rpx 18rpx;
   background: linear-gradient(180deg, #e8f8ee 0%, #f2faf5 100%);

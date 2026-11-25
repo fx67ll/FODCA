@@ -1,7 +1,7 @@
 <template>
   <view class="fx67ll-return-box">
-    <z-paging-mini ref="paging" back-to-top-bottom="40rpx" :auto-show-back-to-top="true" v-model="returnList"
-      @query="queryReturnList">
+    <z-paging-mini ref="paging" :paging-style="pagingStyle" back-to-top-bottom="40rpx" :auto-show-back-to-top="true"
+      v-model="returnList" @query="queryReturnList">
       <!-- 顶部固定区：与列表滚动解耦，搜索和状态筛选始终可操作 -->
       <template v-slot:top>
         <view class="return-top">
@@ -57,7 +57,7 @@
                 </view>
               </view>
               <view class="return-advanced-footer">
-                <text class="return-advanced-tip">默认展示已采用组合；核验和图片操作仅对已采用记录开放。</text>
+                <text class="return-advanced-tip">默认展示已采用且未核验的组合；核验和图片操作仅对已采用记录开放。</text>
                 <button class="return-reset-btn" @click="resetFilters">重置</button>
               </view>
             </view>
@@ -160,7 +160,7 @@ export default {
       filterOpen: false,
       filters: {
         keyword: '',
-        verificationStatus: '',
+        verificationStatus: 'U',
         adoptedFlag: 'Y',
       },
       verificationOptions: [
@@ -182,6 +182,18 @@ export default {
       ],
       verifyingId: null,
     };
+  },
+  computed: {
+    // H5 宽屏卡片中导航栏和顶部安全区均为 fixed；通过组件内联样式覆盖 z-paging 默认的 windowTop，
+    // 让列表从真实内容区开始，避免顶部 Hero 被模拟导航栏遮挡。其他平台保持组件默认定位。
+    pagingStyle() {
+      const style = {};
+      // #ifdef H5
+      style.top = 'calc(var(--window-top, 44px) + var(--safe-top, 0px))';
+      style.bottom = 'var(--safe-bottom, 0px)';
+      // #endif
+      return style;
+    },
   },
   onShow() {
     // 从详情、核验或上传页面返回时刷新列表，避免继续展示旧核验状态和图片计数。
@@ -242,7 +254,7 @@ export default {
     resetFilters() {
       this.filters = {
         keyword: '',
-        verificationStatus: '',
+        verificationStatus: 'U',
         adoptedFlag: 'Y',
       };
       this.filterOpen = false;

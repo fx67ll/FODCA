@@ -8,6 +8,17 @@
   background: #f2faf5;
 }
 
+/* #ifdef H5 */
+// 宽屏卡片内容区高度已扣除导航栏和上下安全区，不能再用浏览器 100vh 作为最小高度；
+// 底部预留按固定操作栏的实际占位收紧，避免内容结束后仍出现一整屏空白滚动。
+@media (orientation: landscape) and (min-width: 980px) {
+  html:not(.full-layout) .fx67ll-return-upload-page {
+    min-height: calc(var(--card-h) - var(--safe-top) - var(--safe-bottom) - var(--window-top, 44px));
+    padding-bottom: calc(50rpx + env(safe-area-inset-bottom));
+  }
+}
+/* #endif */
+
 .upload-hero {
   position: relative;
   display: flex;
