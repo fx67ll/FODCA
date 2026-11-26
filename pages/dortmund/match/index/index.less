@@ -210,25 +210,22 @@
     box-shadow: 0 6rpx 14rpx rgba(46, 204, 113, 0.24);
   }
 
-  &.is-pending.is-active {
-    background: #708177;
-    border-color: #708177;
-    box-shadow: 0 6rpx 14rpx rgba(78, 94, 84, 0.2);
+  &.is-scope.is-active {
+    background: #218e57;
+    border-color: #218e57;
+    box-shadow: 0 6rpx 14rpx rgba(28, 135, 81, 0.24);
   }
 
-  &.is-home.is-active {
-    background: #2ecc71;
-    border-color: #2ecc71;
+  &.is-match-unregistered.is-active {
+    background: #d99a2b;
+    border-color: #d99a2b;
+    box-shadow: 0 6rpx 14rpx rgba(190, 132, 30, 0.22);
   }
 
-  &.is-draw.is-active {
-    background: #4096ff;
-    border-color: #4096ff;
-  }
-
-  &.is-away.is-active {
-    background: #7b61ff;
-    border-color: #7b61ff;
+  &.is-odds-unregistered.is-active {
+    background: #c4772f;
+    border-color: #c4772f;
+    box-shadow: 0 6rpx 14rpx rgba(174, 101, 32, 0.22);
   }
 }
 
@@ -244,6 +241,42 @@
   font-size: 21rpx;
   font-weight: 700;
   color: #3d5447;
+}
+
+.match-advanced-scroll {
+  width: 100%;
+  margin-bottom: 16rpx;
+  white-space: nowrap;
+}
+
+.match-advanced-chip-row {
+  display: inline-flex;
+  gap: 10rpx;
+  padding: 2rpx;
+}
+
+.match-advanced-chip {
+  padding: 8rpx 16rpx;
+  font-size: 20rpx;
+  color: #6e7e74;
+  background: #f7faf8;
+  border: 1rpx solid #e2eee7;
+  border-radius: 12rpx;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+
+  &.is-active {
+    color: #1c8d54;
+    background: #e9f9ef;
+    border-color: #b9e6ca;
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
 }
 
 .match-date-row {
@@ -622,7 +655,7 @@
   }
 }
 
-/* 左滑赛果录入弹窗：紧凑、移动端优先，常规赛果单选，倍率赛果多选 */
+/* 左滑赛果录入弹窗：紧凑、移动端优先，比赛结果单选，倍率赛果多选 */
 .match-entry-dialog {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,12 @@
 <template>
   <view class="fx67ll-match-box">
     <z-paging-mini ref="paging" :paging-style="pagingStyle" back-to-top-bottom="40rpx" :auto-show-back-to-top="true"
-      v-model="matchList" @query="queryMatchList">
+      :refresher-threshold="58" :refresher-complete-delay="360" :refresher-complete-duration="520"
+      refresher-background="#f2faf5" @scrollTopChange="handleScrollTopChange" v-model="matchList"
+      @query="queryMatchList">
+      <template v-slot:refresher="{ refresherStatus }">
+        <refreshIndicator :status="refresherStatus" />
+      </template>
       <!-- 顶部固定区：标题、比赛球队搜索和赛果筛选不随列表滚动 -->
       <template v-slot:top>
         <view class="match-top">
@@ -14,7 +19,7 @@
                 <text class="match-hero-emoji">⚽️</text>
                 <text>比赛历史记录</text>
               </view>
-              <text class="match-hero-desc">回看比赛编排，补录常规赛果与倍率赛果</text>
+              <text class="match-hero-desc">回看比赛编排，补录比赛结果与倍率赛果</text>
             </view>
             <view class="match-hero-mark">
               <uni-icons type="flag" color="#ffffff" size="34" />
@@ -40,15 +45,44 @@
 
             <scroll-view scroll-x class="match-chip-scroll" :show-scrollbar="false">
               <view class="match-chip-row">
-                <view v-for="option in resultOptions" :key="option.text" class="match-chip"
-                  :class="['match-chip', filters.matchResult === option.value ? 'is-active' : '', option.className]"
-                  @click="selectMatchResult(option.value)">
+                <view v-for="option in resultScopeOptions" :key="option.value" class="match-chip"
+                  :class="['match-chip', filters.resultScope === option.value ? 'is-active' : '', option.className]"
+                  @click="selectResultScope(option.value)">
                   <text>{{ option.text }}</text>
                 </view>
               </view>
             </scroll-view>
 
             <view v-if="filterOpen" class="match-advanced">
+              <view class="match-advanced-title">比赛结果</view>
+              <scroll-view scroll-x class="match-advanced-scroll" :show-scrollbar="false">
+                <view class="match-advanced-chip-row">
+                  <view class="match-advanced-chip"
+                    :class="{ 'is-active': !filters.matchResultFilter && (!filters.resultScope || filters.resultScope === 'ALL') }"
+                    @click="clearMatchResultFilter">
+                    <text>全部赛果</text>
+                  </view>
+                  <view v-for="option in matchResultFilterOptions" :key="option.value" class="match-advanced-chip"
+                    :class="{ 'is-active': filters.matchResultFilter === option.value }"
+                    @click="selectMatchResultFilter(option.value)">
+                    <text>{{ option.text }}</text>
+                  </view>
+                </view>
+              </scroll-view>
+              <view class="match-advanced-title">倍率赛果</view>
+              <scroll-view scroll-x class="match-advanced-scroll" :show-scrollbar="false">
+                <view class="match-advanced-chip-row">
+                  <view class="match-advanced-chip"
+                    :class="{ 'is-active': !filters.oddsResultFilters.length && (!filters.resultScope || filters.resultScope === 'ALL') }"
+                    @click="clearOddsFilters">
+                    <text>全部倍率</text>
+                  </view>
+                  <view v-for="option in oddsFilterOptions" :key="option.value" class="match-advanced-chip"
+                    :class="{ 'is-active': oddsFilterMap[option.value] }" @click="toggleOddsFilter(option.value)">
+                    <text>{{ option.text }}</text>
+                  </view>
+                </view>
+              </scroll-view>
               <view class="match-advanced-title">比赛时间</view>
               <view class="match-date-row">
                 <picker class="match-date-picker" mode="date" :value="filters.beginMatchTime"
@@ -67,7 +101,7 @@
                 </picker>
               </view>
               <view class="match-advanced-footer">
-                <text class="match-advanced-tip">赛果和日期筛选会即时刷新；球队名称输入后按回车搜索。</text>
+                <text class="match-advanced-tip">快捷范围与高级赛果条件互斥，切换时会自动清除冲突项；日期和球队搜索可继续叠加。</text>
                 <button class="match-reset-btn" @click="resetFilters">重置</button>
               </view>
             </view>
@@ -91,7 +125,7 @@
                     {{ matchStatusLabel(item.matchStatus) }}
                   </text>
                   <text class="match-tag" :class="item._resultClass">
-                    {{ matchResultLabel(item.matchResult) }}
+                    {{ item._resultText }}
                   </text>
                 </view>
               </view>
@@ -115,7 +149,7 @@
                   <text>🏟️ {{ item.matchVenue || '主场待定' }}</text>
                 </view>
                 <view class="match-meta-pill">
-                  <text>🎯 倍率赛果 {{ oddsResultText(item.oddsResult) }}</text>
+                  <text>🎯 倍率赛果 {{ item._oddsResultText }}</text>
                 </view>
               </view>
 
@@ -190,14 +224,14 @@
               <text class="match-entry-odds-empty-icon">📌</text>
               <view>
                 <text class="match-entry-odds-empty-title">暂无有效倍率版本</text>
-                <text class="match-entry-odds-empty-desc">仍可先登记常规赛果与倍率赛果。</text>
+                <text class="match-entry-odds-empty-desc">仍可先登记比赛结果与倍率赛果。</text>
               </view>
             </template>
           </view>
 
           <view class="match-entry-section">
             <view class="match-entry-section-head">
-              <text class="match-entry-section-title">常规赛果</text>
+              <text class="match-entry-section-title">比赛结果</text>
               <text class="match-entry-section-tip">单选，可再次点击取消</text>
             </view>
             <view class="match-entry-result-row">
@@ -246,32 +280,42 @@ import {
   ODDS_RESULT_OPTIONS,
   cardAnimationDelay,
   formatNumber,
+  isMatchResultRegistered,
+  isOddsResultRegistered,
   matchResultLabel,
   normalizeDateTime,
   oddsResultLabels,
 } from '@/pages/dortmund/common/format';
+import RefreshIndicator from '@/pages/dortmund/component/refreshIndicator/refreshIndicator.vue';
 import uniPopup from '@/pages/dortmund/component/uni-popup/uni-popup.vue';
 
 export default {
-  components: { uniPopup },
+  components: { uniPopup, RefreshIndicator },
   data() {
     return {
       matchList: [],
       total: 0,
       listReady: false,
+      currentScrollTop: 0,
+      pendingRestoreTop: null,
       filterOpen: false,
       filters: {
         keyword: '',
-        matchResult: 'U',
+        resultScope: 'PENDING',
+        matchResultFilter: '',
+        oddsResultFilters: [],
         beginMatchTime: '',
         endMatchTime: '',
       },
-      resultOptions: [
-        { text: '全部赛果', value: '', className: 'is-neutral' },
-        { text: '未登记', value: 'U', className: 'is-pending' },
-        { text: '主队胜', value: '0', className: 'is-home' },
-        { text: '平局', value: '1', className: 'is-draw' },
-        { text: '客队胜', value: '2', className: 'is-away' },
+      resultScopeOptions: [
+        { text: '全部', value: 'ALL', className: 'is-neutral' },
+        { text: '待补录', value: 'PENDING', className: 'is-scope' },
+        { text: '赛果未登记', value: 'MATCH_U', className: 'is-match-unregistered' },
+        { text: '倍率未登记', value: 'ODDS_U', className: 'is-odds-unregistered' },
+      ],
+      matchResultFilterOptions: MATCH_RESULT_OPTIONS,
+      oddsFilterOptions: [
+        ...ODDS_RESULT_OPTIONS,
       ],
       // 静态左滑操作配置：详情由右下角“查看”进入，左滑只保留高频赛果录入
       actionOptions: [
@@ -311,6 +355,12 @@ export default {
         return map;
       }, {});
     },
+    oddsFilterMap() {
+      return this.filters.oddsResultFilters.reduce((map, value) => {
+        map[value] = true;
+        return map;
+      }, {});
+    },
     entryHandicapClass() {
       const value = Number(this.entryActiveOdds?.handicapValue);
       if (!Number.isFinite(value) || value === 0) return 'is-neutral';
@@ -318,9 +368,9 @@ export default {
     },
   },
   onShow() {
-    // 从详情页返回后重新查询，确保刚补录的赛果和关联组合统计立即生效。
+    // 从详情页返回后保留当前阅读位置，确保刚补录的赛果统计立即生效。
     if (this.listReady) {
-      this.reloadList();
+      this.refreshKeepingPosition();
     }
   },
   methods: {
@@ -337,37 +387,113 @@ export default {
         pageNum,
         pageSize,
         teamName: this.filters.keyword.trim() || null,
-        matchResult: this.filters.matchResult || null,
         beginMatchTime: this.filters.beginMatchTime ? `${this.filters.beginMatchTime} 00:00:00` : null,
         endMatchTime: this.filters.endMatchTime ? `${this.filters.endMatchTime} 23:59:59` : null,
       };
+      // 四个快捷范围互斥；仅“全部”允许继续叠加两个维度的具体高级条件。
+      if (this.filters.resultScope === 'PENDING') {
+        query.pendingRegistration = true;
+      } else if (this.filters.resultScope === 'MATCH_U') {
+        query.matchResult = 'U';
+      } else if (this.filters.resultScope === 'ODDS_U') {
+        query.oddsResultFilters = ['U'];
+      } else {
+        if (this.filters.matchResultFilter) {
+          query.matchResult = this.filters.matchResultFilter;
+        }
+        if (this.filters.oddsResultFilters.length) {
+          query.oddsResultFilters = [...this.filters.oddsResultFilters];
+        }
+      }
       getMatchList(query)
         .then((res) => {
           if (res?.code === 200) {
             this.total = Number(res.total || 0);
             // 小程序模板不支持在 :class/:style 中调用方法，卡片展示字段在入列前统一预计算
-            const rows = (res.rows || []).map((item, index) => ({
-              ...item,
-              _statusClass: this.matchStatusClass(item.matchStatus),
-              _resultClass: this.matchResultTagClass(item.matchResult),
-              _animationDelay: cardAnimationDelay(index),
-            }));
+            const rows = (res.rows || []).map((item, index) => {
+              const fullyRegistered = isMatchResultRegistered(item.matchResult)
+                && isOddsResultRegistered(item.oddsResult);
+              return {
+                ...item,
+                _statusClass: this.matchStatusClass(item.matchStatus),
+                _resultClass: fullyRegistered ? this.matchResultTagClass(item.matchResult) : 'is-pending',
+                _resultText: fullyRegistered ? matchResultLabel(item.matchResult) : '未登记',
+                _oddsResultText: this.oddsResultText(item.oddsResult),
+                _animationDelay: cardAnimationDelay(index),
+              };
+            });
             this.$refs.paging.completeByTotal(rows, this.total);
             this.listReady = true;
+            this.restoreScrollAfterQuery();
           } else {
+            this.pendingRestoreTop = null;
             this.$refs.paging.complete(false);
           }
         })
         .catch(() => {
           // request.js 已统一提示业务错误
+          this.pendingRestoreTop = null;
           this.$refs.paging.complete(false);
         });
     },
+    handleScrollTopChange(value) {
+      this.currentScrollTop = Number(value) || 0;
+    },
+    // 补录或核验后只刷新当前已加载区间，避免整页回到顶部。
+    refreshKeepingPosition() {
+      if (!this.$refs.paging) return;
+      this.pendingRestoreTop = this.currentScrollTop;
+      this.$refs.paging.refresh();
+    },
+    restoreScrollAfterQuery() {
+      if (this.pendingRestoreTop === null) return;
+      const targetTop = this.pendingRestoreTop;
+      this.pendingRestoreTop = null;
+      this.$nextTick(() => {
+        setTimeout(() => {
+          if (!this.$refs.paging) return;
+          this.$refs.paging.scrollToY(targetTop, 0, false);
+          this.currentScrollTop = targetTop;
+        }, 60);
+      });
+    },
     reloadList() {
+      this.pendingRestoreTop = null;
       this.$refs.paging && this.$refs.paging.reload();
     },
-    selectMatchResult(value) {
-      this.filters.matchResult = value;
+    selectResultScope(value) {
+      this.filters.resultScope = value;
+      // 快捷范围代表完整的赛果口径，切换时必须清掉会改变该口径的高级条件。
+      this.filters.matchResultFilter = '';
+      this.filters.oddsResultFilters = [];
+      this.reloadList();
+    },
+    selectMatchResultFilter(value) {
+      // 具体比赛结果会清除快捷范围，避免“全部”与高级条件同时处于选中态。
+      this.filters.matchResultFilter = value;
+      this.filters.resultScope = '';
+      this.reloadList();
+    },
+    clearMatchResultFilter() {
+      this.filters.matchResultFilter = '';
+      this.filters.resultScope = this.filters.oddsResultFilters.length ? '' : 'ALL';
+      this.reloadList();
+    },
+    toggleOddsFilter(value) {
+      // 具体倍率赛果会清除快捷范围；多选值之间可叠加，取消最后一项后回到“全部”。
+      if (this.filters.oddsResultFilters.includes(value)) {
+        this.filters.oddsResultFilters = this.filters.oddsResultFilters.filter((item) => item !== value);
+      } else {
+        this.filters.oddsResultFilters = [...this.filters.oddsResultFilters, value];
+      }
+      this.filters.resultScope = (this.filters.matchResultFilter || this.filters.oddsResultFilters.length)
+        ? ''
+        : 'ALL';
+      this.reloadList();
+    },
+    clearOddsFilters() {
+      this.filters.oddsResultFilters = [];
+      this.filters.resultScope = this.filters.matchResultFilter ? '' : 'ALL';
       this.reloadList();
     },
     onBeginDateChange(event) {
@@ -392,7 +518,9 @@ export default {
     resetFilters() {
       this.filters = {
         keyword: '',
-        matchResult: '',
+        resultScope: 'PENDING',
+        matchResultFilter: '',
+        oddsResultFilters: [],
         beginMatchTime: '',
         endMatchTime: '',
       };
@@ -481,6 +609,16 @@ export default {
         .filter((value) => this.entryOddsList.includes(value));
       return values.length ? values.join(',') : null;
     },
+    normalizeOddsResult(value) {
+      const tokens = String(value || '')
+        .split(/[,，;；、\s]+/)
+        .map((token) => token.trim().toUpperCase())
+        .filter(Boolean);
+      return ODDS_RESULT_OPTIONS
+        .map((option) => option.value)
+        .filter((token) => tokens.includes(token))
+        .join(',');
+    },
     formatHandicap(value) {
       if (value === null || value === undefined || value === '') return '未设置';
       const number = Number(value);
@@ -501,6 +639,8 @@ export default {
         uni.showToast({ title: '请至少录入一项赛果', icon: 'none' });
         return;
       }
+      const hasChanged = String(this.entryItem.matchResult || '') !== String(this.entryMatchResult || '')
+        || this.normalizeOddsResult(this.entryItem.oddsResult) !== String(oddsResult || '');
       this.entrySaving = true;
       updateMatchResult({
         matchId,
@@ -511,7 +651,9 @@ export default {
           if (res?.code === 200) {
             this.$refs.resultPopup && this.$refs.resultPopup.close();
             uni.showToast({ title: '赛果已保存', icon: 'none' });
-            setTimeout(() => this.reloadList(), 260);
+            if (hasChanged) {
+              setTimeout(() => this.refreshKeepingPosition(), 260);
+            }
           } else {
             uni.showToast({ title: res?.msg || '赛果保存失败，请稍后重试', icon: 'none' });
           }

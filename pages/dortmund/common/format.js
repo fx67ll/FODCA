@@ -55,6 +55,12 @@ export function matchResultLabel(value) {
   return matched ? matched.text : String(value);
 }
 
+// 比赛结果只有 0/1/2 三个有效值；异常导入占位按未登记处理
+export function isMatchResultRegistered(value) {
+  const normalized = String(value ?? '');
+  return MATCH_RESULT_OPTIONS.some(item => item.value === normalized);
+}
+
 export function oddsResultLabels(value) {
   const tokens = String(value || '')
     .split(/[,，;；、\s]+/)
@@ -64,6 +70,15 @@ export function oddsResultLabels(value) {
     const matched = ODDS_RESULT_OPTIONS.find(item => item.value === token);
     return matched ? matched.text : token;
   });
+}
+
+// 倍率赛果是逗号分隔的多值集合，只要包含任一标准令牌即视为已登记
+export function isOddsResultRegistered(value) {
+  const tokens = String(value || '')
+    .split(/[,，;；、\s]+/)
+    .map(item => item.trim().toUpperCase())
+    .filter(Boolean);
+  return tokens.some(token => ODDS_RESULT_OPTIONS.some(item => item.value === token));
 }
 
 export function verificationLabel(value) {

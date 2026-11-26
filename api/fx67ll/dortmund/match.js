@@ -25,7 +25,7 @@ export function getActiveOdds(matchId) {
   });
 }
 
-// 移动端仅补录或修正比赛赛果与倍率赛果，不覆盖比赛编排字段
+// 移动端仅补录或修正比赛结果与倍率赛果，不覆盖比赛编排字段
 export function updateMatchResult(data) {
   return request({
     url: '/dortmund/match/updateMatchResultForApp',

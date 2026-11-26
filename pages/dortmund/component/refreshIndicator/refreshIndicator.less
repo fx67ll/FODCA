@@ -1,0 +1,160 @@
+.fx67ll-refresh-indicator {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 96rpx;
+  color: #486355;
+}
+
+.fx67ll-refresh-orbit {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 62rpx;
+  height: 62rpx;
+  overflow: hidden;
+  background: linear-gradient(145deg, #f8fffb, #e8f8ee);
+  border: 1rpx solid #cbeed9;
+  border-radius: 50%;
+  box-shadow: 0 8rpx 18rpx rgba(46, 204, 113, 0.14);
+  transition:
+    transform 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.fx67ll-refresh-ring {
+  position: absolute;
+  inset: 4rpx;
+  border: 2rpx solid transparent;
+  border-top-color: #2ecc71;
+  border-right-color: rgba(46, 204, 113, 0.36);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.fx67ll-refresh-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 30rpx;
+  font-weight: 900;
+  line-height: 1;
+  color: #249b5d;
+  transition:
+    transform 0.22s ease,
+    color 0.22s ease;
+}
+
+.fx67ll-refresh-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3rpx;
+  min-width: 0;
+}
+
+.fx67ll-refresh-title {
+  font-size: 23rpx;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #2d5a41;
+  letter-spacing: 1rpx;
+}
+
+.fx67ll-refresh-tip {
+  font-size: 18rpx;
+  line-height: 1.3;
+  color: #8a9d91;
+}
+
+.is-ready {
+  .fx67ll-refresh-orbit {
+    background: linear-gradient(145deg, #fafffc, #dff7e8);
+    border-color: #aee8c5;
+    transform: scale(1.05);
+  }
+
+  .fx67ll-refresh-icon {
+    transform: translateY(-3rpx);
+  }
+}
+
+.is-loading {
+  .fx67ll-refresh-orbit {
+    background: linear-gradient(145deg, #ebfaf1, #d7f5e3);
+    border-color: #8fddaf;
+  }
+
+  .fx67ll-refresh-ring {
+    opacity: 1;
+    animation: fx67ll-refresh-orbit 0.9s linear infinite;
+  }
+
+  .fx67ll-refresh-icon {
+    animation: fx67ll-refresh-turn 1.1s linear infinite;
+  }
+
+  .fx67ll-refresh-title {
+    animation: fx67ll-refresh-pulse 1.3s ease-in-out infinite;
+  }
+}
+
+.is-complete {
+  .fx67ll-refresh-orbit {
+    background: linear-gradient(145deg, #2ecc71, #1ca95b);
+    border-color: #1ca95b;
+    transform: scale(1.04);
+  }
+
+  .fx67ll-refresh-icon {
+    color: #ffffff;
+    animation: fx67ll-refresh-pop 0.32s ease both;
+  }
+
+  .fx67ll-refresh-title {
+    color: #238a56;
+  }
+}
+
+@keyframes fx67ll-refresh-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fx67ll-refresh-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fx67ll-refresh-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+
+  70% {
+    transform: scale(1.14);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fx67ll-refresh-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}

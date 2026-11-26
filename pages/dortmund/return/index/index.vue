@@ -1,7 +1,12 @@
 <template>
   <view class="fx67ll-return-box">
     <z-paging-mini ref="paging" :paging-style="pagingStyle" back-to-top-bottom="40rpx" :auto-show-back-to-top="true"
-      v-model="returnList" @query="queryReturnList">
+      :refresher-threshold="58" :refresher-complete-delay="360" :refresher-complete-duration="520"
+      refresher-background="#f2faf5" @scrollTopChange="handleScrollTopChange" v-model="returnList"
+      @query="queryReturnList">
+      <template v-slot:refresher="{ refresherStatus }">
+        <refreshIndicator :status="refresherStatus" />
+      </template>
       <!-- 顶部固定区：与列表滚动解耦，搜索和状态筛选始终可操作 -->
       <template v-slot:top>
         <view class="return-top">
@@ -150,13 +155,17 @@ import {
   verificationClass,
   verificationLabel,
 } from '@/pages/dortmund/common/format';
+import RefreshIndicator from '@/pages/dortmund/component/refreshIndicator/refreshIndicator.vue';
 
 export default {
+  components: { RefreshIndicator },
   data() {
     return {
       returnList: [],
       total: 0,
       listReady: false,
+      currentScrollTop: 0,
+      pendingRestoreTop: null,
       filterOpen: false,
       filters: {
         keyword: '',
@@ -164,7 +173,7 @@ export default {
         adoptedFlag: 'Y',
       },
       verificationOptions: [
-        { text: '全部状态', value: '', className: 'is-neutral' },
+        { text: '全部状态', value: 'ALL', className: 'is-neutral' },
         { text: '未核验', value: 'U', className: 'is-pending' },
         { text: '已达成', value: 'Y', className: 'is-success' },
         { text: '未达成', value: 'N', className: 'is-failed' },
@@ -172,7 +181,7 @@ export default {
       adoptionOptions: [
         { text: '已采用', value: 'Y' },
         { text: '未采用', value: 'N' },
-        { text: '全部采用状态', value: '' },
+        { text: '全部采用状态', value: 'ALL' },
       ],
       // 详情仅由卡片右下角“查看”进入；未采用组合没有核验或上传动作
       baseActionOptions: [],
@@ -196,9 +205,9 @@ export default {
     },
   },
   onShow() {
-    // 从详情、核验或上传页面返回时刷新列表，避免继续展示旧核验状态和图片计数。
+    // 从详情或上传页返回时保留当前阅读位置，刷新数据和滚动位置都由 z-paging 接管。
     if (this.listReady) {
-      this.reloadList();
+      this.refreshKeepingPosition();
     }
   },
   methods: {
@@ -215,9 +224,14 @@ export default {
         pageNum,
         pageSize,
         keyword: this.filters.keyword.trim(),
-        adoptedFlag: this.filters.adoptedFlag || null,
-        verificationStatus: this.filters.verificationStatus || null,
       };
+      // ALL 是仅前端使用的哨兵；不能把空串或 null 序列化成字面过滤值。
+      if (this.filters.adoptedFlag !== 'ALL') {
+        query.adoptedFlag = this.filters.adoptedFlag;
+      }
+      if (this.filters.verificationStatus !== 'ALL') {
+        query.verificationStatus = this.filters.verificationStatus;
+      }
       getReturnCombinationList(query)
         .then((res) => {
           if (res?.code === 200) {
@@ -232,15 +246,40 @@ export default {
             }));
             this.$refs.paging.completeByTotal(rows, this.total);
             this.listReady = true;
+            this.restoreScrollAfterQuery();
           } else {
+            this.pendingRestoreTop = null;
             this.$refs.paging.complete(false);
           }
         })
         .catch(() => {
+          this.pendingRestoreTop = null;
           this.$refs.paging.complete(false);
         });
     },
+    handleScrollTopChange(value) {
+      this.currentScrollTop = Number(value) || 0;
+    },
+    // 操作后刷新当前已加载区间，不重置页码；查询结束后再把滚动位置还原。
+    refreshKeepingPosition() {
+      if (!this.$refs.paging) return;
+      this.pendingRestoreTop = this.currentScrollTop;
+      this.$refs.paging.refresh();
+    },
+    restoreScrollAfterQuery() {
+      if (this.pendingRestoreTop === null) return;
+      const targetTop = this.pendingRestoreTop;
+      this.pendingRestoreTop = null;
+      this.$nextTick(() => {
+        setTimeout(() => {
+          if (!this.$refs.paging) return;
+          this.$refs.paging.scrollToY(targetTop, 0, false);
+          this.currentScrollTop = targetTop;
+        }, 60);
+      });
+    },
     reloadList() {
+      this.pendingRestoreTop = null;
       this.$refs.paging && this.$refs.paging.reload();
     },
     selectVerification(value) {
@@ -322,6 +361,7 @@ export default {
             const status = res.data?.verificationStatus || null;
             this.updateVerificationStatus(combinationId, status);
             uni.showToast({ title: `核验完成：${verificationLabel(status)}`, icon: 'none' });
+            this.refreshKeepingPosition();
           }
         })
         .catch(() => {
